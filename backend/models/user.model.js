@@ -8,7 +8,6 @@ const OAuthProviderSchema = new mongoose.Schema(
   },
   { _id: false }
 );
-
 const UserSchema = new mongoose.Schema({
   name: String,
   email: { type: String, required: true, unique: true, index: true },
@@ -20,6 +19,7 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Subscription",
     default: null,
+    index: true,
   },
   updatedAt: { type: Date, default: Date.now },
 });
