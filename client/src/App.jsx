@@ -36,7 +36,7 @@ const App = () => {
   useEffect(() => {
     setTimeout(() => {
       scrollRef.current?.update();
-    }, 100); 
+    }, 100);
   }, [location]);
 
   return (

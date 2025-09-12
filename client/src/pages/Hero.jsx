@@ -4,7 +4,7 @@ const Hero = () => {
   return (
     <div
       data-scroll-section
-      className="min-h-screen dm-sans-font w-full overflow-x-hidden flex items-center justify-center"
+      className="min-h-screen dm-sans-font w-full overflow-x-hidden  items-center justify-center"
     >
       <div
         className="h-screen w-full flex items-center justify-center"
@@ -16,6 +16,15 @@ const Hero = () => {
           </div>
           <h4>Next Gen DB Ai</h4>
         </div>
+      </div>
+
+      <div className="h-screen w-full bg-red-500"> 
+      
+      
+      </div>
+      <div className="h-screen w-full bg-red-500"> 
+      
+      
       </div>
     </div>
   );
