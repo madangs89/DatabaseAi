@@ -9,3 +9,9 @@
   font-weight: 400;
   font-style: normal;
 };
+
+body{
+  font-family: "DM Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-style: normal;
+}

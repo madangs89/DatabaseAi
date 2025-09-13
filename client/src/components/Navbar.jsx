@@ -1,21 +1,25 @@
 import React from "react";
+import logo from "../assets/log.png";
 
 const Navbar = () => {
   return (
     <nav className="fixed top-0 text-white left-0 w-full z-50 border-b border-[#d4d4d4] ">
       {/* bg-black/30 backdrop-blur-md */}
-      <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3">
+      <div className="max-w-7xl mx-auto flex items-center pr-1 py-1 justify-between md:px-6 md:py-3">
         {/* Logo */}
-        <div className="text-xl font-bold">DB Copilot</div>
+        <img src={logo} alt="" className="w-32 h-12  object-cover" />
         {/* Links */}
-        <div className="flex space-x-6 dm-sans-font">
+        <div className=" space-x-6 lg:flex hidden dm-sans-font">
           <a
             href="/"
             className="bg-gradient-to-r dm-sans-font from-white via-gray-400 to-gray-300 bg-clip-text text-transparent"
           >
             Home
           </a>
-          <a href="/features" className="text-[rgb(255, 255, 255)] dm-sans-font">
+          <a
+            href="/features"
+            className="text-[rgb(255, 255, 255)] dm-sans-font"
+          >
             Features
           </a>
           <a href="/pricing" className="text-[#e5e5e5] dm-sans-font">
@@ -26,7 +30,7 @@ const Navbar = () => {
         {/* Button */}
         <a
           href="/login"
-          className="px-4 py-2 rounded-xl bg-white/40 hover:bg-white/60 backdrop-blur-sm border border-white/30"
+          className="px-6 py-1 rounded-md bg-white/40 hover:bg-white/60 backdrop-blur-sm border border-white/30"
         >
           Login
         </a>
