@@ -34,7 +34,6 @@ const Hero = () => {
       if (vantaEffect) vantaEffect.destroy();
     };
   }, [vantaEffect]);
-
   return (
     <div
       ref={vantaRef}

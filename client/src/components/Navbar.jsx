@@ -1,7 +1,10 @@
 import React from "react";
 import logo from "../assets/log.png";
+import { useLocation } from "react-router-dom";
 
 const Navbar = () => {
+  const location = useLocation();
+  if (location.pathname.includes("/dashboard")) return null;
   return (
     <nav className="fixed top-0 text-white left-0 w-full z-50 border-b border-[#d4d4d4] ">
       {/* bg-black/30 backdrop-blur-md */}
@@ -24,6 +27,9 @@ const Navbar = () => {
           </a>
           <a href="/pricing" className="text-[#e5e5e5] dm-sans-font">
             Pricing
+          </a>
+          <a href="/dashboard" className="text-[#e5e5e5] dm-sans-font">
+            dashboard
           </a>
         </div>
 
