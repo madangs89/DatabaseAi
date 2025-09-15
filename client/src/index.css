@@ -8,9 +8,18 @@
   font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;
-};
+}
+.dm-sans {
+  font-family: "DM Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-style: normal;
+  line-height: normal;
+}
 
-body{
+.inter-font {
+  font-family: "Inter", "Noto Sans", sans-serif;
+}
+body {
   font-family: "DM Sans", sans-serif;
   font-optical-sizing: auto;
   font-style: normal;
