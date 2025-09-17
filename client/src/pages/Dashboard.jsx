@@ -71,7 +71,6 @@ const TableNode = ({ data }) => {
 const Dashboard = () => {
   const [theme, setTheme] = useState("dark");
   const [selectedTab, setSelectedTab] = useState("editor");
-
   const tableData = [
     {
       id: "users",
