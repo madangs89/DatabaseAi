@@ -24,3 +24,30 @@ body {
   font-optical-sizing: auto;
   font-style: normal;
 }
+
+/* For Webkit browsers (Chrome, Safari) */
+/* For Webkit browsers (Chrome, Safari) */
+.hide-scrollbar::-webkit-scrollbar {
+  width: 0px;      /* Small scrollbar width */
+  height: 0px;     /* Small scrollbar height */
+}
+
+.hide-scrollbar::-webkit-scrollbar-track {
+  background: #ccc;   /* Light gray track */
+  border-radius: 3px;
+}
+
+.hide-scrollbar::-webkit-scrollbar-thumb {
+  background: #888;   /* Slightly darker gray thumb */
+  border-radius: 3px;
+}
+
+.hide-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #666;   /* Darker gray on hover */
+}
+
+/* For Firefox */
+.hide-scrollbar {
+  scrollbar-width: none;
+  scrollbar-color: #888 #ccc; /* thumb color | track color */
+}
