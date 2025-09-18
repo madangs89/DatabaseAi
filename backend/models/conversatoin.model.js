@@ -7,10 +7,6 @@ const MessageSchema = new mongoose.Schema(
       required: true,
     },
     text: { type: String, required: true }, // human-readable
-    schemaVersionId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "SchemaVersion",
-    }, 
     createdAt: { type: Date, default: Date.now },
   },
   { _id: false }

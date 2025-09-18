@@ -100,38 +100,38 @@ export const loginWithEmail = async (req, res) => {
 };
 
 // ==================== OAuth Login/Signup ====================
-export const oauthLogin = async (req, res) => {
-  try {
-    const { provider, providerId, email, name } = req.body; // assume frontend sends these after Google OAuth
+// export const oauthLogin = async (req, res) => {
+//   try {
+//     const { provider, providerId, email, name } = req.body; // assume frontend sends these after Google OAuth
 
-    let user = await User.findOne({
-      "oauthProviders.providerId": providerId,
-      "oauthProviders.provider": provider,
-    });
+//     let user = await User.findOne({
+//       "oauthProviders.providerId": providerId,
+//       "oauthProviders.provider": provider,
+//     });
 
-    if (!user) {
-      user = await User.findOne({ email });
-      if (user) {
-        user.oauthProviders.push({ provider, providerId, email });
-        await user.save();
-      } else {
-        user = await User.create({
-          name,
-          email,
-          oauthProviders: [{ provider, providerId, email }],
-        });
-      }
-    }
+//     if (!user) {
+//       user = await User.findOne({ email });
+//       if (user) {
+//         user.oauthProviders.push({ provider, providerId, email });
+//         await user.save();
+//       } else {
+//         user = await User.create({
+//           name,
+//           email,
+//           oauthProviders: [{ provider, providerId, email }],
+//         });
+//       }
+//     }
 
-    const token = generateToken(user);
-    setTokenCookie(res, token);
+//     const token = generateToken(user);
+//     setTokenCookie(res, token);
 
-    return res.json({ user, token });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Internal server error" });
-  }
-};
+//     return res.json({ user, token });
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({ error: "Internal server error" });
+//   }
+// };
 
 // ==================== Logout ====================
 export const logout = (req, res) => {

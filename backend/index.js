@@ -4,6 +4,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { connectDb } from "./db/connectDB.js";
+import llmRouter from "./routes/lll.routes.js";
 
 const app = express();
 
@@ -16,11 +17,13 @@ app.get("/", (req, res) => {
   res.send("Hello World");
 });
 
+app.use("/" , llmRouter)
+
 const startServer = async () => {
   try {
     await connectDb(); // Connect DB first
     app.listen(5000, () => {
-      console.log("Server is running on port 5000");
+      console.log("Server is running on port http://localhost:5000");
     });
   } catch (error) {
     console.error("Failed to start server:", error);
