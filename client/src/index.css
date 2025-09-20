@@ -25,25 +25,41 @@ body {
   font-style: normal;
 }
 
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+.pulseAnime {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
 /* For Webkit browsers (Chrome, Safari) */
 /* For Webkit browsers (Chrome, Safari) */
 .hide-scrollbar::-webkit-scrollbar {
-  width: 0px;      /* Small scrollbar width */
-  height: 0px;     /* Small scrollbar height */
+  width: 0px; /* Small scrollbar width */
+  height: 0px; /* Small scrollbar height */
 }
 
 .hide-scrollbar::-webkit-scrollbar-track {
-  background: #ccc;   /* Light gray track */
+  background: #ccc; /* Light gray track */
   border-radius: 3px;
 }
 
 .hide-scrollbar::-webkit-scrollbar-thumb {
-  background: #888;   /* Slightly darker gray thumb */
+  background: #888; /* Slightly darker gray thumb */
   border-radius: 3px;
 }
 
 .hide-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #666;   /* Darker gray on hover */
+  background: #666; /* Darker gray on hover */
 }
 
 /* For Firefox */

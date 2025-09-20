@@ -42,7 +42,21 @@ import { getElkLayout } from "../utils/elak";
 // ✅ Custom Table Node
 
 const TableNode = ({ data }) => {
-  const { title, fields, theme } = data;
+  const {
+    title,
+    fields,
+    theme,
+    id,
+    code,
+    description,
+    setSelectedDb, // pass the setter
+    selectedDb,
+    setDbOpen,
+    setChatOpen,
+    setCopyOpen,
+    loading,
+    setSelectedDbData,
+  } = data;
 
   const themeStyles = {
     dark: {
@@ -58,7 +72,23 @@ const TableNode = ({ data }) => {
 
   return (
     <div
-      className="border border-blue-400"
+      className={`border ${
+        title === selectedDb ? "border-blue-500" : "border-black"
+      } cursor-pointer ${loading && "pulseAnime"}`}
+      onClick={() => {
+        setSelectedDb(title);
+        setDbOpen(true);
+        setChatOpen(false);
+        setCopyOpen(false);
+        setSelectedDbData({
+          title,
+          fields,
+          theme,
+          id,
+          code,
+          description,
+        });
+      }}
       style={{
         ...themeStyles[theme],
         // borderRadius: "8px",
@@ -105,10 +135,14 @@ const Dashboard = () => {
   const [dbOpen, setDbOpen] = useState(false);
   const [copyOpen, setCopyOpen] = useState(false);
   const [selectedDb, setSelectedDb] = useState(null);
+  const [selectedDbData, setSelectedDbData] = useState({});
   const [fitViewChangeTracker, setFitViewChangeTracker] = useState(0);
   const [chatMessages, setChatMessages] = useState([]);
+  const [isCallingEditApi, setIsCallingEditApi] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [llmChatHistory, setLlmChatHistory] = useState([]);
+  const [llmCodeFromServer, setLlmCodeFromServer] = useState("");
   const bottomRef = useRef(null);
   const { fitView } = useReactFlow();
 
@@ -219,8 +253,6 @@ const Dashboard = () => {
     ],
   };
 
-  const codeFromBackend = `"'''\nCREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";\n\nCREATE TABLE Users (\n    userId UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n    username VARCHAR(255) UNIQUE NOT NULL,\n    email VARCHAR(255) UNIQUE NOT NULL,\n    passwordHash TEXT NOT NULL,\n    firstName VARCHAR(255),\n    lastName VARCHAR(255),\n    address TEXT,\n    phone VARCHAR(20),\n    createdAt TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,\n    updatedAt TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL\n);\n\nCREATE TABLE Categories (\n    categoryId UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n    name VARCHAR(255) UNIQUE NOT NULL,\n    description TEXT\n);\n\nCREATE TABLE Products (\n    productId UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n    name VARCHAR(255) NOT NULL,\n    description TEXT,\n    price DECIMAL(10, 2) NOT NULL CHECK (price >= 0),\n    stockQuantity INTEGER NOT NULL CHECK (stockQuantity >= 0),\n    imageUrl TEXT,\n    categoryId UUID NOT NULL,\n    createdAt TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,\n    updatedAt TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,\n    FOREIGN KEY (categoryId) REFERENCES Categories(categoryId) ON DELETE RESTRICT\n);\n\nCREATE TABLE Orders (\n    orderId UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n    userId UUID NOT NULL,\n    orderDate TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,\n    totalAmount DECIMAL(10, 2) NOT NULL CHECK (totalAmount >= 0),\n    status VARCHAR(50) NOT NULL DEFAULT 'Pending',\n    shippingAddress TEXT,\n    FOREIGN KEY (userId) REFERENCES Users(userId) ON DELETE RESTRICT\n);\n\nCREATE TABLE OrderItems (\n    orderItemId UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n    orderId UUID NOT NULL,\n    productId UUID NOT NULL,\n    quantity INTEGER NOT NULL CHECK (quantity > 0),\n    price DECIMAL(10, 2) NOT NULL CHECK (price >= 0),\n    FOREIGN KEY (orderId) REFERENCES Orders(orderId) ON DELETE CASCADE,\n    FOREIGN KEY (productId) REFERENCES Products(productId) ON DELETE RESTRICT,\n    UNIQUE (orderId, productId) -- A product should only appear once per order item entry\n);\n\nCREATE TABLE Carts (\n    cartId UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n    userId UUID UNIQUE NOT NULL,\n    createdAt TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,\n    updatedAt TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,\n    FOREIGN KEY (userId) REFERENCES Users(userId) ON DELETE CASCADE\n);\n\nCREATE TABLE CartItems (\n    cartItemId UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n    cartId UUID NOT NULL,\n    productId UUID NOT NULL,\n    quantity INTEGER NOT NULL CHECK (quantity > 0),\n    createdAt TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,\n    updatedAt TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,\n    FOREIGN KEY (cartId) REFERENCES Carts(cartId) ON DELETE CASCADE,\n    FOREIGN KEY (productId) REFERENCES Products(productId) ON DELETE CASCADE,\n    UNIQUE (cartId, productId) -- A product should only appear once per cart item entry\n);\n\n-- Indexes for performance\nCREATE INDEX idx_users_email ON Users(email);\nCREATE INDEX idx_products_categoryid ON Products(categoryId);\nCREATE INDEX idx_orders_userid ON Orders(userId);\nCREATE INDEX idx_orderitems_orderid ON OrderItems(orderId);\nCREATE INDEX idx_orderitems_productid ON OrderItems(productId);\nCREATE INDEX idx_carts_userid ON Carts(userId);\nCREATE INDEX idx_cartitems_cartid ON CartItems(cartId);\nCREATE INDEX idx_cartitems_productid ON CartItems(productId);\n\n\n-- Basic example for Users and Posts (as per rule 3, adapted to e-commerce)\n-- This is just an example to fulfill the rule; the above schema is more complete.\nCREATE TABLE SampleUsers (\n    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n    name VARCHAR(255) NOT NULL,\n    email VARCHAR(255) UNIQUE NOT NULL\n);\n\nCREATE TABLE SamplePosts (\n    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n    title VARCHAR(255) NOT NULL,\n    content TEXT,\n    author_id UUID NOT NULL,\n    FOREIGN KEY (author_id) REFERENCES SampleUsers(id) ON DELETE CASCADE\n);\n'''"
-`;
   // Convert to nodes
   const initialNodes = tableData.map((t) => ({
     id: t.id,
@@ -228,7 +260,21 @@ const Dashboard = () => {
     position: t.pos,
     code: t?.code ? t.code : null,
     description: t?.description ? t.description : null,
-    data: { title: t.name, fields: t.fields, theme },
+    data: {
+      title: t.name,
+      fields: t.fields,
+      theme,
+      code: t?.code?.length ? t.code : null,
+      id: t?.name?.toLowerCase(),
+      description: t?.description ? t?.description : null,
+      setSelectedDb, // pass the setter
+      selectedDb,
+      setDbOpen,
+      setChatOpen,
+      setCopyOpen,
+      loading,
+      setSelectedDbData,
+    },
   }));
   // Edges (like Xarrow before)
   const initialEdges = [
@@ -249,11 +295,13 @@ const Dashboard = () => {
       return;
     }
 
+    setChatOpen(true);
+    setCopyOpen(false);
+    setDbOpen(false);
     setLoading(true);
 
     const inn = input;
     setInput("");
-
     setChatMessages((prev) => [
       ...prev,
       { sender: "user", text: inn, id: uuidv4() },
@@ -262,11 +310,34 @@ const Dashboard = () => {
     const userQueryResult = await axios.post(
       "http://localhost:5000/create-db",
       {
-        prompt: inn,
+        message: inn,
+        prompt: isCallingEditApi == false ? llmChatHistory : [],
       }
     );
 
     setLoading(false);
+    console.log(userQueryResult.data.data);
+
+    if (
+      isCallingEditApi == false &&
+      userQueryResult?.data?.data?.initialResponse.length > 0
+    ) {
+      setLlmChatHistory((prev) => [
+        ...prev,
+        { role: "user", parts: [{ text: inn }] },
+      ]);
+      setLlmChatHistory((prev) => [
+        ...prev,
+        {
+          role: "model",
+          parts: [
+            {
+              text: JSON.stringify(userQueryResult?.data?.data),
+            },
+          ],
+        },
+      ]);
+    }
     if (userQueryResult?.data?.data?.initialResponse.length > 0) {
       setChatMessages((prev) => [
         ...prev,
@@ -277,19 +348,30 @@ const Dashboard = () => {
         },
       ]);
     }
-    console.log(userQueryResult?.data?.data);
 
     if (
-      userQueryResult?.data?.data?.entities.length > 0 &&
-      userQueryResult?.data?.data?.relationships.length > 0
+      userQueryResult?.data?.data?.entities?.length > 0 &&
+      userQueryResult?.data?.data?.relationships?.length > 0
     ) {
       let nodes = userQueryResult?.data?.data?.entities.map((t) => ({
         id: t.name.toLowerCase(),
         type: "tableNode",
         position: t.pos,
-        // code: t?.code.length ? t.code : null,
-        // description: t?.description ? t.description : null,
-        data: { title: t.name, fields: t.fields, theme },
+        data: {
+          title: t.name,
+          fields: t.fields,
+          theme,
+          code: t?.code?.length ? t.code : null,
+          id: t.name.toLowerCase(),
+          description: t?.description ? t.description : null,
+          setSelectedDb, // pass the setter
+          selectedDb,
+          setDbOpen,
+          setSelectedDbData,
+          setChatOpen,
+          loading,
+          setCopyOpen,
+        },
       }));
       let edges = userQueryResult?.data?.data?.relationships.map((t) => ({
         id: "e" + new Date().getTime(),
@@ -298,14 +380,16 @@ const Dashboard = () => {
         // description: t?.description ? t.description : null,
         target: t.target.toLowerCase(),
       }));
-      const { layoutedEdges, layoutedNodes } = await getElkLayout(nodes, edges);
 
-      setNodes(layoutedNodes);
-      setEdges(layoutedEdges);
-      // setNodes(nodes);
-      // setEdges(edges);
+      nodes.forEach((node) => {
+        setLlmCodeFromServer((prev) => prev + node.data.code);
+      });
+
+      setNodes(nodes);
+      setEdges(edges);
 
       setFitViewChangeTracker((prev) => prev + 1);
+      setIsCallingEditApi(true);
     }
   };
 
@@ -324,7 +408,25 @@ const Dashboard = () => {
     if (nodes.length > 0 && edges.length > 0) {
       fitView({ padding: 0.2 });
     }
-  }, [nodes, edges, fitView , fitViewChangeTracker]);
+  }, [nodes, edges, fitView, fitViewChangeTracker]);
+
+  useEffect(() => {
+    setNodes((nds) =>
+      nds.map((n) => ({
+        ...n,
+        data: {
+          ...n.data,
+          selectedDb: selectedDb,
+          setSelectedDb,
+          setDbOpen,
+          setSelectedDbData,
+          setChatOpen,
+          setCopyOpen,
+          loading,
+        },
+      }))
+    );
+  }, [selectedDb, loading]);
 
   return (
     <div className="w-full overflow-hidden dm-sans-font relative bg-black h-screen flex-col flex">
@@ -493,60 +595,78 @@ const Dashboard = () => {
             </div>
           )}
           {dbOpen && (
-            <div className=" flex-1 text-white px-3 overflow-y-auto rounded-lg shadow-lg w-full max-w-md">
-              {/* Entity Details */}
-              <div className="mb-6">
-                <div className="mb-4">
-                  <label className="block text-sm text-gray-400 mb-1">
-                    Entity Name
-                  </label>
-                  <input
-                    type="text"
-                    value={entity.name}
-                    readOnly
-                    className="w-full bg-[#232323] outline-none text-white border border-[#3d3c3c] rounded px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    value={entity.description}
-                    readOnly
-                    className="w-full bg-[#232323] outline-none text-white border border-[#3d3c3c] rounded px-3 py-2 resize-none"
-                    rows={3}
-                  />
-                </div>
-              </div>
-
-              {/* Attributes */}
-              <div>
-                <h3 className="text-md font-semibold mb-2">Attributes</h3>
-                {entity.attributes.map((attr) => (
-                  <div
-                    key={attr.name}
-                    className="bg-[#232323] outline-none text-white border border-[#3d3c3c] p-3 rounded mb-2"
-                  >
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-medium">{attr.name}</span>
-                      {attr.note && (
-                        <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">
-                          {attr.note}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-sm text-gray-400 mb-1">
-                      {attr.type}
-                    </div>
-                    {attr.description && (
-                      <div className="text-xs text-gray-500">
-                        {attr.description}
-                      </div>
-                    )}
+            <div className=" flex-1 text-white px-3 overflow-y-auto  rounded-lg shadow-lg w-full max-w-md">
+              {selectedDbData && selectedDbData.title ? (
+                <div className="mb-6">
+                  {/* Entity Details */}
+                  <div className="mb-4">
+                    <label className="block text-sm text-gray-400 mb-1">
+                      Entity Name
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedDbData.title}
+                      readOnly
+                      className="w-full bg-[#232323] outline-none text-white border border-[#3d3c3c] rounded px-3 py-2"
+                    />
                   </div>
-                ))}
-              </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      value={selectedDbData.description}
+                      readOnly
+                      className="w-full bg-[#232323] outline-none text-white border border-[#3d3c3c] rounded px-3 py-2 resize-none"
+                      rows={3}
+                    />
+                  </div>
+
+                  {/* Attributes */}
+                  <div>
+                    <h3 className="text-md font-semibold mb-2">Attributes</h3>
+                    {selectedDbData?.fields.map((attr) => (
+                      <div
+                        key={attr.name}
+                        className="bg-[#232323] outline-none text-white border border-[#3d3c3c] p-3 rounded mb-2"
+                      >
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-medium">{attr.name}</span>
+                          <div className="flex gap-2 items-center justify-center">
+                            {attr.primaryKey == true && (
+                              <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">
+                                {"Primary Key"}
+                              </span>
+                            )}
+                            {attr.required == true && (
+                              <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">
+                                {"Required"}
+                              </span>
+                            )}
+                            {attr.unique == true && (
+                              <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">
+                                {"Unique"}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-sm text-gray-400 mb-1">
+                          {attr.type}
+                        </div>
+                        {attr.description && (
+                          <div className="text-xs text-gray-500">
+                            {attr.description}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-[#525252]">Select a database entity</p>
+                </div>
+              )}
             </div>
           )}
           {copyOpen && (
@@ -559,10 +679,10 @@ const Dashboard = () => {
        
               </SyntaxHighlighter> */}
               <CodeBlock
-                text={codeFromBackend}
+                text={llmCodeFromServer}
                 language="javascript"
                 showLineNumbers={true}
-                theme={dracula}
+                theme={github}
                 wrapLines
               />
             </div>
