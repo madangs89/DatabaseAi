@@ -70,7 +70,7 @@ Never respond in plain text. If clarification is needed, put it inside "initialR
           "description": "string"
         }
       ],
-
+    "finalExplanation": "A step-by-step explanation of the schema u designed and how it is useful for the app. Use numbered steps and numbered points. This must be included in every response. If no code is written, just send an empty string; otherwise, provide the full details.",
       "migrationPlan": "string -- step-by-step SQL migration if schema updated"
     }
     Rules for code(Inside entities.code):
@@ -79,6 +79,7 @@ Never respond in plain text. If clarification is needed, put it inside "initialR
     3. Include a basic example with at least a User and Post model.
     4. Ensure the code is ready to copy and paste into a project without modifications.
     5. Provide the code for user specified Database only (e.g., Postgres, MySQL, MongoDB, DynamoDB, Neo4j) if not specified default to Postgres.
+    6. After completing the code, add two line spaces do this for all entities:
     `,
       },
     });
@@ -150,9 +151,11 @@ Never respond in plain text. If clarification is needed, put it inside "initialR
     console.log("Token usage:", response.usageMetadata);
     console.log("prompt:", prompt);
     console.log("message", message);
+    console.log("response",  response?.candidates[0]?.content.parts[0]?.text);
+    
     let raw = response?.candidates[0]?.content.parts[0]?.text;
     raw = raw.replace(/```json|```/g, "").trim();
-    let json =JSON.parse(raw);
+    let json = JSON.parse(raw);
     return res.json({
       data: json,
       token: response.usageMetadata,

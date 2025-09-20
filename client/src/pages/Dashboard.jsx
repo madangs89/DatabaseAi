@@ -198,36 +198,6 @@ const Dashboard = () => {
       pos: { x: 900, y: 150 },
     },
   ];
-  // const chatMessages = [
-  //   { id: 1, sender: "user", text: "Hey, how are you?" },
-  //   { id: 2, sender: "bot", text: "I'm good, thanks! How about you?" },
-  //   {
-  //     id: 3,
-  //     sender: "user",
-  //     text: "Doing well. Can you help me with my code?",
-  //   },
-  //   { id: 4, sender: "bot", text: "Of course! What seems to be the problem?" },
-  //   {
-  //     id: 5,
-  //     sender: "user",
-  //     text: "I'm trying to style a chat bubble dynamically.",
-  //   },
-  //   {
-  //     id: 6,
-  //     sender: "bot",
-  //     text: "Got it! Your code snippet looks correct for that.",
-  //   },
-  //   {
-  //     id: 5,
-  //     sender: "user",
-  //     text: "I'm trying to style a chat bubble dynamically.",
-  //   },
-  //   {
-  //     id: 6,
-  //     sender: "bot",
-  //     text: "Got it! Your code snippet looks correct for that.",
-  //   },
-  // ];
   const entity = {
     name: "Users",
     description: "Stores user account information and login credentials.",
@@ -374,7 +344,7 @@ const Dashboard = () => {
         },
       }));
       let edges = userQueryResult?.data?.data?.relationships.map((t) => ({
-        id: "e" + new Date().getTime(),
+        id: "e" + new Date().getTime() + Math.random(),
         source: t.source.toLowerCase(),
         // type: t.type,
         // description: t?.description ? t.description : null,
@@ -391,6 +361,30 @@ const Dashboard = () => {
       setFitViewChangeTracker((prev) => prev + 1);
       setIsCallingEditApi(true);
     }
+    if (userQueryResult?.data?.data?.finalExplanation.length > 0) {
+      setLlmChatHistory((prev) => [
+        ...prev,
+        {
+          role: "model",
+          parts: [
+            {
+              text: JSON.stringify(
+                userQueryResult?.data?.data?.finalExplanation
+              ),
+            },
+          ],
+        },
+      ]);
+
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          sender: "system",
+          text: userQueryResult?.data?.data?.finalExplanation,
+          id: uuidv4(),
+        },
+      ]);
+    }
   };
 
   // Scroll to bottom For Chat
@@ -405,10 +399,8 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (nodes.length > 0 && edges.length > 0) {
-      fitView({ padding: 0.2 });
-    }
-  }, [nodes, edges, fitView, fitViewChangeTracker]);
+    fitView({ padding: 0.2 });
+  }, [fitView, fitViewChangeTracker]);
 
   useEffect(() => {
     setNodes((nds) =>
@@ -682,7 +674,7 @@ const Dashboard = () => {
                 text={llmCodeFromServer}
                 language="javascript"
                 showLineNumbers={true}
-                theme={github}
+                theme={dracula}
                 wrapLines
               />
             </div>
