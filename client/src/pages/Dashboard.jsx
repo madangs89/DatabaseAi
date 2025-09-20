@@ -1,15 +1,15 @@
 import React, { useState, useCallback } from "react";
 import { Light as SyntaxHighlighter } from "react-syntax-highlighter";
 import { docco } from "react-syntax-highlighter/dist/esm/styles/hljs";
+import { v4 as uuidv4 } from "uuid";
 import { CodeBlock, dracula } from "react-code-blocks";
 import { github } from "react-code-blocks";
 import ReactFlow, {
-  ReactFlowProvider,
   Background,
-  MiniMap,
   Controls,
   Handle,
   Position,
+  useReactFlow,
   useNodesState,
   useEdgesState,
 } from "reactflow";
@@ -31,10 +31,16 @@ import {
   SendToBackIcon,
   Settings,
 } from "lucide-react";
+import axios from "axios";
 import DashbordNav from "../components/DashbordNav";
+import { useRef } from "react";
+import { useEffect } from "react";
+import Loader from "../components/Loader";
+import { getElkLayout } from "../utils/elak";
 
 // ✅ Define once outside
 // ✅ Custom Table Node
+
 const TableNode = ({ data }) => {
   const { title, fields, theme } = data;
 
@@ -57,7 +63,7 @@ const TableNode = ({ data }) => {
         ...themeStyles[theme],
         // borderRadius: "8px",
         padding: "10px",
-        width: 200,
+        minWidth: 200,
         boxShadow:
           theme === "dark"
             ? "0 4px 12px rgba(0,0,0,0.4)"
@@ -67,8 +73,8 @@ const TableNode = ({ data }) => {
       <h3 style={{ marginBottom: "5px" }}>{title}</h3>
       <table style={{ width: "100%", fontSize: "14px" }}>
         <tbody>
-          {fields.map((f) => (
-            <tr key={f.name}>
+          {fields.map((f, index) => (
+            <tr key={f.name + index}>
               <td>{f.name}</td>
               <td
                 style={{
@@ -76,7 +82,7 @@ const TableNode = ({ data }) => {
                   color: theme === "dark" ? "#aaa" : "#555",
                 }}
               >
-                {f.type}
+                {f.type.length > 15 ? f.type.substring(0, 10) + "..." : f.type}
               </td>
             </tr>
           ))}
@@ -95,16 +101,21 @@ const nodeTypes = { tableNode: TableNode };
 const Dashboard = () => {
   const [theme, setTheme] = useState("dark");
   const [selectedTab, setSelectedTab] = useState("editor");
-
   const [chatOpen, setChatOpen] = useState(true);
   const [dbOpen, setDbOpen] = useState(false);
   const [copyOpen, setCopyOpen] = useState(false);
   const [selectedDb, setSelectedDb] = useState(null);
-  const [chatMessage, setChatMessage] = useState([]);
+  const [fitViewChangeTracker, setFitViewChangeTracker] = useState(0);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef(null);
+  const { fitView } = useReactFlow();
+
   const tableData = [
     {
       id: "users",
-      title: "Users",
+      name: "Users",
       fields: [
         { name: "id", type: "INT" },
         { name: "name", type: "VARCHAR" },
@@ -114,7 +125,7 @@ const Dashboard = () => {
     },
     {
       id: "products",
-      title: "Products",
+      name: "Products",
       fields: [
         { name: "id", type: "INT" },
         { name: "name", type: "VARCHAR" },
@@ -124,7 +135,7 @@ const Dashboard = () => {
     },
     {
       id: "orders",
-      title: "Orders",
+      name: "Orders",
       fields: [
         { name: "id", type: "INT" },
         { name: "user_id", type: "INT" },
@@ -134,7 +145,7 @@ const Dashboard = () => {
     },
     {
       id: "payments",
-      title: "Payments",
+      name: "Payments",
       fields: [
         { name: "id", type: "INT" },
         { name: "order_id", type: "INT" },
@@ -144,7 +155,7 @@ const Dashboard = () => {
     },
     {
       id: "reviews",
-      title: "Reviews",
+      name: "Reviews",
       fields: [
         { name: "id", type: "INT" },
         { name: "product_id", type: "INT" },
@@ -153,36 +164,36 @@ const Dashboard = () => {
       pos: { x: 900, y: 150 },
     },
   ];
-  const chatMessages = [
-    { id: 1, sender: "user", text: "Hey, how are you?" },
-    { id: 2, sender: "bot", text: "I'm good, thanks! How about you?" },
-    {
-      id: 3,
-      sender: "user",
-      text: "Doing well. Can you help me with my code?",
-    },
-    { id: 4, sender: "bot", text: "Of course! What seems to be the problem?" },
-    {
-      id: 5,
-      sender: "user",
-      text: "I'm trying to style a chat bubble dynamically.",
-    },
-    {
-      id: 6,
-      sender: "bot",
-      text: "Got it! Your code snippet looks correct for that.",
-    },
-    {
-      id: 5,
-      sender: "user",
-      text: "I'm trying to style a chat bubble dynamically.",
-    },
-    {
-      id: 6,
-      sender: "bot",
-      text: "Got it! Your code snippet looks correct for that.",
-    },
-  ];
+  // const chatMessages = [
+  //   { id: 1, sender: "user", text: "Hey, how are you?" },
+  //   { id: 2, sender: "bot", text: "I'm good, thanks! How about you?" },
+  //   {
+  //     id: 3,
+  //     sender: "user",
+  //     text: "Doing well. Can you help me with my code?",
+  //   },
+  //   { id: 4, sender: "bot", text: "Of course! What seems to be the problem?" },
+  //   {
+  //     id: 5,
+  //     sender: "user",
+  //     text: "I'm trying to style a chat bubble dynamically.",
+  //   },
+  //   {
+  //     id: 6,
+  //     sender: "bot",
+  //     text: "Got it! Your code snippet looks correct for that.",
+  //   },
+  //   {
+  //     id: 5,
+  //     sender: "user",
+  //     text: "I'm trying to style a chat bubble dynamically.",
+  //   },
+  //   {
+  //     id: 6,
+  //     sender: "bot",
+  //     text: "Got it! Your code snippet looks correct for that.",
+  //   },
+  // ];
   const entity = {
     name: "Users",
     description: "Stores user account information and login credentials.",
@@ -207,6 +218,7 @@ const Dashboard = () => {
       },
     ],
   };
+
   const codeFromBackend = `"'''\nCREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";\n\nCREATE TABLE Users (\n    userId UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n    username VARCHAR(255) UNIQUE NOT NULL,\n    email VARCHAR(255) UNIQUE NOT NULL,\n    passwordHash TEXT NOT NULL,\n    firstName VARCHAR(255),\n    lastName VARCHAR(255),\n    address TEXT,\n    phone VARCHAR(20),\n    createdAt TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,\n    updatedAt TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL\n);\n\nCREATE TABLE Categories (\n    categoryId UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n    name VARCHAR(255) UNIQUE NOT NULL,\n    description TEXT\n);\n\nCREATE TABLE Products (\n    productId UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n    name VARCHAR(255) NOT NULL,\n    description TEXT,\n    price DECIMAL(10, 2) NOT NULL CHECK (price >= 0),\n    stockQuantity INTEGER NOT NULL CHECK (stockQuantity >= 0),\n    imageUrl TEXT,\n    categoryId UUID NOT NULL,\n    createdAt TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,\n    updatedAt TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,\n    FOREIGN KEY (categoryId) REFERENCES Categories(categoryId) ON DELETE RESTRICT\n);\n\nCREATE TABLE Orders (\n    orderId UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n    userId UUID NOT NULL,\n    orderDate TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,\n    totalAmount DECIMAL(10, 2) NOT NULL CHECK (totalAmount >= 0),\n    status VARCHAR(50) NOT NULL DEFAULT 'Pending',\n    shippingAddress TEXT,\n    FOREIGN KEY (userId) REFERENCES Users(userId) ON DELETE RESTRICT\n);\n\nCREATE TABLE OrderItems (\n    orderItemId UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n    orderId UUID NOT NULL,\n    productId UUID NOT NULL,\n    quantity INTEGER NOT NULL CHECK (quantity > 0),\n    price DECIMAL(10, 2) NOT NULL CHECK (price >= 0),\n    FOREIGN KEY (orderId) REFERENCES Orders(orderId) ON DELETE CASCADE,\n    FOREIGN KEY (productId) REFERENCES Products(productId) ON DELETE RESTRICT,\n    UNIQUE (orderId, productId) -- A product should only appear once per order item entry\n);\n\nCREATE TABLE Carts (\n    cartId UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n    userId UUID UNIQUE NOT NULL,\n    createdAt TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,\n    updatedAt TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,\n    FOREIGN KEY (userId) REFERENCES Users(userId) ON DELETE CASCADE\n);\n\nCREATE TABLE CartItems (\n    cartItemId UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n    cartId UUID NOT NULL,\n    productId UUID NOT NULL,\n    quantity INTEGER NOT NULL CHECK (quantity > 0),\n    createdAt TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,\n    updatedAt TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,\n    FOREIGN KEY (cartId) REFERENCES Carts(cartId) ON DELETE CASCADE,\n    FOREIGN KEY (productId) REFERENCES Products(productId) ON DELETE CASCADE,\n    UNIQUE (cartId, productId) -- A product should only appear once per cart item entry\n);\n\n-- Indexes for performance\nCREATE INDEX idx_users_email ON Users(email);\nCREATE INDEX idx_products_categoryid ON Products(categoryId);\nCREATE INDEX idx_orders_userid ON Orders(userId);\nCREATE INDEX idx_orderitems_orderid ON OrderItems(orderId);\nCREATE INDEX idx_orderitems_productid ON OrderItems(productId);\nCREATE INDEX idx_carts_userid ON Carts(userId);\nCREATE INDEX idx_cartitems_cartid ON CartItems(cartId);\nCREATE INDEX idx_cartitems_productid ON CartItems(productId);\n\n\n-- Basic example for Users and Posts (as per rule 3, adapted to e-commerce)\n-- This is just an example to fulfill the rule; the above schema is more complete.\nCREATE TABLE SampleUsers (\n    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n    name VARCHAR(255) NOT NULL,\n    email VARCHAR(255) UNIQUE NOT NULL\n);\n\nCREATE TABLE SamplePosts (\n    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n    title VARCHAR(255) NOT NULL,\n    content TEXT,\n    author_id UUID NOT NULL,\n    FOREIGN KEY (author_id) REFERENCES SampleUsers(id) ON DELETE CASCADE\n);\n'''"
 `;
   // Convert to nodes
@@ -214,7 +226,9 @@ const Dashboard = () => {
     id: t.id,
     type: "tableNode",
     position: t.pos,
-    data: { title: t.title, fields: t.fields, theme },
+    code: t?.code ? t.code : null,
+    description: t?.description ? t.description : null,
+    data: { title: t.name, fields: t.fields, theme },
   }));
   // Edges (like Xarrow before)
   const initialEdges = [
@@ -226,15 +240,100 @@ const Dashboard = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  // Update theme across nodes
+  // All Refs
+  const inputRef = useRef(null);
+  // Handling the submit function
+  const handleInputSubmit = async (e) => {
+    e.preventDefault();
+    if (input.length <= 0) {
+      return;
+    }
+
+    setLoading(true);
+
+    const inn = input;
+    setInput("");
+
+    setChatMessages((prev) => [
+      ...prev,
+      { sender: "user", text: inn, id: uuidv4() },
+    ]);
+
+    const userQueryResult = await axios.post(
+      "http://localhost:5000/create-db",
+      {
+        prompt: inn,
+      }
+    );
+
+    setLoading(false);
+    if (userQueryResult?.data?.data?.initialResponse.length > 0) {
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          sender: "system",
+          text: userQueryResult?.data?.data?.initialResponse,
+          id: uuidv4(),
+        },
+      ]);
+    }
+    console.log(userQueryResult?.data?.data);
+
+    if (
+      userQueryResult?.data?.data?.entities.length > 0 &&
+      userQueryResult?.data?.data?.relationships.length > 0
+    ) {
+      let nodes = userQueryResult?.data?.data?.entities.map((t) => ({
+        id: t.name.toLowerCase(),
+        type: "tableNode",
+        position: t.pos,
+        // code: t?.code.length ? t.code : null,
+        // description: t?.description ? t.description : null,
+        data: { title: t.name, fields: t.fields, theme },
+      }));
+      let edges = userQueryResult?.data?.data?.relationships.map((t) => ({
+        id: "e" + new Date().getTime(),
+        source: t.source.toLowerCase(),
+        // type: t.type,
+        // description: t?.description ? t.description : null,
+        target: t.target.toLowerCase(),
+      }));
+      const { layoutedEdges, layoutedNodes } = await getElkLayout(nodes, edges);
+
+      setNodes(layoutedNodes);
+      setEdges(layoutedEdges);
+      // setNodes(nodes);
+      // setEdges(edges);
+
+      setFitViewChangeTracker((prev) => prev + 1);
+    }
+  };
+
+  // Scroll to bottom For Chat
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (nodes.length > 0 && edges.length > 0) {
+      fitView({ padding: 0.2 });
+    }
+  }, [nodes, edges, fitView , fitViewChangeTracker]);
+
   return (
     <div className="w-full overflow-hidden dm-sans-font relative bg-black h-screen flex-col flex">
       <DashbordNav selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
-      {/* LEFT HALF: ReactFlow canvas */}
       <div className="w-full h-full overflow-hidden flex">
-        <div className="w-[67%] p-2 flex-shrink-0 items-center justify-center gap-4  border-r-[0.5px] border-[#262626] h-full flex flex-col">
+        {/* LEFT HALF: ReactFlow canvas */}
+        <div className="w-[67%] overflow-hidden p-2 flex-shrink-0 items-center justify-center gap-4  border-r-[0.5px] border-[#262626] h-full flex flex-col">
           {/* Nav for left half */}
-          <div className="h-12 w-full bg-inherit flex items-center justify-between px-4">
+          <div className="h-12 w-full bg-inherit overflow-hidden flex items-center justify-between px-4">
             {/* Left: Title */}
             <h2 className="text-white text-2xl font-bold">ER Diagram</h2>
             {/* Right: Search + Buttons */}
@@ -261,7 +360,6 @@ const Dashboard = () => {
                   className="bg-transparent placeholder:text-[#525252] outline-none text-sm text-white px-2"
                 />
               </div>
-
               {/* Plus Button */}
               <button className="w-8 h-8 flex items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]">
                 +
@@ -287,38 +385,51 @@ const Dashboard = () => {
             </div>
           </div>
           {/* <div className="w-full flex-shrink-0 border-r-[0.5px] border-[#262626] h-full flex-col flex"> */}
-          <div className="h-[77%] w-[98%] bg-[#171717] rounded-lg flex-shrink-0">
-            <ReactFlowProvider>
-              <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                fitView
-                proOptions={{ hideAttribution: true }}
-                nodeTypes={nodeTypes}
-              >
-                <Background variant="dots" gap={20} size={1} color={"black"} />
-                <Controls
-                  showZoom={true}
-                  showFitView={true}
-                  showInteractive={true}
-                  position="bottom-right"
-                  className="bg-[#171717] border-[0.5px] border-[#262626]"
-                />
-              </ReactFlow>
-            </ReactFlowProvider>
+          <div className="flex-1 h-full w-full bg-[#171717]  rounded-lg flex-shrink-0">
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              fitView
+              minZoom={0.1}
+              maxZoom={2}
+              proOptions={{ hideAttribution: true }}
+              nodeTypes={nodeTypes}
+            >
+              <Background variant="dots" gap={20} size={1} color={"black"} />
+              <Controls
+                showZoom={true}
+                showFitView={true}
+                showInteractive={true}
+                position="bottom-right"
+                className="bg-[#171717] border-[0.5px] border-[#262626]"
+              />
+            </ReactFlow>
             {/* </div> */}
           </div>
-          <div className="h-12 w-[98%] bg-[#171717] px-2  flex gap-2 items-center rounded-lg border-t-[0.5px] border-[#262626]">
+          <form
+            onSubmit={handleInputSubmit}
+            className="h-12 w-[98%] bg-[#171717] px-2  flex gap-2 items-center rounded-lg border-t-[0.5px] border-[#262626]"
+          >
             <SearchIcon className="w-5 h-5 text-[#525252]" />
             <input
               type="text"
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
               placeholder="Create a database for instagram clone..."
               className="flex-1 border-none placeholder:text-[#525252] outline-none bg-transparent text-white"
             />
-            <ArrowUp className="w-5 p-1 h-5 transition-all duration-200 ease-linear text-black bg-white rounded-full " />
-          </div>
+            <button className="flex items-center justify-center" type="submit">
+              {" "}
+              {loading ? (
+                <Loader />
+              ) : (
+                <ArrowUp className="w-5 cursor-pointer p-1 h-5 transition-all duration-200 ease-linear text-black bg-white rounded-full " />
+              )}
+            </button>
+          </form>
         </div>
         {/* RIGHT HALF: Red div */}
         <div className="w-1/2 relative h-full  flex-col overflow-hidden bg-[#171717] flex gap-2  justify-center">
@@ -363,12 +474,12 @@ const Dashboard = () => {
               {chatMessages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`flex ${
+                  className={`flex  ${
                     msg.sender === "user" ? "justify-end" : "justify-start"
                   }`}
                 >
                   <div
-                    className={`max-w-[70%] px-4 py-2 rounded-lg ${
+                    className={`max-w-[70%] whitespace-pre-line  px-4 py-2 rounded-lg ${
                       msg.sender === "user"
                         ? "bg-blue-600 text-white"
                         : "bg-[#232323] text-gray-200"
@@ -376,6 +487,7 @@ const Dashboard = () => {
                   >
                     {msg.text}
                   </div>
+                  <div ref={bottomRef} />
                 </div>
               ))}
             </div>

@@ -8,7 +8,7 @@ export const createDBWithLlmCall = async (req, res) => {
       return res
         .status(400)
         .json({ message: "Prompt is required", success: false });
-    const convKey = await getConvKey(prompt);
+    // const convKey = await getConvKey(prompt);
 
     // check in cache
     // const existingCache = await redis.get(convKey);
@@ -35,11 +35,12 @@ Rules:
 5.Default DB: Postgres if the user does not specify.
 6.If the user specifies a DB → output only for that DB.
 7. If the user gives a clear app idea (e.g., e-commerce, Instagram clone) → infer entities/relationships yourself (no clarifications needed).
-8. If vague → ask clarifying questions. Make sure your response is user-friendly, simple, and clear.
+8. If vague → ask clarifying questions. Make sure your response is user-friendly, simple, and clear and that must be in json only and nothing else for that see the jSON FORMAT below and you have to give the response in that format only basically that is in initialResponse.
 9. If the user asks to generate schemas for more than one database at the same time (e.g., "create Uber database in MongoDB and Postgres") → ask them to choose only one database before proceeding.
+10. The position in the JSON format represents the coordinates of an entity in the UI. It is required, and it is your job to assign positions such that:1.No two schemas overlap. 2.Each schema has dimensions of 200px width and 200px height. 3.There must be a 20px gap between schemas. 4.Do not place more than one schema in the same layer. 5.The order of placement must follow a left-to-right, top-to-bottom layout.
 JSON format:
 {
-  "initialResponse": "string -- Initial response from AI. Note: Fields under 'entities' are general, human-readable so developers can understand them irrespective of DB. Actual database-specific implementation is in the 'schemas' section.",
+  "initialResponse": "string -- Initial response from AI. Note: Fields under 'entities' are general, human-readable so developers can understand them irrespective of DB. Actual database-specific implementation is in the 'schemas' section. only give text in this field",
   "entities": [
     {
       "name": "string",
@@ -54,13 +55,14 @@ JSON format:
           "reference": "EntityName" | null
         }
      ],
+     "pos": { x: number, y: number }, 
     "code":"string -- (postgres:Sequelize model code for Postgres,mysql:Sequelize model code for MySQL , mongodb:Mongoose Schema code for MongoDB , dynamodb: AWS DynamoDB table definition code (Node.js) , neo4j:Neo4j Cypher CREATE statements (Node.js or Cypher console))  ready to copy-paste"
     }
   ],
   "relationships": [
     {
-      "fromEntity": "string",
-      "toEntity": "string",
+      "source": "string",
+      "target": "string",
       "type": "one-to-one | one-to-many | many-to-many",
       "description": "string"
     }
@@ -78,8 +80,11 @@ Rules for code(Inside entities.code):
       },
     });
     console.log("Token usage:", response.usageMetadata);
+    let raw = response?.candidates[0]?.content.parts[0]?.text;
+    raw = raw.replace(/```json|```/g, "").trim();
+    let json = JSON.parse(raw);
     return res.json({
-      data: response.candidates[0].content.parts[0].text,
+      data: json,
       token: response.usageMetadata,
       success: true,
     });

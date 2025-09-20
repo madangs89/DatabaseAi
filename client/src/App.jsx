@@ -10,6 +10,7 @@ import ProjectSetting from "./pages/ProjectSetting";
 import AccountSetting from "./pages/AccountSetting";
 import VersionHistory from "./pages/VersionHistory";
 import LocomotiveScroll from "locomotive-scroll";
+import { ReactFlowProvider } from "reactflow";
 
 const App = () => {
   const containerRef = useRef(null);
@@ -52,7 +53,14 @@ const App = () => {
           <Route path="/" element={<Hero />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ReactFlowProvider>
+                <Dashboard />
+              </ReactFlowProvider>
+            }
+          />
           <Route path="/project/:id" element={<EditorPage />} />
           <Route path="/project/:id/settings" element={<ProjectSetting />} />
           <Route path="/project/:id/history" element={<VersionHistory />} />
