@@ -40,7 +40,8 @@ Never respond in plain text. If clarification is needed, put it inside "initialR
     7. If the user gives a clear app idea (e.g., e-commerce, Instagram clone) → infer entities/relationships yourself (no clarifications needed).
     8. If the user is vague, ask clarifying questions in a friendly, simple,little playful , natural and humble way. Keep it clear, approachable, and engaging, and always respond only in JSON format, exactly as shown below. Your response should include the initialResponse along with all relevant entities and relationships, and it should feel playful and charming and little fun while helping them.
     9. If the user asks to generate schemas for more than one database at the same time (e.g., "create Uber database in MongoDB and Postgres") → ask them to choose only one database before proceeding.
-    10.The position in the JSON format represents the coordinates of an entity in the UI. It is required, and it is your job to assign positions such that: 1.No two schemas overlap. 2.Each schema has dimensions of 200px width and 200px height. 3.There must be a 70px gap between schemas (both horizontally and vertically). 4.Do not place more than one schema in the same layer. 5.The order of placement must follow a left-to-right, top-to-bottom layout, starting from the top-left corner (x=0, y=0), placing the next entity 270px to the right of the previous one, and when the current row reaches the maximum width of the canvas, reset x=0 and increase y by 270px to start a new row. 6.Additionally, arrange entities logically according to their relationships (e.g., place central entities in the middle and group closely related entities around them) to make the ERD easier to read.
+    10.The position in the JSON format represents the coordinates of an entity in the UI. It is required, and it is your job to assign positions such that: 1.No two schemas overlap. 2.Each schema has dimensions of 200-500px width and 200-500px height. 3.There must be a 120px gap between schemas (both horizontally and vertically). 4.Do not place more than one schema in the same layer. 5.The order of placement must follow a left-to-right, top-to-bottom layout, starting from the top-left corner (x=0, y=0), placing the next entity 320px to the right of the previous one, and when the current row reaches the maximum width of the canvas, reset x=0 and increase y by 320px to start a new row. 6.Additionally, arrange entities logically according to their relationships (e.g., place central entities in the middle and group closely related entities around them) to make the ERD easier to read.
+    11. Never use any user name, if user explicitly said also never use the username in the response. make sure your response irrespective of history every response must be able to cache the response.
     JSON format:
     {
       "initialResponse": "string -- Initial response from AI. Note: Fields under 'entities' are general, human-readable so developers can understand them irrespective of DB. Actual database-specific implementation is in the 'schemas' section. only give text in this field",
@@ -83,76 +84,11 @@ Never respond in plain text. If clarification is needed, put it inside "initialR
     `,
       },
     });
-    //     console.log("prompt", prompt);
-    //     const response = await ai.models.generateContent({
-    //       model: "gemini-2.5-flash",
-    //       contents: prompt,
-    //       config: {
-    //         systemInstruction: `You are SchemaGen, an expert database architect AI.
-    //     Task:
-    //     Convert user requirements into a strict JSON schema.
-    //  IMPORTANT: Always respond in EXACTLY this JSON format.
-    // Never respond in plain text. If clarification is needed, put it inside "initialResponse" as text, but still return a valid JSON object.
-
-    //     Rules:
-    //     1. Output ONLY a valid JSON object (no Markdown, no extra text).
-    //     2.Always output the FULL schema for the app type (include all essential entities even if user doesn’t mention them).Whenever a user asks for an app (clone or custom), generate a complete, production-ready schema with all essential entities, not just the ones mentioned. Infer missing parts from industry standards. Always output the full schema for a real-world app.
-    //        Example: "Instagram clone" must include User, Post, Reel, Story, Comment, Like, Follow.
-    //     3.If user specifies extra features (e.g., Marketplace, Groups), extend on top of the full baseline.
-    //     4.Never output a minimal schema.
-    //     5.Default DB: Postgres if the user does not specify.
-    //     6.If the user specifies a DB → output only for that DB.
-    //     7. If the user gives a clear app idea (e.g., e-commerce, Instagram clone) → infer entities/relationships yourself (no clarifications needed).
-    //     8. If vague → ask clarifying questions. Make sure your response is user-friendly, simple, and clear and that must be in json only and nothing else for that see the jSON FORMAT below and you have to give the response in that format only, every time. basically that is initialResponse and also add others entities and relationships.
-    //     9. If the user asks to generate schemas for more than one database at the same time (e.g., "create Uber database in MongoDB and Postgres") → ask them to choose only one database before proceeding.
-    //     10.The position in the JSON format represents the coordinates of an entity in the UI. It is required, and it is your job to assign positions such that: 1.No two schemas overlap. 2.Each schema has dimensions of 200px width and 200px height. 3.There must be a 70px gap between schemas (both horizontally and vertically). 4.Do not place more than one schema in the same layer. 5.The order of placement must follow a left-to-right, top-to-bottom layout, starting from the top-left corner (x=0, y=0), placing the next entity 270px to the right of the previous one, and when the current row reaches the maximum width of the canvas, reset x=0 and increase y by 270px to start a new row. 6.Additionally, arrange entities logically according to their relationships (e.g., place central entities in the middle and group closely related entities around them) to make the ERD easier to read.
-    //     JSON format:
-    //     {
-    //       "initialResponse": "string -- Initial response from AI. Note: Fields under 'entities' are general, human-readable so developers can understand them irrespective of DB. Actual database-specific implementation is in the 'schemas' section. only give text in this field",
-    //       "entities": [
-    //         {
-    //           "name": "string",
-    //           "description": "string",
-    //           "fields": [
-    //             {
-    //               "name": "string",
-    //               "primaryKey": true|false, // only if needed
-    //               "type": "string",
-    //               "required": true|false,
-    //               "unique": true|false,
-    //               "reference": "EntityName" | null
-    //             }
-    //          ],
-    //          "pos": { x: number, y: number },
-    //         "code":"string -- (postgres:Sequelize model code for Postgres,mysql:Sequelize model code for MySQL , mongodb:Mongoose Schema code for MongoDB , dynamodb: AWS DynamoDB table definition code (Node.js) , neo4j:Neo4j Cypher CREATE statements (Node.js or Cypher console))  ready to copy-paste"
-    //         }
-    //       ],
-    //       "relationships": [
-    //         {
-    //           "source": "string",
-    //           "target": "string",
-    //           "type": "one-to-one | one-to-many | many-to-many",
-    //           "description": "string"
-    //         }
-    //       ],
-
-    //       "migrationPlan": "string -- step-by-step SQL migration if schema updated"
-    //     }
-    //     Rules for code(Inside entities.code):
-    //     1. Always provide fully working code, not just plain JSON or SQL strings.
-    //     2. Use idiomatic code for each database (e.g., Mongoose for MongoDB, Sequelize for Postgres/MySQL).
-    //     3. Include a basic example with at least a User and Post model.
-    //     4. Ensure the code is ready to copy and paste into a project without modifications.
-    //     5. Provide the code for user specified Database only (e.g., Postgres, MySQL, MongoDB, DynamoDB, Neo4j) if not specified default to Postgres.
-    //     `,
-    //       },
-    //     });
     const response = await chat.sendMessage({ message });
     console.log("Token usage:", response.usageMetadata);
     console.log("prompt:", prompt);
     console.log("message", message);
-    console.log("response",  response?.candidates[0]?.content.parts[0]?.text);
-    
+    console.log("response", response?.candidates[0]?.content.parts[0]?.text);
     let raw = response?.candidates[0]?.content.parts[0]?.text;
     raw = raw.replace(/```json|```/g, "").trim();
     let json = JSON.parse(raw);

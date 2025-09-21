@@ -19,6 +19,7 @@ import {
   ArrowUp,
   Bell,
   Brain,
+  Cable,
   ChartBarIcon,
   CircleUser,
   Copy,
@@ -51,6 +52,7 @@ const TableNode = ({ data }) => {
     description,
     setSelectedDb, // pass the setter
     selectedDb,
+    setRelationshipsOpen,
     setDbOpen,
     setChatOpen,
     setCopyOpen,
@@ -80,6 +82,7 @@ const TableNode = ({ data }) => {
         setDbOpen(true);
         setChatOpen(false);
         setCopyOpen(false);
+        setRelationshipsOpen(false);
         setSelectedDbData({
           title,
           fields,
@@ -134,6 +137,8 @@ const Dashboard = () => {
   const [chatOpen, setChatOpen] = useState(true);
   const [dbOpen, setDbOpen] = useState(false);
   const [copyOpen, setCopyOpen] = useState(false);
+  const [relationshipsOpen, setRelationshipsOpen] = useState(false);
+  const [selectedRelationshipId, setSelectedRelationshipId] = useState("");
   const [selectedDb, setSelectedDb] = useState(null);
   const [selectedDbData, setSelectedDbData] = useState({});
   const [fitViewChangeTracker, setFitViewChangeTracker] = useState(0);
@@ -248,10 +253,36 @@ const Dashboard = () => {
   }));
   // Edges (like Xarrow before)
   const initialEdges = [
-    { id: "e1", source: "users", target: "orders" },
-    { id: "e2", source: "orders", target: "payments" },
-    { id: "e3", source: "products", target: "reviews" },
-    { id: "e4", source: "users", target: "reviews" },
+    {
+      id: "e1",
+      source: "users",
+      target: "orders",
+      data: { type: "ONE_TO_MANY", description: "User has many orders" },
+      style: { stroke: "gray", strokeWidth: 2 },
+    },
+    {
+      id: "e2",
+      source: "orders",
+      target: "payments",
+      data: { type: "ONE_TO_MANY", description: "Order has many payments" },
+
+      style: { stroke: "gray", strokeWidth: 2 },
+    },
+    {
+      id: "e3",
+      source: "products",
+      target: "reviews",
+      data: { type: "ONE_TO_MANY", description: "Product has many reviews" },
+
+      style: { stroke: "gray", strokeWidth: 2 },
+    },
+    {
+      id: "e4",
+      source: "users",
+      target: "reviews",
+      data: { type: "ONE_TO_MANY", description: "User has many reviews" },
+      style: { stroke: "gray", strokeWidth: 2 },
+    },
   ];
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -268,6 +299,7 @@ const Dashboard = () => {
     setChatOpen(true);
     setCopyOpen(false);
     setDbOpen(false);
+    setRelationshipsOpen(false);
     setLoading(true);
 
     const inn = input;
@@ -338,6 +370,7 @@ const Dashboard = () => {
           selectedDb,
           setDbOpen,
           setSelectedDbData,
+          setRelationshipsOpen,
           setChatOpen,
           loading,
           setCopyOpen,
@@ -345,12 +378,11 @@ const Dashboard = () => {
       }));
       let edges = userQueryResult?.data?.data?.relationships.map((t) => ({
         id: "e" + new Date().getTime() + Math.random(),
-        source: t.source.toLowerCase(),
-        // type: t.type,
-        // description: t?.description ? t.description : null,
-        target: t.target.toLowerCase(),
+        source: t?.source.toLowerCase(),
+        target: t?.target.toLowerCase(),
+        data: { type: t?.type, description: t?.description },
+        style: { stroke: "gray", strokeWidth: 2 },
       }));
-
       nodes.forEach((node) => {
         setLlmCodeFromServer((prev) => prev + node.data.code);
       });
@@ -358,7 +390,12 @@ const Dashboard = () => {
       setNodes(nodes);
       setEdges(edges);
 
+      setSelectedDbData(edges[0]);
+
       setFitViewChangeTracker((prev) => prev + 1);
+      setTimeout(() => {
+        fitView({ padding: 0.2 });
+      }, 100);
       setIsCallingEditApi(true);
     }
     if (userQueryResult?.data?.data?.finalExplanation.length > 0) {
@@ -399,7 +436,9 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
+    // if (nodes.length > 0 && edges.length > 0) {
     fitView({ padding: 0.2 });
+    // }
   }, [fitView, fitViewChangeTracker]);
 
   useEffect(() => {
@@ -414,6 +453,7 @@ const Dashboard = () => {
           setSelectedDbData,
           setChatOpen,
           setCopyOpen,
+          setRelationshipsOpen,
           loading,
         },
       }))
@@ -528,11 +568,18 @@ const Dashboard = () => {
         {/* RIGHT HALF: Red div */}
         <div className="w-1/2 relative h-full  flex-col overflow-hidden bg-[#171717] flex gap-2  justify-center">
           <nav className="w-full sticky top-0 border-b pl-3 border-[#262626] py-7 left-0 h-10 flex justify-between pr-3 bg-[#171717] gap-5 items-center">
-            <h1 className="text-white font-bold">Chat with AI</h1>
+            <h1 className="text-white font-bold">
+              {chatOpen && "Chat with AI"}
+              {dbOpen &&
+                `${selectedDb == null ? "" : selectedDb} Entity Details`}
+              {copyOpen && "Copy to clipboard"}
+              {relationshipsOpen && "Relationships"}
+            </h1>
             <div className="flex justify-end gap-5">
               <Brain
                 onClick={() => {
                   setDbOpen(false);
+                  setRelationshipsOpen(false);
                   setCopyOpen(false);
                   setChatOpen(true);
                 }}
@@ -544,6 +591,7 @@ const Dashboard = () => {
                 onClick={() => {
                   setChatOpen(false);
                   setCopyOpen(false);
+                  setRelationshipsOpen(false);
                   setDbOpen(true);
                 }}
                 className={`w-5 h-5 cursor-pointer transition-all duration-200 ease-linear ${
@@ -554,10 +602,22 @@ const Dashboard = () => {
                 onClick={() => {
                   setChatOpen(false);
                   setDbOpen(false);
+                  setRelationshipsOpen(false);
                   setCopyOpen(true);
                 }}
                 className={`w-5 h-5 cursor-pointer transition-all duration-200 ease-linear ${
                   copyOpen ? "text-white" : "text-[#525252]"
+                }`}
+              />
+              <Cable
+                onClick={() => {
+                  setChatOpen(false);
+                  setDbOpen(false);
+                  setCopyOpen(false);
+                  setRelationshipsOpen(true);
+                }}
+                className={`w-5 h-5 cursor-pointer transition-all duration-200 ease-linear ${
+                  relationshipsOpen ? "text-white" : "text-[#525252]"
                 }`}
               />
             </div>
@@ -565,25 +625,31 @@ const Dashboard = () => {
           {/* Ai Chat bot messages */}
           {chatOpen && (
             <div className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-4">
-              {chatMessages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex  ${
-                    msg.sender === "user" ? "justify-end" : "justify-start"
-                  }`}
-                >
+              {chatMessages && chatMessages.length > 0 ? (
+                chatMessages.map((msg) => (
                   <div
-                    className={`max-w-[70%] whitespace-pre-line  px-4 py-2 rounded-lg ${
-                      msg.sender === "user"
-                        ? "bg-blue-600 text-white"
-                        : "bg-[#232323] text-gray-200"
+                    key={msg.id}
+                    className={`flex  ${
+                      msg.sender === "user" ? "justify-end" : "justify-start"
                     }`}
                   >
-                    {msg.text}
+                    <div
+                      className={`max-w-[90%] whitespace-pre-line  px-4 py-2 rounded-lg ${
+                        msg.sender === "user"
+                          ? "bg-blue-600 text-white"
+                          : "bg-[#232323] text-gray-200"
+                      }`}
+                    >
+                      {msg.text}
+                    </div>
+                    <div ref={bottomRef} />
                   </div>
-                  <div ref={bottomRef} />
+                ))
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-[#525252]">Start a conversation</p>
                 </div>
-              ))}
+              )}
             </div>
           )}
           {dbOpen && (
@@ -617,41 +683,43 @@ const Dashboard = () => {
                   {/* Attributes */}
                   <div>
                     <h3 className="text-md font-semibold mb-2">Attributes</h3>
-                    {selectedDbData?.fields.map((attr) => (
-                      <div
-                        key={attr.name}
-                        className="bg-[#232323] outline-none text-white border border-[#3d3c3c] p-3 rounded mb-2"
-                      >
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="font-medium">{attr.name}</span>
-                          <div className="flex gap-2 items-center justify-center">
-                            {attr.primaryKey == true && (
-                              <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">
-                                {"Primary Key"}
-                              </span>
-                            )}
-                            {attr.required == true && (
-                              <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">
-                                {"Required"}
-                              </span>
-                            )}
-                            {attr.unique == true && (
-                              <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">
-                                {"Unique"}
-                              </span>
-                            )}
+                    {selectedDbData.fields &&
+                      selectedDbData.fields.length > 0 &&
+                      selectedDbData?.fields.map((attr) => (
+                        <div
+                          key={attr.name}
+                          className="bg-[#232323] outline-none text-white border border-[#3d3c3c] p-3 rounded mb-2"
+                        >
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-medium">{attr.name}</span>
+                            <div className="flex gap-2 items-center justify-center">
+                              {attr.primaryKey == true && (
+                                <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">
+                                  {"Primary Key"}
+                                </span>
+                              )}
+                              {attr.required == true && (
+                                <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">
+                                  {"Required"}
+                                </span>
+                              )}
+                              {attr.unique == true && (
+                                <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">
+                                  {"Unique"}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-sm text-gray-400 mb-1">
-                          {attr.type}
-                        </div>
-                        {attr.description && (
-                          <div className="text-xs text-gray-500">
-                            {attr.description}
+                          <div className="text-sm text-gray-400 mb-1">
+                            {attr.type}
                           </div>
-                        )}
-                      </div>
-                    ))}
+                          {attr.description && (
+                            <div className="text-xs text-gray-500">
+                              {attr.description}
+                            </div>
+                          )}
+                        </div>
+                      ))}
                   </div>
                 </div>
               ) : (
@@ -663,20 +731,72 @@ const Dashboard = () => {
           )}
           {copyOpen && (
             <div className="flex-1 text-white px-3  overflow-y-auto rounded-lg shadow-lg w-full max-w-md">
-              {/* <SyntaxHighlighter
-                className="w-full h-full bg-[#232323] outline-none text-white border border-[#3d3c3c] rounded px-3 py-2 resize-none"
-                language="text"
-                style={docco}
-              >
-       
-              </SyntaxHighlighter> */}
-              <CodeBlock
-                text={llmCodeFromServer}
-                language="javascript"
-                showLineNumbers={true}
-                theme={dracula}
-                wrapLines
-              />
+              {llmCodeFromServer.length > 0 ? (
+                <CodeBlock
+                  text={llmCodeFromServer}
+                  language="javascript"
+                  showLineNumbers={true}
+                  theme={dracula}
+                  wrapLines
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-[#525252]">
+                    Please create your database.
+                    <br /> then we handle the coding part
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          {relationshipsOpen && (
+            <div className="flex-1 text-white px-3  overflow-y-auto rounded-lg shadow-lg w-full max-w-md">
+              {edges?.length > 0 &&
+                edges?.map((attr) => (
+                  <div
+                    onClick={() => {
+                      setSelectedRelationshipId(attr.id);
+                      setEdges((prev) =>
+                        prev.map((e) => {
+                          if (e.id == attr.id) {
+                            return {
+                              ...e,
+                              style: { ...e.style, stroke: "#2463EB" },
+                            };
+                          } else {
+                            return {
+                              ...e,
+                              style: { ...e.style, stroke: "gray" },
+                            };
+                          }
+                        })
+                      );
+                    }}
+                    key={attr.id}
+                    className={`bg-[#232323] cursor-pointer outline-none text-white border ${
+                      selectedRelationshipId == attr.id
+                        ? "border-[#2463EB]"
+                        : "border-[#3d3c3c]"
+                    } p-3 flex flex-col justify-center gap-4 rounded mb-2`}
+                  >
+                    <div className="flex justify-between gap-2 items-center mb-1">
+                      <span className="font-medium">
+                        {attr.source.length > 10
+                          ? attr.source.substring(0, 10) + "..."
+                          : attr.source}
+                      </span>
+                      <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">
+                        {attr?.data?.type}
+                      </span>
+                      <span className="font-medium">
+                        {attr.target.length > 10
+                          ? attr.target.substring(0, 10) + "..."
+                          : attr.target}
+                      </span>
+                    </div>
+                    <span>{attr?.data?.description}</span>
+                  </div>
+                ))}
             </div>
           )}
         </div>
