@@ -1,0 +1,65 @@
+import { Brain, Cable, Copy, DatabaseZap } from "lucide-react";
+import React from "react";
+
+const DashboardRightNav = ({chatOpen , dbOpen , copyOpen , relationshipsOpen , setChatOpen , setDbOpen , setCopyOpen , setRelationshipsOpen , selectedDb}) => {
+  return (
+    <>
+      <nav className="w-full sticky top-0 border-b pl-3 border-[#262626] py-7 left-0 h-10 flex justify-between pr-3 bg-[#171717] gap-5 items-center">
+        <h1 className="text-white font-bold">
+          {chatOpen && "Chat with AI"}
+          {dbOpen && `${selectedDb == null ? "" : selectedDb} Entity Details`}
+          {copyOpen && "Copy to clipboard"}
+          {relationshipsOpen && "Relationships"}
+        </h1>
+        <div className="flex justify-end gap-5">
+          <Brain
+            onClick={() => {
+              setDbOpen(false);
+              setRelationshipsOpen(false);
+              setCopyOpen(false);
+              setChatOpen(true);
+            }}
+            className={`w-5 h-5 cursor-pointer transition-all duration-200 ease-linear ${
+              chatOpen ? "text-white" : "text-[#525252]"
+            }`}
+          />
+          <DatabaseZap
+            onClick={() => {
+              setChatOpen(false);
+              setCopyOpen(false);
+              setRelationshipsOpen(false);
+              setDbOpen(true);
+            }}
+            className={`w-5 h-5 cursor-pointer transition-all duration-200 ease-linear ${
+              dbOpen ? "text-white" : "text-[#525252]"
+            }`}
+          />
+          <Copy
+            onClick={() => {
+              setChatOpen(false);
+              setDbOpen(false);
+              setRelationshipsOpen(false);
+              setCopyOpen(true);
+            }}
+            className={`w-5 h-5 cursor-pointer transition-all duration-200 ease-linear ${
+              copyOpen ? "text-white" : "text-[#525252]"
+            }`}
+          />
+          <Cable
+            onClick={() => {
+              setChatOpen(false);
+              setDbOpen(false);
+              setCopyOpen(false);
+              setRelationshipsOpen(true);
+            }}
+            className={`w-5 h-5 cursor-pointer transition-all duration-200 ease-linear ${
+              relationshipsOpen ? "text-white" : "text-[#525252]"
+            }`}
+          />
+        </div>
+      </nav>
+    </>
+  );
+};
+
+export default DashboardRightNav;

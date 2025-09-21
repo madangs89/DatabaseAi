@@ -1,10 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { Light as SyntaxHighlighter } from "react-syntax-highlighter";
-import { docco } from "react-syntax-highlighter/dist/esm/styles/hljs";
-import ReactMarkdown from "react-markdown";
 import { v4 as uuidv4 } from "uuid";
-import { CodeBlock, dracula } from "react-code-blocks";
-import { github } from "react-code-blocks";
 import ReactFlow, {
   Background,
   Controls,
@@ -38,7 +33,12 @@ import DashbordNav from "../components/DashbordNav";
 import { useRef } from "react";
 import { useEffect } from "react";
 import Loader from "../components/Loader";
-import { getElkLayout, typeMessage } from "../utils/elak";
+import { typeMessage } from "../utils/elak";
+import Chat from "../components/Chat";
+import DatabaseOpen from "../components/DatabaseOpen";
+import CodeCopyOpen from "../components/CodeCopyOpen";
+import RelationShipDbOpen from "../components/RelationShipDbOpen";
+import DashboardRightNav from "../components/DashboardRightNav";
 
 const TableNode = ({ data }) => {
   const {
@@ -529,7 +529,6 @@ const Dashboard = () => {
               </button>
             </div>
           </div>
-          {/* <div className="w-full flex-shrink-0 border-r-[0.5px] border-[#262626] h-full flex-col flex"> */}
           <div className="flex-1 h-full w-full bg-[#171717]  rounded-lg flex-shrink-0">
             <ReactFlow
               nodes={nodes}
@@ -578,266 +577,36 @@ const Dashboard = () => {
         </div>
         {/* RIGHT HALF: Red div */}
         <div className="w-1/2 relative h-full  flex-col overflow-hidden bg-[#171717] flex gap-2  justify-center">
-          <nav className="w-full sticky top-0 border-b pl-3 border-[#262626] py-7 left-0 h-10 flex justify-between pr-3 bg-[#171717] gap-5 items-center">
-            <h1 className="text-white font-bold">
-              {chatOpen && "Chat with AI"}
-              {dbOpen &&
-                `${selectedDb == null ? "" : selectedDb} Entity Details`}
-              {copyOpen && "Copy to clipboard"}
-              {relationshipsOpen && "Relationships"}
-            </h1>
-            <div className="flex justify-end gap-5">
-              <Brain
-                onClick={() => {
-                  setDbOpen(false);
-                  setRelationshipsOpen(false);
-                  setCopyOpen(false);
-                  setChatOpen(true);
-                }}
-                className={`w-5 h-5 cursor-pointer transition-all duration-200 ease-linear ${
-                  chatOpen ? "text-white" : "text-[#525252]"
-                }`}
-              />
-              <DatabaseZap
-                onClick={() => {
-                  setChatOpen(false);
-                  setCopyOpen(false);
-                  setRelationshipsOpen(false);
-                  setDbOpen(true);
-                }}
-                className={`w-5 h-5 cursor-pointer transition-all duration-200 ease-linear ${
-                  dbOpen ? "text-white" : "text-[#525252]"
-                }`}
-              />
-              <Copy
-                onClick={() => {
-                  setChatOpen(false);
-                  setDbOpen(false);
-                  setRelationshipsOpen(false);
-                  setCopyOpen(true);
-                }}
-                className={`w-5 h-5 cursor-pointer transition-all duration-200 ease-linear ${
-                  copyOpen ? "text-white" : "text-[#525252]"
-                }`}
-              />
-              <Cable
-                onClick={() => {
-                  setChatOpen(false);
-                  setDbOpen(false);
-                  setCopyOpen(false);
-                  setRelationshipsOpen(true);
-                }}
-                className={`w-5 h-5 cursor-pointer transition-all duration-200 ease-linear ${
-                  relationshipsOpen ? "text-white" : "text-[#525252]"
-                }`}
-              />
-            </div>
-          </nav>
-          {/* Ai Chat bot messages */}
-          {chatOpen && (
-            <div
-              ref={chatContainerRef}
-              onScroll={handleScroll}
-              className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-4"
-            >
-              {chatMessages && chatMessages.length > 0 ? (
-                chatMessages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex  ${
-                      msg.sender === "user" ? "justify-end" : "justify-start"
-                    }`}
-                  >
-                    <div
-                      className={`max-w-[90%] whitespace-pre-line  px-4 py-2 rounded-lg ${
-                        msg.sender === "user"
-                          ? "bg-blue-600 text-white"
-                          : "bg-[#232323] text-gray-200"
-                      }`}
-                    >
-                      <ReactMarkdown
-                        components={{
-                          p: ({ node, ...props }) => {
-                            const text = String(props.children);
-                            if (/^[A-Z].*:$/g.test(text)) {
-                              return (
-                                <h3 className="font-bold text-white mt-2 mb-1">
-                                  {text}
-                                </h3>
-                              );
-                            }
-                            return (
-                              <p {...props} className="mb-1 leading-relaxed" />
-                            );
-                          },
-                          ul: ({ node, ...props }) => (
-                            <ul {...props} className="list-disc ml-5 mb-1" />
-                          ),
-                          li: ({ node, ...props }) => (
-                            <li {...props} className="mb-0.5" />
-                          ),
-                        }}
-                      >
-                        {msg.text.replace(/\n{2,}/g, "\n")}
-                      </ReactMarkdown>
-                    </div>
-                    <div ref={bottomRef} />
-                  </div>
-                ))
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-[#525252]">Start a conversation</p>
-                </div>
-              )}
-            </div>
-          )}
-          {dbOpen && (
-            <div className=" flex-1 text-white px-3 overflow-y-auto  rounded-lg shadow-lg w-full max-w-md">
-              {selectedDbData && selectedDbData.title ? (
-                <div className="mb-6">
-                  {/* Entity Details */}
-                  <div className="mb-4">
-                    <label className="block text-sm text-gray-400 mb-1">
-                      Entity Name
-                    </label>
-                    <input
-                      type="text"
-                      value={selectedDbData.title}
-                      readOnly
-                      className="w-full bg-[#232323] outline-none text-white border border-[#3d3c3c] rounded px-3 py-2"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-1">
-                      Description
-                    </label>
-                    <textarea
-                      value={selectedDbData.description}
-                      readOnly
-                      className="w-full bg-[#232323] outline-none text-white border border-[#3d3c3c] rounded px-3 py-2 resize-none"
-                      rows={3}
-                    />
-                  </div>
-
-                  {/* Attributes */}
-                  <div>
-                    <h3 className="text-md font-semibold mb-2">Attributes</h3>
-                    {selectedDbData?.fields &&
-                      selectedDbData?.fields.length > 0 &&
-                      selectedDbData?.fields?.map((attr) => (
-                        <div
-                          key={attr.name}
-                          className="bg-[#232323] outline-none text-white border border-[#3d3c3c] p-3 rounded mb-2"
-                        >
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="font-medium">{attr.name}</span>
-                            <div className="flex gap-2 items-center justify-center">
-                              {attr.primaryKey == true && (
-                                <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">
-                                  {"Primary Key"}
-                                </span>
-                              )}
-                              {attr.required == true && (
-                                <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">
-                                  {"Required"}
-                                </span>
-                              )}
-                              {attr.unique == true && (
-                                <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">
-                                  {"Unique"}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="text-sm text-gray-400 mb-1">
-                            {attr.type}
-                          </div>
-                          {attr.description && (
-                            <div className="text-xs text-gray-500">
-                              {attr.description}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-[#525252]">Select a database entity</p>
-                </div>
-              )}
-            </div>
-          )}
-          {copyOpen && (
-            <div className="flex-1 text-white px-3  overflow-y-auto rounded-lg shadow-lg w-full max-w-md">
-              {llmCodeFromServer.length > 0 ? (
-                <CodeBlock
-                  text={llmCodeFromServer}
-                  language="javascript"
-                  showLineNumbers={true}
-                  theme={dracula}
-                  wrapLines
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-[#525252]">
-                    Please create your database.
-                    <br /> then we handle the coding part
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-          {relationshipsOpen && (
-            <div className="flex-1 text-white px-3  overflow-y-auto rounded-lg shadow-lg w-full max-w-md">
-              {edges?.length > 0 &&
-                edges?.map((attr) => (
-                  <div
-                    onClick={() => {
-                      setSelectedRelationshipId(attr.id);
-                      setEdges((prev) =>
-                        prev.map((e) => {
-                          if (e.id == attr.id) {
-                            return {
-                              ...e,
-                              style: { ...e.style, stroke: "#2463EB" },
-                            };
-                          } else {
-                            return {
-                              ...e,
-                              style: { ...e.style, stroke: "gray" },
-                            };
-                          }
-                        })
-                      );
-                    }}
-                    key={attr.id}
-                    className={`bg-[#232323] cursor-pointer outline-none text-white border ${
-                      selectedRelationshipId == attr.id
-                        ? "border-[#2463EB]"
-                        : "border-[#3d3c3c]"
-                    } p-3 flex flex-col justify-center gap-4 rounded mb-2`}
-                  >
-                    <div className="flex justify-between gap-2 items-center mb-1">
-                      <span className="font-medium">
-                        {attr.source.length > 10
-                          ? attr.source.substring(0, 10) + "..."
-                          : attr.source}
-                      </span>
-                      <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">
-                        {attr?.data?.type}
-                      </span>
-                      <span className="font-medium">
-                        {attr.target.length > 10
-                          ? attr.target.substring(0, 10) + "..."
-                          : attr.target}
-                      </span>
-                    </div>
-                    <span>{attr?.data?.description}</span>
-                  </div>
-                ))}
-            </div>
-          )}
+          <DashboardRightNav
+            chatOpen={chatOpen}
+            dbOpen={dbOpen}
+            copyOpen={copyOpen}
+            relationshipsOpen={relationshipsOpen}
+            setChatOpen={setChatOpen}
+            setDbOpen={setDbOpen}
+            setCopyOpen={setCopyOpen}
+            setRelationshipsOpen={setRelationshipsOpen}
+            selectedDb={selectedDb}
+          />
+          <Chat
+            chatOpen={chatOpen}
+            chatMessages={chatMessages}
+            chatContainerRef={chatContainerRef}
+            handleScroll={handleScroll}
+            bottomRef={bottomRef}
+          />
+          <DatabaseOpen dbOpen={dbOpen} selectedDbData={selectedDbData} />
+          <CodeCopyOpen
+            llmCodeFromServer={llmCodeFromServer}
+            copyOpen={copyOpen}
+          />
+          <RelationShipDbOpen
+            relationshipsOpen={relationshipsOpen}
+            edges={edges}
+            setSelectedRelationshipId={setSelectedRelationshipId}
+            setEdges={setEdges}
+            selectedRelationshipId={selectedRelationshipId}
+          />
         </div>
       </div>
     </div>
