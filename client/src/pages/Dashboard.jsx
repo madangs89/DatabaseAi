@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { Light as SyntaxHighlighter } from "react-syntax-highlighter";
 import { docco } from "react-syntax-highlighter/dist/esm/styles/hljs";
+import ReactMarkdown from "react-markdown";
 import { v4 as uuidv4 } from "uuid";
 import { CodeBlock, dracula } from "react-code-blocks";
 import { github } from "react-code-blocks";
@@ -37,10 +38,7 @@ import DashbordNav from "../components/DashbordNav";
 import { useRef } from "react";
 import { useEffect } from "react";
 import Loader from "../components/Loader";
-import { getElkLayout } from "../utils/elak";
-
-// ✅ Define once outside
-// ✅ Custom Table Node
+import { getElkLayout, typeMessage } from "../utils/elak";
 
 const TableNode = ({ data }) => {
   const {
@@ -106,7 +104,7 @@ const TableNode = ({ data }) => {
       <h3 style={{ marginBottom: "5px" }}>{title}</h3>
       <table style={{ width: "100%", fontSize: "14px" }}>
         <tbody>
-          {fields.map((f, index) => (
+          {fields?.map((f, index) => (
             <tr key={f.name + index}>
               <td>{f.name}</td>
               <td
@@ -134,6 +132,7 @@ const nodeTypes = { tableNode: TableNode };
 const Dashboard = () => {
   const [theme, setTheme] = useState("dark");
   const [selectedTab, setSelectedTab] = useState("editor");
+  const [autoScroll, setAutoScroll] = useState(true);
   const [chatOpen, setChatOpen] = useState(true);
   const [dbOpen, setDbOpen] = useState(false);
   const [copyOpen, setCopyOpen] = useState(false);
@@ -147,86 +146,67 @@ const Dashboard = () => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [llmChatHistory, setLlmChatHistory] = useState([]);
+  const chatContainerRef = useRef(null);
   const [llmCodeFromServer, setLlmCodeFromServer] = useState("");
   const bottomRef = useRef(null);
   const { fitView } = useReactFlow();
 
   const tableData = [
     {
-      id: "users",
-      name: "Users",
-      fields: [
-        { name: "id", type: "INT" },
-        { name: "name", type: "VARCHAR" },
-        { name: "email", type: "VARCHAR" },
-      ],
+      id: "welcome",
+      name: "🌟 Welcome",
+
       pos: { x: 100, y: 100 },
     },
     {
-      id: "products",
-      name: "Products",
-      fields: [
-        { name: "id", type: "INT" },
-        { name: "name", type: "VARCHAR" },
-        { name: "price", type: "DECIMAL" },
-      ],
+      id: "create",
+      name: "Create",
+
       pos: { x: 500, y: 150 },
     },
     {
-      id: "orders",
-      name: "Orders",
-      fields: [
-        { name: "id", type: "INT" },
-        { name: "user_id", type: "INT" },
-        { name: "total", type: "DECIMAL" },
-      ],
+      id: "your",
+      name: "Your",
+
       pos: { x: 300, y: 350 },
     },
     {
-      id: "payments",
-      name: "Payments",
-      fields: [
-        { name: "id", type: "INT" },
-        { name: "order_id", type: "INT" },
-        { name: "amount", type: "DECIMAL" },
-      ],
+      id: "database",
+      name: "Database",
+
       pos: { x: 700, y: 400 },
     },
     {
-      id: "reviews",
-      name: "Reviews",
-      fields: [
-        { name: "id", type: "INT" },
-        { name: "product_id", type: "INT" },
-        { name: "comment", type: "TEXT" },
-      ],
+      id: "start",
+      name: "Get Started",
+
       pos: { x: 900, y: 150 },
     },
   ];
-  const entity = {
-    name: "Users",
-    description: "Stores user account information and login credentials.",
-    attributes: [
-      {
-        name: "id",
-        type: "INT",
-        note: "PRIMARY KEY",
-        description: "Unique identifier for each user.",
-      },
-      {
-        name: "username",
-        type: "VARCHAR(255)",
-        note: "UNIQUE",
-        description: "",
-      },
-      {
-        name: "email",
-        type: "VARCHAR(255)",
-        note: "NOT NULL",
-        description: "",
-      },
-    ],
-  };
+  // const entity = {
+  //   name: "Users",
+  //   description: "Stores user account information and login credentials.",
+  //   attributes: [
+  //     {
+  //       name: "id",
+  //       type: "INT",
+  //       note: "PRIMARY KEY",
+  //       description: "Unique identifier for each user.",
+  //     },
+  //     {
+  //       name: "username",
+  //       type: "VARCHAR(255)",
+  //       note: "UNIQUE",
+  //       description: "",
+  //     },
+  //     {
+  //       name: "email",
+  //       type: "VARCHAR(255)",
+  //       note: "NOT NULL",
+  //       description: "",
+  //     },
+  //   ],
+  // };
 
   // Convert to nodes
   const initialNodes = tableData.map((t) => ({
@@ -236,8 +216,8 @@ const Dashboard = () => {
     code: t?.code ? t.code : null,
     description: t?.description ? t.description : null,
     data: {
-      title: t.name,
-      fields: t.fields,
+      title: t?.name,
+      fields: t?.fields,
       theme,
       code: t?.code?.length ? t.code : null,
       id: t?.name?.toLowerCase(),
@@ -255,33 +235,43 @@ const Dashboard = () => {
   const initialEdges = [
     {
       id: "e1",
-      source: "users",
-      target: "orders",
-      data: { type: "ONE_TO_MANY", description: "User has many orders" },
-      style: { stroke: "gray", strokeWidth: 2 },
+      source: "welcome",
+      target: "create",
+      data: {
+        type: "ONE_TO_ONE",
+        description: "Welcome unlocks the power to create.",
+      },
+      style: { stroke: "gold", strokeWidth: 2 },
     },
     {
       id: "e2",
-      source: "orders",
-      target: "payments",
-      data: { type: "ONE_TO_MANY", description: "Order has many payments" },
-
-      style: { stroke: "gray", strokeWidth: 2 },
+      source: "create",
+      target: "your",
+      data: {
+        type: "ONE_TO_ONE",
+        description: "Creation flows into your world.",
+      },
+      style: { stroke: "violet", strokeWidth: 2 },
     },
     {
       id: "e3",
-      source: "products",
-      target: "reviews",
-      data: { type: "ONE_TO_MANY", description: "Product has many reviews" },
-
-      style: { stroke: "gray", strokeWidth: 2 },
+      source: "your",
+      target: "database",
+      data: {
+        type: "ONE_TO_ONE",
+        description: "Your essence shapes the database.",
+      },
+      style: { stroke: "turquoise", strokeWidth: 2 },
     },
     {
       id: "e4",
-      source: "users",
-      target: "reviews",
-      data: { type: "ONE_TO_MANY", description: "User has many reviews" },
-      style: { stroke: "gray", strokeWidth: 2 },
+      source: "database",
+      target: "start",
+      data: {
+        type: "ONE_TO_ONE",
+        description: "The database invites you to begin.",
+      },
+      style: { stroke: "pink", strokeWidth: 2 },
     },
   ];
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -309,6 +299,9 @@ const Dashboard = () => {
       { sender: "user", text: inn, id: uuidv4() },
     ]);
 
+    setTimeout(() => {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
     const userQueryResult = await axios.post(
       "http://localhost:5000/create-db",
       {
@@ -316,8 +309,6 @@ const Dashboard = () => {
         prompt: isCallingEditApi == false ? llmChatHistory : [],
       }
     );
-
-    setLoading(false);
     console.log(userQueryResult.data.data);
 
     if (
@@ -341,16 +332,16 @@ const Dashboard = () => {
       ]);
     }
     if (userQueryResult?.data?.data?.initialResponse.length > 0) {
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          sender: "system",
-          text: userQueryResult?.data?.data?.initialResponse,
-          id: uuidv4(),
-        },
-      ]);
+      await typeMessage({
+        text: userQueryResult.data.data.initialResponse,
+        sender: "system",
+        setChatMessages,
+        autoScroll,
+        bottomRef,
+      });
     }
 
+    setLoading(false);
     if (
       userQueryResult?.data?.data?.entities?.length > 0 &&
       userQueryResult?.data?.data?.relationships?.length > 0
@@ -360,8 +351,8 @@ const Dashboard = () => {
         type: "tableNode",
         position: t.pos,
         data: {
-          title: t.name,
-          fields: t.fields,
+          title: t?.name,
+          fields: t?.fields,
           theme,
           code: t?.code?.length ? t.code : null,
           id: t.name.toLowerCase(),
@@ -413,21 +404,29 @@ const Dashboard = () => {
         },
       ]);
 
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          sender: "system",
-          text: userQueryResult?.data?.data?.finalExplanation,
-          id: uuidv4(),
-        },
-      ]);
+      await typeMessage({
+        text: userQueryResult.data.data.finalExplanation,
+        sender: "system",
+        setChatMessages,
+        bottomRef,
+        autoScroll,
+      });
     }
   };
 
+  // detect user scroll
+  const handleScroll = () => {
+    if (!chatContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+    const isAtBottom = scrollHeight - scrollTop <= clientHeight + 150; // 50px threshold
+    setAutoScroll(isAtBottom);
+  };
   // Scroll to bottom For Chat
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages]);
+  // useEffect(() => {
+  //   if (autoScroll) {
+  //     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  //   }
+  // }, [chatMessages, autoScroll]);
 
   useEffect(() => {
     if (inputRef.current) {
@@ -459,6 +458,18 @@ const Dashboard = () => {
       }))
     );
   }, [selectedDb, loading]);
+
+  useEffect(() => {
+    if (relationshipsOpen == true || chatOpen == true || copyOpen == true) {
+      setSelectedDb("");
+    }
+
+    if (dbOpen == true || chatOpen || copyOpen) {
+      setEdges((prev) =>
+        prev.map((e) => ({ ...e, style: { stroke: "gray", strokeWidth: 2 } }))
+      );
+    }
+  }, [relationshipsOpen, chatOpen, dbOpen, copyOpen]);
 
   return (
     <div className="w-full overflow-hidden dm-sans-font relative bg-black h-screen flex-col flex">
@@ -624,7 +635,11 @@ const Dashboard = () => {
           </nav>
           {/* Ai Chat bot messages */}
           {chatOpen && (
-            <div className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-4">
+            <div
+              ref={chatContainerRef}
+              onScroll={handleScroll}
+              className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-4"
+            >
               {chatMessages && chatMessages.length > 0 ? (
                 chatMessages.map((msg) => (
                   <div
@@ -640,7 +655,31 @@ const Dashboard = () => {
                           : "bg-[#232323] text-gray-200"
                       }`}
                     >
-                      {msg.text}
+                      <ReactMarkdown
+                        components={{
+                          p: ({ node, ...props }) => {
+                            const text = String(props.children);
+                            if (/^[A-Z].*:$/g.test(text)) {
+                              return (
+                                <h3 className="font-bold text-white mt-2 mb-1">
+                                  {text}
+                                </h3>
+                              );
+                            }
+                            return (
+                              <p {...props} className="mb-1 leading-relaxed" />
+                            );
+                          },
+                          ul: ({ node, ...props }) => (
+                            <ul {...props} className="list-disc ml-5 mb-1" />
+                          ),
+                          li: ({ node, ...props }) => (
+                            <li {...props} className="mb-0.5" />
+                          ),
+                        }}
+                      >
+                        {msg.text.replace(/\n{2,}/g, "\n")}
+                      </ReactMarkdown>
                     </div>
                     <div ref={bottomRef} />
                   </div>
@@ -683,9 +722,9 @@ const Dashboard = () => {
                   {/* Attributes */}
                   <div>
                     <h3 className="text-md font-semibold mb-2">Attributes</h3>
-                    {selectedDbData.fields &&
-                      selectedDbData.fields.length > 0 &&
-                      selectedDbData?.fields.map((attr) => (
+                    {selectedDbData?.fields &&
+                      selectedDbData?.fields.length > 0 &&
+                      selectedDbData?.fields?.map((attr) => (
                         <div
                           key={attr.name}
                           className="bg-[#232323] outline-none text-white border border-[#3d3c3c] p-3 rounded mb-2"

@@ -1,3 +1,5 @@
+import { v4 as uuidv4 } from "uuid";
+
 let ELK;
 export const initELK = async () => {
   if (!ELK) {
@@ -55,4 +57,37 @@ export const getElkLayout = async (nodes, edges) => {
     };
   });
   return { layoutedEdges, layoutedNodes };
+};
+
+export const typeMessage = ({
+  text,
+  sender = "system",
+  setChatMessages,
+  bottomRef,
+  autoScroll,
+}) => {
+  return new Promise((resolve) => {
+    const id = uuidv4();
+    let index = 0;
+
+    // Add empty message first
+    setChatMessages((prev) => [...prev, { sender, text: "", id }]);
+
+    let interval = setInterval(() => {
+      setChatMessages((prev) =>
+        prev.map((m) => {
+          if (m.id === id) {
+            return { ...m, text: text.slice(0, index++) };
+          }
+          return m;
+        })
+      );
+
+
+      if (index > text.length) {
+        clearInterval(interval);
+        resolve(); // ✅ typing finished
+      }
+    }, 25);
+  });
 };
