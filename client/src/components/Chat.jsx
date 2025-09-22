@@ -1,5 +1,4 @@
 import ReactMarkdown from "react-markdown";
-
 const Chat = ({
   chatOpen,
   chatMessages,
