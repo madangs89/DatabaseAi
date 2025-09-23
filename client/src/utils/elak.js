@@ -82,12 +82,10 @@ export const typeMessage = ({
           return m;
         })
       );
-
-
       if (index > text.length) {
         clearInterval(interval);
         resolve(); // ✅ typing finished
       }
-    }, 25);
+    }, 10);
   });
 };

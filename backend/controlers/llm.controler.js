@@ -1,3 +1,4 @@
+import client from "../app.js";
 import { ai, getConvKey } from "../utils/lll.service.js";
 
 import { GoogleGenAI, Type } from "@google/genai";
@@ -8,26 +9,43 @@ export const createDBWithLlmCall = async (req, res) => {
       return res
         .status(400)
         .json({ message: "Prompt is required", success: false });
-    // const convKey = await getConvKey(prompt);
-
-    // check in cache
-    // const existingCache = await redis.get(convKey);
-    // if (existingCache) {
-    //   return res
-    //     .status(200)
-    //     .json({ message: "Cache hit", success: true, data: existingCache });
-    // }
-
     console.log("prompt", prompt);
+    console.log("message", message);
+    const smallLLMResponse = await getConvKey(prompt, message);
+    console.log("smallLLM", smallLLMResponse);
+    if (smallLLMResponse?.isDbCall === false) {
+      smallLLMResponse.entities = [];
+      smallLLMResponse.relationships = [];
+      smallLLMResponse.finalExplanation = "";
+      smallLLMResponse.migrationPlan = "";
+      console.log("return ing the response", smallLLMResponse);
+      return res.json({ data: smallLLMResponse, success: true });
+    }
+
+    if (smallLLMResponse?.isDbCall === true && smallLLMResponse?.dbConvKey) {
+      const cachedData = await client.get(smallLLMResponse.dbConvKey);
+      if (cachedData) {
+        console.log("Cache hit");
+        return res.status(200).json({
+          message: "Cache hit",
+          success: true,
+          data: JSON.parse(cachedData),
+        });
+      }
+    }
+
     const chat = ai.chats.create({
       model: "gemini-2.5-flash",
-      history: prompt,
+      history: [],
       config: {
         systemInstruction: `You are SchemaGen, an expert database architect AI.
     Task:
     Convert user requirements into a strict JSON schema.
  IMPORTANT: Always respond in EXACTLY this JSON format. 
 Never respond in plain text. If clarification is needed, put it inside "initialResponse" as text, but still return a valid JSON object.
+Must place 3 schema in the same layer(eg: first layer => user => post => comment => like =>reel)
+Must, arrange entities logically according to their relationships (e.g., place central entities in the middle and group closely related entities around them (eg: user have relationship with post, post have relationship with comment so place user at center others at the Surrounding area)) to make the ERD easier to read
+There must be a 120px gap between schemas (both horizontally and vertically) and each schema node have height of 250-500px and width of 250-500px. 
 
     Rules:
     1. Output ONLY a valid JSON object (no Markdown, no extra text).
@@ -40,7 +58,7 @@ Never respond in plain text. If clarification is needed, put it inside "initialR
     7. If the user gives a clear app idea (e.g., e-commerce, Instagram clone) → infer entities/relationships yourself (no clarifications needed).
     8. If the user is vague, ask clarifying questions in a friendly, simple,little playful , natural and humble way. Keep it clear, approachable, and engaging, and always respond only in JSON format, exactly as shown below. Your response should include the initialResponse along with all relevant entities and relationships, and it should feel playful and charming and little fun while helping them.
     9. If the user asks to generate schemas for more than one database at the same time (e.g., "create Uber database in MongoDB and Postgres") → ask them to choose only one database before proceeding.
-    10.The position in the JSON format represents the coordinates of an entity in the UI. It is required, and it is your job to assign positions such that: 1.No two schemas overlap. 2.Each schema has dimensions of 200-500px width and 200-500px height. 3.There must be a 120px gap between schemas (both horizontally and vertically). 4.Do not place more than 5 schema in the same layer(eg: first layer => user => post => comment => like =>reel). 5.Must, arrange entities logically according to their relationships (e.g., place central entities in the middle and group closely related entities around them (eg: user have relationship with post, post have relationship with comment so place user at center others at the Surrounding area)) to make the ERD easier to read.
+    10.The position in the JSON format represents the coordinates of an entity in the UI. It is required, and it is your job to assign positions such that: 1.No two schemas overlap. 2.Each schema has dimensions of 200-500px width and 200-500px height.
     11. Never use any user name, if user explicitly said also never use the username in the response. make sure your response irrespective of history every response must be able to cache the response.
     JSON format:
     {
@@ -84,7 +102,9 @@ Never respond in plain text. If clarification is needed, put it inside "initialR
     `,
       },
     });
-    const response = await chat.sendMessage({ message });
+    const response = await chat.sendMessage({
+      message: smallLLMResponse?.dbPrompt,
+    });
     console.log("Token usage:", response.usageMetadata);
     console.log("prompt:", prompt);
     console.log("message", message);
@@ -92,6 +112,7 @@ Never respond in plain text. If clarification is needed, put it inside "initialR
     let raw = response?.candidates[0]?.content.parts[0]?.text;
     raw = raw.replace(/```json|```/g, "").trim();
     let json = JSON.parse(raw);
+    client.set(smallLLMResponse?.dbConvKey, JSON.stringify(json));
     return res.json({
       data: json,
       token: response.usageMetadata,

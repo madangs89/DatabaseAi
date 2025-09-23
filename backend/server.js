@@ -5,6 +5,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { connectDb } from "./db/connectDB.js";
 import llmRouter from "./routes/lll.routes.js";
+import client from "./app.js";
+
 
 const app = express();
 
@@ -17,7 +19,7 @@ app.get("/", (req, res) => {
   res.send("Hello World");
 });
 
-app.use("/" , llmRouter)
+app.use("/", llmRouter);
 
 const startServer = async () => {
   try {
