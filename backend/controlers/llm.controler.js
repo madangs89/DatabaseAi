@@ -5,6 +5,9 @@ import { GoogleGenAI, Type } from "@google/genai";
 export const createDBWithLlmCall = async (req, res) => {
   try {
     const { prompt, message } = req.body;
+
+    console.log(prompt, message);
+    
     if (!prompt)
       return res
         .status(400)
@@ -26,8 +29,12 @@ export const createDBWithLlmCall = async (req, res) => {
       const cachedData = await client.get(smallLLMResponse.dbConvKey);
       if (cachedData) {
         console.log("Cache hit");
-
-        await getApiCodes()
+        // const d = await getApiCodes(cachedData);
+        // return res.status(200).json({
+        //   message: "Cache hit",
+        //   success: true,
+        //   data: d,
+        // });
         return res.status(200).json({
           message: "Cache hit",
           success: true,

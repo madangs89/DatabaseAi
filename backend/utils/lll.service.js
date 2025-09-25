@@ -68,6 +68,8 @@ json
 };
 export const getApiCodes = async (message) => {
   try {
+    console.log("called get api codes");
+
     const chat = ai.chats.create({
       model: "gemini-2.5-flash-lite",
       history: [],
@@ -119,7 +121,8 @@ Note:
 8. Always include package.json with required dependencies.
 
 9. *Output format must always be JSON*, where each key is the file path and the value is the code:
-   {
+JSON   
+{
      "package.json": "file content here",
      "server.js": "file content here",
      "config/db.js": "file content here",
@@ -135,7 +138,7 @@ Note:
     raw = raw.replace(/```json|```/g, "").trim();
     let json = JSON.parse(raw);
     console.log(json);
-    return;
+    return json;
   } catch (error) {
     console.error(error);
   }
