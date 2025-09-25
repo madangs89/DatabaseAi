@@ -22,7 +22,6 @@ Your job is to analyze every user input and return a JSON object with exactly fo
 If the request does not match a well-known platform, the dbConvKey should be a descriptive lowercase name for the app (e.g., "hospital", "socialmediaapp"), and if unable to get the app description from the user input, the dbPrompt should be framed as: "Create a database system for the tables <list-of-tables>" or "Create a database system for <app description>".
 This ensures that for any app, including clones like Uber, the dbConvKey is consistent (e.g., "uber" for Uber clones) and the dbPrompt is appropriately rewritten for known platforms or left generic for custom apps.
 4. "initialResponse" (string) → your warm, playful, explanatory response to the user. Always use a friendly tone with emojis.  
-
 ✨ Rules:  
 - **Schema generation only** → set isDbCall=true. Examples: “create an Instagram clone DB”, “design a database for e-commerce”, “generate schema for hospital management”, “generate a database for a social media app”, “create a database system for the tables user, post, like, comment” (⚠️ in this case you must infer a well-known platform such as Instagram or Facebook — so instead of literally repeating ‘user, post, like, comment’, rewrite the dbPrompt as something like: “Generate schema for an Instagram-like platform”).  
 - **General DB advice, recommendations, comparisons, or Q&A** → isDbCall=false. You must directly answer the user’s DB-related question yourself inside initialResponse.  
@@ -33,6 +32,7 @@ This ensures that for any app, including clones like Uber, the dbConvKey is cons
 - Be expressive and clear in explanations.  
 - Never leave initialResponse empty.  
 - Never output plain text outside JSON.  
+- Not always starting with oh
 
 🛑 Restrictions:  
 - Do not accidentally classify DB *recommendations* or *Q&A* as dbCalls — only schema generation counts.  
@@ -62,6 +62,80 @@ json
     raw = raw.replace(/```json|```/g, "").trim();
     let json = JSON.parse(raw);
     return json;
+  } catch (error) {
+    console.error(error);
+  }
+};
+export const getApiCodes = async (message) => {
+  try {
+    const chat = ai.chats.create({
+      model: "gemini-2.5-flash-lite",
+      history: [],
+      config: {
+        systemInstruction: `
+You are a code generator that always outputs a complete Express.js project structure in JSON format.  
+I will provide you with a database schema in JSON format. Based on the schema, do the following:
+Do not expect user to explicitly provide the prompt. If you get database with json format means do the following:
+Note: 
+1.Always respond only in JSON format, exactly as shown below. Your response should include all files with their paths as keys and file contents as values.
+2. No need of any explanations outside the JSON format. Just output the JSON object.
+
+1. Generate a folder structure with files:
+   - package.json
+   - server.js
+   - config/db.js
+   - models/<model>.js
+   - controllers/<model>Controller.js
+   - routes/<model>Routes.js
+
+2. For MongoDB schemas, use Mongoose models.  
+   For SQL schemas, use Sequelize models . so for different databases you there respective models and schemas.
+
+3. Each model should:
+   - Be defined in models/ with correct fields.
+   - Use validation if the schema specifies required or unique.
+
+4. Each controller should have:
+   - create<Item>
+   - getAll<Items>
+   - get<Item>ById
+   - update<Item>
+   - delete<Item>
+
+5. Each route file should import its controller and expose RESTful endpoints:
+   - POST /
+   - GET /
+   - GET /:id
+   - PUT /:id
+   - DELETE /:id
+
+6. Where user Db exits do authentication Routes controller and also required apis for login and signup
+
+7. server.js should:
+   - Import express and mongoose/sequelize
+   - Load routes dynamically
+   - Listen on port 5000
+
+8. Always include package.json with required dependencies.
+
+9. *Output format must always be JSON*, where each key is the file path and the value is the code:
+   {
+     "package.json": "file content here",
+     "server.js": "file content here",
+     "config/db.js": "file content here",
+     "models/User.js": "file content here",
+     "controllers/userController.js": "file content here",
+     "routes/userRoutes.js": "file content here"
+   }
+  `,
+      },
+    });
+    const response = await chat.sendMessage({ message });
+    let raw = response?.candidates[0]?.content.parts[0]?.text;
+    raw = raw.replace(/```json|```/g, "").trim();
+    let json = JSON.parse(raw);
+    console.log(json);
+    return;
   } catch (error) {
     console.error(error);
   }

@@ -1,5 +1,5 @@
 import client from "../app.js";
-import { ai, getConvKey } from "../utils/lll.service.js";
+import { ai, getApiCodes, getConvKey } from "../utils/lll.service.js";
 
 import { GoogleGenAI, Type } from "@google/genai";
 export const createDBWithLlmCall = async (req, res) => {
@@ -26,6 +26,8 @@ export const createDBWithLlmCall = async (req, res) => {
       const cachedData = await client.get(smallLLMResponse.dbConvKey);
       if (cachedData) {
         console.log("Cache hit");
+
+        await getApiCodes()
         return res.status(200).json({
           message: "Cache hit",
           success: true,
