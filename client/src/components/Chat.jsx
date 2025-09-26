@@ -1,4 +1,5 @@
 import ReactMarkdown from "react-markdown";
+
 const Chat = ({
   chatOpen,
   chatMessages,
@@ -18,43 +19,54 @@ const Chat = ({
             chatMessages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex  ${
+                className={`flex ${
                   msg.sender === "user" ? "justify-end" : "justify-start"
                 }`}
               >
-                <div
-                  className={`max-w-[90%] whitespace-pre-line  px-4 py-2 rounded-lg ${
-                    msg.sender === "user"
-                      ? "bg-blue-600 text-white"
-                      : "bg-[#232323] text-gray-200"
-                  }`}
-                >
-                  <ReactMarkdown
-                    components={{
-                      p: ({ node, ...props }) => {
-                        const text = String(props.children);
-                        if (/^[A-Z].*:$/g.test(text)) {
-                          return (
-                            <h3 className="font-bold text-white mt-2 mb-1">
-                              {text}
-                            </h3>
-                          );
-                        }
-                        return (
-                          <p {...props} className="mb-1 leading-relaxed" />
-                        );
-                      },
-                      ul: ({ node, ...props }) => (
-                        <ul {...props} className="list-disc ml-5 mb-1" />
-                      ),
-                      li: ({ node, ...props }) => (
-                        <li {...props} className="mb-0.5" />
-                      ),
-                    }}
+                {msg?.type === "status" ? (
+                  // 👇 Custom single updating bubble
+                  <div className="max-w-[80%] px-4 py-2 rounded-lg flex-col   text-gray-200 italic flex items-start gap-2">
+                    <span className="animate-pulse text-[#525252] ">
+                      {"Working on It..."}
+                    </span>
+                    <span className="text-[#737373]">{msg?.text}</span>
+                  </div>
+                ) : (
+                  // 👇 Regular bubbles with markdown
+                  <div
+                    className={`max-w-[90%] whitespace-pre-line px-4 py-2 rounded-lg ${
+                      msg.sender === "user"
+                        ? "bg-blue-600 text-white"
+                        : "bg-[#232323] text-gray-200"
+                    }`}
                   >
-                    {msg.text.replace(/\n{2,}/g, "\n")}
-                  </ReactMarkdown>
-                </div>
+                    <ReactMarkdown
+                      components={{
+                        p: ({ node, ...props }) => {
+                          const text = String(props.children);
+                          if (/^[A-Z].*:$/g.test(text)) {
+                            return (
+                              <h3 className="font-bold text-white mt-2 mb-1">
+                                {text}
+                              </h3>
+                            );
+                          }
+                          return (
+                            <p {...props} className="mb-1 leading-relaxed" />
+                          );
+                        },
+                        ul: ({ node, ...props }) => (
+                          <ul {...props} className="list-disc ml-5 mb-1" />
+                        ),
+                        li: ({ node, ...props }) => (
+                          <li {...props} className="mb-0.5" />
+                        ),
+                      }}
+                    >
+                      {msg.text.replace(/\n{2,}/g, "\n")}
+                    </ReactMarkdown>
+                  </div>
+                )}
                 <div ref={bottomRef} />
               </div>
             ))

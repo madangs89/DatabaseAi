@@ -1,14 +1,11 @@
 import dotenv from "dotenv";
 dotenv.config();
-import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { connectDb } from "./db/connectDB.js";
 import llmRouter from "./routes/lll.routes.js";
-import client from "./app.js";
-
-
-const app = express();
+import { app, httpServer } from "./app.js";
+import express from "express";
 
 app.use(express.json());
 app.use(cors());
@@ -21,15 +18,10 @@ app.get("/", (req, res) => {
 
 app.use("/", llmRouter);
 
-const startServer = async () => {
-  try {
-    await connectDb(); // Connect DB first
-    app.listen(5000, () => {
-      console.log("Server is running on port http://localhost:5000");
-    });
-  } catch (error) {
-    console.error("Failed to start server:", error);
-  }
-};
-
-startServer();
+// Connect DB first
+httpServer.listen(process.env.PORT || 5000, async () => {
+  await connectDb();
+  console.log(
+    `Server is running on port http://localhost:${process.env.PORT || 5000}`
+  );
+});

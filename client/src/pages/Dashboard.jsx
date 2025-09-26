@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from "react";
+import { io } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
 import ReactFlow, {
   Background,
@@ -150,6 +151,7 @@ const Dashboard = () => {
   const [llmCodeFromServer, setLlmCodeFromServer] = useState("");
   const bottomRef = useRef(null);
   const { fitView } = useReactFlow();
+  const [socket, setSocket] = useState(null);
 
   const tableData = [
     {
@@ -331,11 +333,13 @@ const Dashboard = () => {
         },
       ]);
     }
+    setChatMessages((prev) => prev.filter((c) => c.type !== "status"));
     if (userQueryResult?.data?.data?.initialResponse.length > 0) {
       await typeMessage({
         text: userQueryResult.data.data.initialResponse,
         sender: "system",
         setChatMessages,
+        type: "normal",
         autoScroll,
         bottomRef,
       });
@@ -407,6 +411,7 @@ const Dashboard = () => {
       await typeMessage({
         text: userQueryResult.data.data.finalExplanation,
         sender: "system",
+        type: "normal",
         setChatMessages,
         bottomRef,
         autoScroll,
@@ -427,6 +432,45 @@ const Dashboard = () => {
   //     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   //   }
   // }, [chatMessages, autoScroll]);
+
+  // For socket connection
+
+  useEffect(() => {
+    const newSocket = io("http://localhost:5000", {
+      auth: {
+        userId: "1234",
+      },
+    });
+    setSocket(newSocket);
+    return () => newSocket.close();
+  }, []);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("statusUpdate", async (data) => {
+        if (data?.isScroll == true) {
+          await typeMessage({
+            text: data.message,
+            sender: "system",
+            type: "status",
+            setChatMessages,
+            autoScroll,
+            bottomRef,
+          });
+          bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+        } else {
+          await typeMessage({
+            text: data.message,
+            sender: "system",
+            type: "normal",
+            setChatMessages,
+            autoScroll,
+            bottomRef,
+          });
+        }
+      });
+    }
+  }, [socket]);
 
   useEffect(() => {
     if (inputRef.current) {

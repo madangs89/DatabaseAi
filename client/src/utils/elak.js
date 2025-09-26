@@ -62,9 +62,49 @@ export const getElkLayout = async (nodes, edges) => {
 export const typeMessage = ({
   text,
   sender = "system",
+  type = "normal",
   setChatMessages,
   bottomRef,
-  autoScroll,
+  autoScroll = false,
+}) => {
+  return new Promise((resolve) => {
+    const id = uuidv4();
+    let index = 0;
+
+    // Add empty message first
+    setChatMessages((prev) => {
+      if (type === "status") {
+        // Remove any old status bubbles before adding the new one
+        const filtered = prev.filter((m) => m.type !== "status");
+        return [...filtered, { id, text, sender, type }];
+      }
+      // Normal message → add with empty text, to simulate typing
+      return [...prev, { id, text: "", sender, type }];
+    });
+
+    let interval = setInterval(() => {
+      setChatMessages((prev) =>
+        prev.map((m) => {
+          if (m.id === id) {
+            return { ...m, text: text.slice(0, index++) };
+          }
+          return m;
+        })
+      );
+      if (index > text.length) {
+        clearInterval(interval);
+        resolve(); // ✅ typing finished
+      }
+    }, 6);
+  });
+};
+
+export const typeMessage2 = ({
+  text,
+  sender = "system",
+  setChatMessages,
+  bottomRef,
+  autoScroll = false,
 }) => {
   return new Promise((resolve) => {
     const id = uuidv4();
@@ -86,6 +126,6 @@ export const typeMessage = ({
         clearInterval(interval);
         resolve(); // ✅ typing finished
       }
-    }, 10);
+    }, 6);
   });
 };

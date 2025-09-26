@@ -1,4 +1,6 @@
+import pubClient from "../app.js";
 import client from "../app.js";
+import { sendMessage, sendMessage2 } from "../utils/helpers.service.js";
 import { ai, getApiCodes, getConvKey } from "../utils/lll.service.js";
 
 import { GoogleGenAI, Type } from "@google/genai";
@@ -7,7 +9,7 @@ export const createDBWithLlmCall = async (req, res) => {
     const { prompt, message } = req.body;
 
     console.log(prompt, message);
-    
+
     if (!prompt)
       return res
         .status(400)
@@ -25,6 +27,12 @@ export const createDBWithLlmCall = async (req, res) => {
       return res.json({ data: smallLLMResponse, success: true });
     }
 
+    let id = await pubClient.hGet("onlineUsers", "1234");
+    const { socketId } = JSON.parse(id);
+    sendMessage2(
+      socketId,
+      smallLLMResponse?.initialResponse || "working on your schema"
+    );
     if (smallLLMResponse?.isDbCall === true && smallLLMResponse?.dbConvKey) {
       const cachedData = await client.get(smallLLMResponse.dbConvKey);
       if (cachedData) {
@@ -41,6 +49,21 @@ export const createDBWithLlmCall = async (req, res) => {
           data: JSON.parse(cachedData),
         });
       }
+    }
+
+    let it;
+    if (id) {
+      console.log(socketId, "socketid");
+      let index = 0;
+
+      const newIt = setInterval(() => {
+        sendMessage(socketId, index++);
+      }, 500);
+      clearInterval(newIt);
+
+      it = setInterval(() => {
+        sendMessage(socketId, index++);
+      }, 15000);
     }
 
     const chat = ai.chats.create({
@@ -71,7 +94,7 @@ There must be a 120px gap between schemas (both horizontally and vertically) and
     11. Never use any user name, if user explicitly said also never use the username in the response. make sure your response irrespective of history every response must be able to cache the response.
     JSON format:
     {
-      "initialResponse": "string -- Initial response from AI. Note: Fields under 'entities' are general, human-readable so developers can understand them irrespective of DB. Actual database-specific implementation is in the 'schemas' section. only give text in this field",
+      "initialResponse": "string -- Initial response from AI.It must be below 50 words. Just tell what u are going to do. here no need to express any feelings. Note: Fields under 'entities' are general, human-readable so developers can understand them irrespective of DB. Actual database-specific implementation is in the 'schemas' section. only give text in this field",
       "entities": [
         {
           "name": "string",
@@ -114,6 +137,7 @@ There must be a 120px gap between schemas (both horizontally and vertically) and
     const response = await chat.sendMessage({
       message: smallLLMResponse?.dbPrompt,
     });
+    clearInterval(it);
     console.log("Token usage:", response.usageMetadata);
     console.log("prompt:", prompt);
     console.log("message", message);
