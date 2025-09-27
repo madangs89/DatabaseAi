@@ -6,9 +6,9 @@ import { ai, getApiCodes, getConvKey } from "../utils/lll.service.js";
 import { GoogleGenAI, Type } from "@google/genai";
 export const createDBWithLlmCall = async (req, res) => {
   try {
-    const { prompt, message } = req.body;
+    const { prompt, message , userId } = req.body;
 
-    console.log(prompt, message);
+    console.log(prompt, message , userId);
 
     if (!prompt)
       return res
@@ -27,7 +27,7 @@ export const createDBWithLlmCall = async (req, res) => {
       return res.json({ data: smallLLMResponse, success: true });
     }
 
-    let id = await pubClient.hGet("onlineUsers", "1234");
+    let id = await pubClient.hGet("onlineUsers", userId);
     const { socketId } = JSON.parse(id);
     sendMessage2(
       socketId,
@@ -58,7 +58,7 @@ export const createDBWithLlmCall = async (req, res) => {
 
       const newIt = setInterval(() => {
         sendMessage(socketId, index++);
-      }, 500);
+      }, 100);
       clearInterval(newIt);
 
       it = setInterval(() => {

@@ -311,6 +311,7 @@ const Dashboard = () => {
       "http://localhost:5000/create-db",
       {
         message: inn,
+        userId: auth?.user?._id,
         prompt: isCallingEditApi == false ? llmChatHistory : [],
       }
     );
