@@ -40,6 +40,7 @@ import DatabaseOpen from "../components/DatabaseOpen";
 import CodeCopyOpen from "../components/CodeCopyOpen";
 import RelationShipDbOpen from "../components/RelationShipDbOpen";
 import DashboardRightNav from "../components/DashboardRightNav";
+import { useSelector } from "react-redux";
 
 const TableNode = ({ data }) => {
   const {
@@ -152,6 +153,8 @@ const Dashboard = () => {
   const bottomRef = useRef(null);
   const { fitView } = useReactFlow();
   const [socket, setSocket] = useState(null);
+
+  const auth = useSelector((state) => state?.auth);
 
   const tableData = [
     {
@@ -426,23 +429,23 @@ const Dashboard = () => {
     const isAtBottom = scrollHeight - scrollTop <= clientHeight + 150; // 50px threshold
     setAutoScroll(isAtBottom);
   };
-  // Scroll to bottom For Chat
-  // useEffect(() => {
-  //   if (autoScroll) {
-  //     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  //   }
-  // }, [chatMessages, autoScroll]);
 
   // For socket connection
 
   useEffect(() => {
     const newSocket = io("http://localhost:5000", {
       auth: {
-        userId: "1234",
+        userId: auth?.user?._id,
       },
     });
     setSocket(newSocket);
-    return () => newSocket.close();
+    return () => {
+      if (socket) {
+        console.log("Emitting EndConnection event...");
+        newSocket.emit("EndConnection", { userId: auth?.user?._id });
+        newSocket.close();
+      }
+    };
   }, []);
 
   useEffect(() => {

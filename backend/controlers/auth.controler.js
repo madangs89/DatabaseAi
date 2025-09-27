@@ -1,6 +1,8 @@
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import User from "../models/User.js";
+import { oauth2Client } from "../utils/helper.google.js";
+import User from "../models/user.model.js";
+import axios from "axios";
 
 const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
 const JWT_EXPIRES_IN = "7d";
@@ -8,7 +10,12 @@ const JWT_EXPIRES_IN = "7d";
 // Helper to generate JWT
 const generateToken = (user) => {
   return jwt.sign(
-    { id: user._id, email: user.email, plan: user.plan },
+    {
+      _id: user._id,
+      email: user.email,
+      plan: user.plan,
+      avatarUrl: user.avatarUrl,
+    },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN }
   );
@@ -90,6 +97,7 @@ export const loginWithEmail = async (req, res) => {
       token,
       success: true,
       message: "Login successful",
+      success: true,
     });
   } catch (error) {
     console.error(error);
@@ -100,38 +108,54 @@ export const loginWithEmail = async (req, res) => {
 };
 
 // ==================== OAuth Login/Signup ====================
-// export const oauthLogin = async (req, res) => {
-//   try {
-//     const { provider, providerId, email, name } = req.body; // assume frontend sends these after Google OAuth
+export const oauthLogin = async (req, res) => {
+  try {
+    const { code } = req.body;
+    const googleRes = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(googleRes.tokens);
+    const userRes = await axios.get(
+      "https://www.googleapis.com/oauth2/v2/userinfo",
+      {
+        headers: {
+          Authorization: `Bearer ${googleRes.tokens.access_token}`,
+        },
+      }
+    );
+    const { id, email, name, picture } = userRes.data;
 
-//     let user = await User.findOne({
-//       "oauthProviders.providerId": providerId,
-//       "oauthProviders.provider": provider,
-//     });
+    let user = await User.findOne({ email });
 
-//     if (!user) {
-//       user = await User.findOne({ email });
-//       if (user) {
-//         user.oauthProviders.push({ provider, providerId, email });
-//         await user.save();
-//       } else {
-//         user = await User.create({
-//           name,
-//           email,
-//           oauthProviders: [{ provider, providerId, email }],
-//         });
-//       }
-//     }
+    if (user) {
+      const token = generateToken(user);
+      setTokenCookie(res, token);
+      return res.json({
+        user,
+        token,
+        message: "Login successful",
+        success: true,
+      });
+    }
 
-//     const token = generateToken(user);
-//     setTokenCookie(res, token);
-
-//     return res.json({ user, token });
-//   } catch (error) {
-//     console.error(error);
-//     return res.status(500).json({ error: "Internal server error" });
-//   }
-// };
+    user = new User({
+      email,
+      name,
+      avatarUrl: picture,
+      oauthProviders: [{ provider: "google", providerId: id }],
+    });
+    await user.save();
+    const token = generateToken(user);
+    setTokenCookie(res, token);
+    return res.json({
+      user,
+      token,
+      message: "Login successful",
+      success: true,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
 
 // ==================== Logout ====================
 export const logout = (req, res) => {
@@ -150,13 +174,8 @@ export const getCurrentUser = async (req, res) => {
     const userId = req.user._id;
     if (!userId)
       return res.status(401).json({ message: "Unauthorized", success: false });
-    const user = await User.findById({ _id: userId }).select("-hashedPassword");
-    if (!user)
-      return res
-        .status(401)
-        .json({ message: "User not found", success: false });
     return res.json({
-      user,
+      user: req.user,
       success: true,
       message: "User found successfully",
     });

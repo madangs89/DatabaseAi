@@ -67,3 +67,29 @@ body {
   scrollbar-width: none;
   scrollbar-color: #888 #ccc; /* thumb color | track color */
 }
+
+
+.hide-scrollbar-2::-webkit-scrollbar {
+  width: 6px;   /* Visible but slim */
+  height: 6px;  /* For horizontal scroll */
+}
+
+.hide-scrollbar-2::-webkit-scrollbar-track {
+  background: #111; /* Dark track for black/white theme */
+  border-radius: 3px;
+}
+
+.hide-scrollbar-2::-webkit-scrollbar-thumb {
+  background: #444; /* Visible gray thumb */
+  border-radius: 3px;
+}
+
+.hide-scrollbar-2::-webkit-scrollbar-thumb:hover {
+  background: #666; /* Lighter on hover */
+}
+
+/* Firefox */
+.hide-scrollbar-2 {
+  scrollbar-width: thin;          /* Instead of none */
+  scrollbar-color: #444 #111;     /* thumb | track */
+}

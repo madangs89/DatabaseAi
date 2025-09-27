@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Hero from "./pages/Hero";
 import Login from "./pages/Login";
@@ -11,11 +11,18 @@ import AccountSetting from "./pages/AccountSetting";
 import VersionHistory from "./pages/VersionHistory";
 import LocomotiveScroll from "locomotive-scroll";
 import { ReactFlowProvider } from "reactflow";
+import ProtectedRoute from "./protected/ProtectedRoute";
+import { useDispatch, useSelector } from "react-redux";
+import axios from "axios";
+import { setAuthTrue } from "./redux/slice/authSlice";
+import Project from "./pages/Project";
 
 const App = () => {
+  const isAuth = useSelector((state) => state.auth.isAuth);
   const containerRef = useRef(null);
   const location = useLocation();
   const scrollRef = useRef(null);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -40,6 +47,20 @@ const App = () => {
     }, 100);
   }, [location]);
 
+  useEffect(() => {
+    (async () => {
+      const data = await axios.get(
+        `http://localhost:5000/auth/get-current-user`,
+        {
+          withCredentials: true,
+        }
+      );
+      if (data?.data?.success) {
+        dispatch(setAuthTrue(data?.data));
+      }
+    })();
+  }, []);
+
   return (
     <div
       id="scroll-container"
@@ -51,17 +72,24 @@ const App = () => {
       <div data-scroll-section>
         <Routes>
           <Route path="/" element={<Hero />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
           <Route
             path="/dashboard"
             element={
-              <ReactFlowProvider>
-                <Dashboard />
-              </ReactFlowProvider>
+              <ProtectedRoute>
+                <ReactFlowProvider>
+                  <Dashboard />
+                </ReactFlowProvider>
+              </ProtectedRoute>
             }
           />
-          <Route path="/project/:id" element={<EditorPage />} />
+          <Route
+            path="/project"
+            element={
+              <ProtectedRoute>
+                <Project />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/project/:id/settings" element={<ProjectSetting />} />
           <Route path="/project/:id/history" element={<VersionHistory />} />
           <Route path="/account" element={<AccountSetting />} />

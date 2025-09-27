@@ -17,5 +17,4 @@ const SchemaVersionSchema = new mongoose.Schema({
 });
 
 const SchemaVersion = mongoose.model("SchemaVersion", SchemaVersionSchema);
-
 export default SchemaVersion;

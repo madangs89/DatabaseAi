@@ -35,6 +35,17 @@ io.on("connection", (socket) => {
     userId,
     JSON.stringify({ socketId: socket.id })
   );
+
+  socket.on("EndConnection", (data) => {
+    console.log("EndConnection event received:", data); // Log the data for debugging
+    // Handle any necessary cleanup here, such as removing the user from the online list
+    pubClient.hDel("onlineUsers", userId); // Example cleanup
+  });
+
+  socket.on("disconnect", () => {
+    console.log("a user disconnected: " + userId);
+    pubClient.hDel("onlineUsers", userId);
+  });
 });
 
 export default pubClient;
