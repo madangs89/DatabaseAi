@@ -93,3 +93,8 @@ body {
   scrollbar-width: thin;          /* Instead of none */
   scrollbar-color: #444 #111;     /* thumb | track */
 }
+input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}

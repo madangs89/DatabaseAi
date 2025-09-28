@@ -7,6 +7,7 @@ import llmRouter from "./routes/lll.routes.js";
 import { app, httpServer } from "./app.js";
 import express from "express";
 import authRouter from "./routes/auth.routes.js";
+import projectRouter from "./routes/project.routes.js";
 
 app.use(express.json());
 app.use(
@@ -14,7 +15,6 @@ app.use(
     origin: process.env.FRONTEND_URL,
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    
   })
 );
 app.use(cookieParser());
@@ -26,6 +26,7 @@ app.get("/", (req, res) => {
 
 app.use("/", llmRouter);
 app.use("/auth", authRouter);
+app.use("/project", projectRouter);
 
 console.log("CLIENT ID:", process.env.GOOGLE_CLIENT_ID);
 console.log("CLIENT SECRET:", process.env.GOOGLE_CLIENT_SECRET);

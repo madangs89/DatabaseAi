@@ -73,7 +73,7 @@ const App = () => {
         <Routes>
           <Route path="/" element={<Hero />} />
           <Route
-            path="/dashboard"
+            path="/:id/dashboard"
             element={
               <ProtectedRoute>
                 <ReactFlowProvider>

@@ -41,6 +41,7 @@ import CodeCopyOpen from "../components/CodeCopyOpen";
 import RelationShipDbOpen from "../components/RelationShipDbOpen";
 import DashboardRightNav from "../components/DashboardRightNav";
 import { useSelector } from "react-redux";
+import { useLocation } from "react-router-dom";
 
 const TableNode = ({ data }) => {
   const {
@@ -153,7 +154,10 @@ const Dashboard = () => {
   const bottomRef = useRef(null);
   const { fitView } = useReactFlow();
   const [socket, setSocket] = useState(null);
+  const messageQueue = useRef(Promise.resolve());
 
+  const location = useLocation();
+  let { aiPrompt } = location.state || {};
   const auth = useSelector((state) => state?.auth);
 
   const tableData = [
@@ -285,19 +289,24 @@ const Dashboard = () => {
   // All Refs
   const inputRef = useRef(null);
   // Handling the submit function
-  const handleInputSubmit = async (e) => {
-    e.preventDefault();
-    if (input.length <= 0) {
-      return;
+  const handleInputSubmit = async (e, isAiPrompt = false, aiPrompt = "") => {
+    e?.preventDefault();
+    let inn;
+    if (isAiPrompt) {
+      inn = aiPrompt;
+    } else {
+      inn = input;
     }
 
+    if (inn.length <= 0) {
+      return;
+    }
     setChatOpen(true);
     setCopyOpen(false);
     setDbOpen(false);
     setRelationshipsOpen(false);
     setLoading(true);
 
-    const inn = input;
     setInput("");
     setChatMessages((prev) => [
       ...prev,
@@ -348,8 +357,6 @@ const Dashboard = () => {
         bottomRef,
       });
     }
-
-    setLoading(false);
     if (
       userQueryResult?.data?.data?.entities?.length > 0 &&
       userQueryResult?.data?.data?.relationships?.length > 0
@@ -389,12 +396,12 @@ const Dashboard = () => {
       setNodes(nodes);
       setEdges(edges);
 
-      setSelectedDbData(edges[0]);
+      setSelectedDbData(nodes[0]);
 
       setFitViewChangeTracker((prev) => prev + 1);
       setTimeout(() => {
-        fitView({ padding: 0.2 });
-      }, 100);
+        fitView({ padding: 0.2, duration: 800 }); // smooth zoom
+      }, 50);
       setIsCallingEditApi(true);
     }
     if (userQueryResult?.data?.data?.finalExplanation.length > 0) {
@@ -421,6 +428,8 @@ const Dashboard = () => {
         autoScroll,
       });
     }
+
+    setLoading(false);
   };
 
   // detect user scroll
@@ -431,8 +440,16 @@ const Dashboard = () => {
     setAutoScroll(isAtBottom);
   };
 
-  // For socket connection
+  useEffect(() => {
+    if (aiPrompt && aiPrompt.length > 0) {
+      (async () => {
+        handleInputSubmit({ preventDefault: () => {} }, true, aiPrompt);
+      })();
+    }
+    aiPrompt = "";
+  }, [aiPrompt]);
 
+  // For socket connection
   useEffect(() => {
     const newSocket = io("http://localhost:5000", {
       auth: {
@@ -451,27 +468,29 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (socket) {
-      socket.on("statusUpdate", async (data) => {
-        if (data?.isScroll == true) {
-          await typeMessage({
-            text: data.message,
-            sender: "system",
-            type: "status",
-            setChatMessages,
-            autoScroll,
-            bottomRef,
-          });
-          bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-        } else {
-          await typeMessage({
-            text: data.message,
-            sender: "system",
-            type: "normal",
-            setChatMessages,
-            autoScroll,
-            bottomRef,
-          });
-        }
+      socket.on("statusUpdate", (data) => {
+        messageQueue.current = messageQueue.current.then(async () => {
+          if (data?.isScroll) {
+            await typeMessage({
+              text: data.message,
+              sender: "system",
+              type: "status",
+              setChatMessages,
+              autoScroll,
+              bottomRef,
+            });
+            bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+          } else {
+            await typeMessage({
+              text: data.message,
+              sender: "system",
+              type: "normal",
+              setChatMessages,
+              autoScroll,
+              bottomRef,
+            });
+          }
+        });
       });
     }
   }, [socket]);
@@ -483,10 +502,10 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    // if (nodes.length > 0 && edges.length > 0) {
-    fitView({ padding: 0.2 });
-    // }
-  }, [fitView, fitViewChangeTracker]);
+    if (nodes.length > 0 || edges.length > 0) {
+      fitView({ padding: 0.2, duration: 800 });
+    }
+  }, [nodes, edges, fitView]);
 
   useEffect(() => {
     setNodes((nds) =>
@@ -584,6 +603,9 @@ const Dashboard = () => {
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               fitView
+              onInit={(reactFlowInstance) => {
+                reactFlowInstance.fitView({ padding: 0.2, duration: 800 });
+              }}
               minZoom={0.1}
               maxZoom={2}
               proOptions={{ hideAttribution: true }}

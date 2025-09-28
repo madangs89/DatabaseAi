@@ -6,9 +6,9 @@ import { ai, getApiCodes, getConvKey } from "../utils/lll.service.js";
 import { GoogleGenAI, Type } from "@google/genai";
 export const createDBWithLlmCall = async (req, res) => {
   try {
-    const { prompt, message , userId } = req.body;
+    const { prompt, message, userId } = req.body;
 
-    console.log(prompt, message , userId);
+    console.log(prompt, message, userId);
 
     if (!prompt)
       return res
@@ -150,6 +150,112 @@ There must be a 120px gap between schemas (both horizontally and vertically) and
       data: json,
       token: response.usageMetadata,
       success: true,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error", success: false });
+  }
+};
+
+export const suggestionModel = async (req, res) => {
+  console.log("hit the suggestion route");
+  try {
+    const { title, description } = req.body;
+    if (!title) {
+      return res
+        .status(400)
+        .json({ message: "Title is required", success: false });
+    }
+
+    const chat = ai.chats.create({
+      model: "gemini-2.5-flash-lite",
+      history: [],
+      config: {
+        systemInstruction: `
+        You are DBDescGen, an expert AI that generates **concise database-focused project descriptions**.
+
+Task:
+Generate a short, clear, **maximum 70-word description** of the database for any app or project. Focus on entities, relationships, and core database functionality. 
+
+Rules:
+1. Respond in JSON format ONLY.
+2. Output **only one field**: "description".
+3. Do NOT include full schema, fields, or modules.
+4. Be concise, professional, and database-focused.
+5. You must include the title in the response.
+
+JSON format:
+{
+  "description": "string -- a short, 70-word database-focused project description. and U Must includes key entities"
+}
+    `,
+      },
+    });
+
+    const response = await chat.sendMessage({
+      message: `title: ${title} + " " + description: ${description}`,
+    });
+    let raw = response?.candidates[0]?.content.parts[0]?.text;
+    raw = raw.replace(/```json|```/g, "").trim();
+    let json = JSON.parse(raw);
+    return res.json({
+      data: json,
+      token: response.usageMetadata,
+      success: true,
+      message: "Description generated successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error", success: false });
+  }
+};
+export const PromptGenerator = async (req, res) => {
+  console.log("hit the prompt route");
+  try {
+    const { title, description } = req.body;
+    if (!title) {
+      return res
+        .status(400)
+        .json({ message: "Title is required", success: false });
+    }
+
+    const chat = ai.chats.create({
+      model: "gemini-2.5-flash-lite",
+      history: [],
+      config: {
+        systemInstruction: `
+        You are DBDescGen, an expert AI that generates **concise database-focused project LLm prompts**.
+
+Task:
+Generate a short, clear, **maximum 70-word description** of the database for any app or project. Focus on entities, relationships, and core database functionality. 
+
+Rules:
+1. Respond in JSON format ONLY.
+2. Output **only one field**: "prompt".
+3. Do NOT include full schema, fields, or modules but u must need to include all production required entities.
+4. Be concise, professional, and database-focused.
+5. You must include the title in the response.
+6. No need to include relationship details.
+
+JSON format:
+{
+  "prompt": "string -- a short, 70-word database-focused project prompt to generate the schema and code. and U Must includes all production required entities, no need of relationship details"
+}
+    `,
+      },
+    });
+
+    const response = await chat.sendMessage({
+      message: `title: ${title} + " " + description: ${description}`,
+    });
+    let raw = response?.candidates[0]?.content.parts[0]?.text;
+    raw = raw.replace(/```json|```/g, "").trim();
+    let json = JSON.parse(raw);
+    return res.json({
+      data: json,
+      token: response.usageMetadata,
+      success: true,
+      message: "Prompt generated successfully",
     });
   } catch (error) {
     console.error(error);
