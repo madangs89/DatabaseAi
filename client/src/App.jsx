@@ -16,9 +16,12 @@ import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
 import { setAuthTrue } from "./redux/slice/authSlice";
 import Project from "./pages/Project";
+import { setPageLoading } from "./redux/slice/loadingSlice";
+import SpinnerLoader from "./components/loaders/SpinnerLoader";
 
 const App = () => {
   const isAuth = useSelector((state) => state.auth.isAuth);
+  const loadingSlice = useSelector((state) => state.loading);
   const containerRef = useRef(null);
   const location = useLocation();
   const scrollRef = useRef(null);
@@ -48,6 +51,7 @@ const App = () => {
   }, [location]);
 
   useEffect(() => {
+    dispatch(setPageLoading(true));
     (async () => {
       const data = await axios.get(
         `http://localhost:5000/auth/get-current-user`,
@@ -58,8 +62,17 @@ const App = () => {
       if (data?.data?.success) {
         dispatch(setAuthTrue(data?.data));
       }
+      dispatch(setPageLoading(false));
     })();
   }, []);
+
+  if (loadingSlice?.pageLoading) {
+    return (
+      <div className="flex justify-center bg-black items-center w-full h-screen">
+        <SpinnerLoader />
+      </div>
+    );
+  }
 
   return (
     <div

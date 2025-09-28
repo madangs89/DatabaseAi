@@ -10,14 +10,14 @@ export const loadingSlice = createSlice({
   name: "loading",
   initialState,
   reducers: {
-    setPageLoading: (state) => {
-      state.pageLoading = true;
+    setPageLoading: (state, action) => {
+      state.pageLoading = action.payload;
     },
-    setButtonLoading: (state) => {
-      state.buttonLoading = true;
+    setButtonLoading: (state, action) => {
+      state.buttonLoading = action.payload;
     },
-    setSmallButtonLoading: (state) => {
-      state.smallButtonLoading = true;
+    setSmallButtonLoading: (state, action) => {
+      state.smallButtonLoading = action.payload;
     },
   },
 });

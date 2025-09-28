@@ -200,7 +200,7 @@ export default function Project() {
 
   useEffect(() => {
     const filteredProjects = projects.filter((project) =>
-      project.title.toLowerCase().includes(search.toLowerCase())
+      project.title.toLowerCase().trim().includes(search.toLowerCase())
     );
     setFilteredProjects(filteredProjects);
   }, [search, projects]);
@@ -236,8 +236,7 @@ export default function Project() {
     <div className="bg-black border-none text-gray-200 h-screen flex flex-col">
       {/* Header */}
       <header
-        onClick={() => navigate("/dashboard")}
-        className="flex items-center justify-between border-b border-[#262626] px-6 py-4 bg-black cursor-pointer"
+        className="flex items-center justify-between border-b border-[#262626] px-6 py-4 bg-black "
       >
         <div className="flex items-center gap-3 cursor-pointer">
           <svg
@@ -354,7 +353,7 @@ export default function Project() {
         )}
         {/* Sidebar */}
         {/* Sidebar */}
-        <aside className="w-96 flex flex-col bg-[#111] border-l border-[#262626] h-full">
+        <aside className="w-96  flex-col hidden lg:flex bg-[#111] border-l border-[#262626] h-full">
           {/* Add Project */}
           <div className="p-6 border-b border-[#262626] flex-1 flex flex-col">
             <h2 className="text-lg font-semibold mb-4 text-white">
