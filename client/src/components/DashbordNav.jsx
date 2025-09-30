@@ -3,7 +3,7 @@ import logoIcon from "../assets/logoIcon.png";
 import { ArrowLeft, Bell, CircleUser, MoveLeft, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-const DashbordNav = ({ selectedTab, setSelectedTab }) => {
+const DashbordNav = ({ selectedTab, setSelectedTab, projectTitle }) => {
   const navigate = useNavigate();
   return (
     <nav className="h-16 py-10  w-full pr-3 sticky left-0 top-0 z-[99999] bg-black border-b-[0.5px] border-[#262626] flex justify-between items-center ">
@@ -24,7 +24,7 @@ const DashbordNav = ({ selectedTab, setSelectedTab }) => {
               ></path>
             </svg>
             <h1 className="text-lg inter-font text-white font-bold">
-              E-commerce Platform
+              {projectTitle}
             </h1>
           </div>
           <p className="text-xs  text-neutral-400">main-branch</p>

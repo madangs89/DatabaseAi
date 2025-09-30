@@ -61,7 +61,7 @@ subClient.subscribe("userChat", async (data) => {
       {
         $push: {
           messages: {
-            role: "user",
+            sender: "user",
             text: message,
           },
         },
@@ -89,7 +89,7 @@ subClient.subscribe("smallLLMResponse", async (data) => {
       {
         $push: {
           messages: {
-            role: "system",
+            sender: "system",
             text: message,
           },
         },

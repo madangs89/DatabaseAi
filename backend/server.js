@@ -59,7 +59,7 @@ const processErrorHandler = async () => {
 
         await Conversation.findOneAndUpdate(
           { projectId },
-          { $push: { messages: { role: "user", text: message } } },
+          { $push: { messages: { sender: "user", text: message } } },
           { upsert: true, new: true }
         );
 
@@ -71,7 +71,7 @@ const processErrorHandler = async () => {
 
         await Conversation.findOneAndUpdate(
           { projectId },
-          { $push: { messages: { role: "system", text: message } } },
+          { $push: { messages: { sender: "system", text: message } } },
           { upsert: true, new: true }
         );
       }

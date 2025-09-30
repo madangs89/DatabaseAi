@@ -4,5 +4,5 @@ import { getPaginatedMessages } from "../controlers/conversataion.controler.js";
 
 const conversationRouter = express.Router();
 
-conversationRouter.get("/:projectId", getPaginatedMessages);
+conversationRouter.get("/chat/:projectId", getPaginatedMessages);
 export default conversationRouter;

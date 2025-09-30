@@ -15,7 +15,6 @@ export const getSchemaById = async (req, res) => {
         .status(404)
         .json({ message: "Project not found", success: false });
     }
-
     const schema = await SchemaVersion.findOne({
       projectId: projectId,
     });

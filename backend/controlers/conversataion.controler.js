@@ -18,7 +18,7 @@ export const getPaginatedMessages = async (req, res) => {
     const limitNumber = parseInt(limit, 10);
 
     const result = await Conversation.aggregate([
-      { $match: { projectId: mongoose.Types.ObjectId(projectId) } },
+      { $match: { projectId: new mongoose.Types.ObjectId(projectId) } },
       { $unwind: "$messages" },
       { $sort: { "messages.createdAt": 1 } }, // oldest first
       { $skip: (pageNumber - 1) * limitNumber },

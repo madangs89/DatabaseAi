@@ -1,9 +1,13 @@
 import { createSlice } from "@reduxjs/toolkit";
+import Dashboard from "../../pages/Dashboard";
 
 const initialState = {
   pageLoading: false,
   buttonLoading: false,
   smallButtonLoading: false,
+  dashboardPageLoading: false,
+  chatLoading: false,
+  entityLoading: false,
 };
 
 export const loadingSlice = createSlice({
@@ -19,11 +23,26 @@ export const loadingSlice = createSlice({
     setSmallButtonLoading: (state, action) => {
       state.smallButtonLoading = action.payload;
     },
+    setDashboardPageLoading: (state, action) => {
+      state.dashboardPageLoading = action.payload;
+    },
+    setChatLoading: (state, action) => {
+      state.chatLoading = action.payload;
+    },
+    setEntityLoading: (state, action) => {
+      state.entityLoading = action.payload;
+    },
   },
 });
 
 // Action creators are generated for each case reducer function
-export const { setPageLoading, setButtonLoading, setSmallButtonLoading } =
-  loadingSlice.actions;
+export const {
+  setPageLoading,
+  setButtonLoading,
+  setSmallButtonLoading,
+  setDashboardPageLoading,
+  setChatLoading,
+  setEntityLoading,
+} = loadingSlice.actions;
 
 export const loadingReducer = loadingSlice.reducer;

@@ -40,8 +40,16 @@ import DatabaseOpen from "../components/DatabaseOpen";
 import CodeCopyOpen from "../components/CodeCopyOpen";
 import RelationShipDbOpen from "../components/RelationShipDbOpen";
 import DashboardRightNav from "../components/DashboardRightNav";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useParams } from "react-router-dom";
+import {
+  setChatLoading,
+  setDashboardPageLoading,
+  setEntityLoading,
+  setPageLoading,
+} from "../redux/slice/loadingSlice";
+import SpinnerLoader from "../components/loaders/SpinnerLoader";
+import toast from "react-hot-toast";
 
 const TableNode = ({ data }) => {
   const {
@@ -135,6 +143,7 @@ const nodeTypes = { tableNode: TableNode };
 const Dashboard = () => {
   const [theme, setTheme] = useState("dark");
   const [selectedTab, setSelectedTab] = useState("editor");
+  const [projectTitle, setProjectTitle] = useState("");
   const [autoScroll, setAutoScroll] = useState(true);
   const [chatOpen, setChatOpen] = useState(true);
   const [dbOpen, setDbOpen] = useState(false);
@@ -158,6 +167,8 @@ const Dashboard = () => {
   const location = useLocation();
   let { aiPrompt } = location.state || {};
   const auth = useSelector((state) => state?.auth);
+  const dispatch = useDispatch();
+  const loadingSlice = useSelector((state) => state.loading);
 
   const { id } = useParams();
 
@@ -323,7 +334,7 @@ const Dashboard = () => {
         message: inn,
         userId: auth?.user?._id,
         projectId: id,
-        prompt: isCallingEditApi == false ? llmChatHistory : [],
+        prompt: llmChatHistory,
       },
       {
         withCredentials: true,
@@ -332,7 +343,6 @@ const Dashboard = () => {
     console.log(userQueryResult.data.data);
 
     if (
-      isCallingEditApi == false &&
       userQueryResult?.data?.data?.initialResponse.length > 0
     ) {
       setLlmChatHistory((prev) => [
@@ -373,10 +383,10 @@ const Dashboard = () => {
         data: {
           title: t?.name,
           fields: t?.fields,
-          theme,
           code: t?.code?.length ? t.code : null,
           id: t.name.toLowerCase(),
           description: t?.description ? t.description : null,
+          theme,
           setSelectedDb, // pass the setter
           selectedDb,
           setDbOpen,
@@ -449,11 +459,94 @@ const Dashboard = () => {
     if (aiPrompt && aiPrompt.length > 0) {
       (async () => {
         handleInputSubmit({ preventDefault: () => {} }, true, aiPrompt);
+        aiPrompt = "";
+        return;
       })();
     }
-    aiPrompt = "";
   }, [aiPrompt]);
 
+  useEffect(() => {
+    (async () => {
+      dispatch(setDashboardPageLoading(true));
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/project/${id}`,
+          { withCredentials: true }
+        );
+        if (res.data.success) {
+          setProjectTitle(res.data.data.title);
+        }
+        dispatch(setDashboardPageLoading(false));
+      } catch (error) {
+        toast.error("Unable to fetch project");
+        dispatch(setDashboardPageLoading(false));
+      }
+    })();
+    (async () => {
+      dispatch(setEntityLoading(true));
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/schema/${id}`,
+          { withCredentials: true }
+        );
+        if (res.data.success) {
+          console.log(res.data.data);
+
+          let nodes = res?.data?.data?.nodes.map((i) => {
+            return {
+              id: i.id.toLowerCase(),
+              type: "tableNode",
+              position: i.position,
+              data: {
+                ...i.data,
+                theme,
+                setSelectedDb, // pass the setter
+                selectedDb,
+                setDbOpen,
+                setSelectedDbData,
+                setRelationshipsOpen,
+                setChatOpen,
+                loading,
+                setCopyOpen,
+              },
+            };
+          });
+
+          let code = "";
+          nodes.forEach((node) => {
+            code += node.data.code;
+          });
+          setLlmCodeFromServer(code);
+          setNodes(nodes);
+          let edges = res?.data?.data?.edges.map((e) => {
+            return { ...e, style: { stroke: "gray", strokeWidth: 2 } };
+          });
+          setEdges(edges);
+        }
+        dispatch(setEntityLoading(false));
+      } catch (error) {
+        toast.error("Unable to fetch schema");
+        dispatch(setEntityLoading(false));
+      }
+    })();
+    (async () => {
+      try {
+        dispatch(setChatLoading(true));
+        const chat = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/conversation/chat/${id}`
+        );
+
+        if (chat.data.success) {
+          setChatMessages(chat?.data?.data);
+        }
+        dispatch(setChatLoading(false));
+        bottomRef.current.scrollIntoView({ behavior: "smooth" });
+      } catch (error) {
+        toast.error("Unable to fetch Chat");
+        dispatch(setChatLoading(false));
+      }
+    })();
+  }, [id, dispatch]);
   // For socket connection
   useEffect(() => {
     const newSocket = io("http://localhost:5000", {
@@ -543,9 +636,21 @@ const Dashboard = () => {
     }
   }, [relationshipsOpen, chatOpen, dbOpen, copyOpen]);
 
+  if (loadingSlice?.dashboardPageLoading) {
+    return (
+      <div className="flex justify-center bg-black items-center w-full h-screen">
+        <SpinnerLoader />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full overflow-hidden dm-sans-font relative bg-black h-screen flex-col flex">
-      <DashbordNav selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
+      <DashbordNav
+        selectedTab={selectedTab}
+        projectTitle={projectTitle}
+        setSelectedTab={setSelectedTab}
+      />
       <div className="w-full h-full overflow-hidden flex">
         {/* LEFT HALF: ReactFlow canvas */}
         <div className="w-[67%] overflow-hidden p-2 flex-shrink-0 items-center justify-center gap-4  border-r-[0.5px] border-[#262626] h-full flex flex-col">
