@@ -69,6 +69,26 @@ const TableNode = ({ data }) => {
     setSelectedDbData,
   } = data;
 
+  const neutralBgColors = [
+    "bg-gray-700",
+    "bg-[#78350f]",
+    "bg-[#14532d]",
+    "bg-[#164e63]",
+    "bg-[#1e3a8a]",
+    "bg-[#4a044e]",
+    "bg-[#500724]",
+    "bg-gray-800", // neutral dark gray
+    "bg-slate-800", // cool gray-blue
+    "bg-indigo-900", // deep indigo
+    "bg-purple-900", // rich purple
+    "bg-emerald-900", // dark green
+    "bg-teal-900", // dark teal
+    "bg-rose-900", // muted dark red/pink
+    "bg-amber-900", // dark golden
+    "bg-cyan-900", // deep cyan
+    "bg-fuchsia-900",
+  ];
+
   const themeStyles = {
     dark: {
       background: "#1e1e1e",
@@ -80,10 +100,15 @@ const TableNode = ({ data }) => {
       // border: "1px solid #ccc",
     },
   };
+  const [index, setIndex] = useState(0);
 
+  // Run once when the node mounts
+  useEffect(() => {
+    setIndex(Math.floor(Math.random() * neutralBgColors.length)); // pick random color
+  }, []);
   return (
     <div
-      className={`border ${
+      className={`border  ${
         title === selectedDb ? "border-blue-500" : "border-black"
       } cursor-pointer ${loading && "pulseAnime"}`}
       onClick={() => {
@@ -112,12 +137,17 @@ const TableNode = ({ data }) => {
             : "0 4px 12px rgba(0,0,0,0.15)",
       }}
     >
-      <h3 style={{ marginBottom: "5px" }}>{title}</h3>
+      <h3
+        className={`font-bold text-lg ${neutralBgColors[index]} text-center py-2 `}
+        style={{ marginBottom: "5px" }}
+      >
+        {title}
+      </h3>
       <table style={{ width: "100%", fontSize: "14px" }}>
         <tbody>
           {fields?.map((f, index) => (
             <tr key={f.name + index}>
-              <td>{f.name}</td>
+              <td className="text-lg">{f.name}</td>
               <td
                 style={{
                   textAlign: "right",
@@ -167,9 +197,12 @@ const Dashboard = () => {
   const location = useLocation();
   let { aiPrompt } = location.state || {};
   const auth = useSelector((state) => state?.auth);
+  const initialScrollDone = useRef(false);
+  const endRef = useRef(null);
   const dispatch = useDispatch();
   const loadingSlice = useSelector((state) => state.loading);
 
+  const [index, setIndex] = useState(0);
   const { id } = useParams();
 
   const tableData = [
@@ -246,6 +279,8 @@ const Dashboard = () => {
       setSelectedDb, // pass the setter
       selectedDb,
       setDbOpen,
+      index,
+      setIndex,
       setChatOpen,
       setCopyOpen,
       loading,
@@ -328,123 +363,128 @@ const Dashboard = () => {
     setTimeout(() => {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);
-    const userQueryResult = await axios.post(
-      "http://localhost:5000/create-db",
-      {
-        message: inn,
-        userId: auth?.user?._id,
-        projectId: id,
-        prompt: llmChatHistory,
-      },
-      {
-        withCredentials: true,
+
+    try {
+      const userQueryResult = await axios.post(
+        "http://localhost:5000/create-db",
+        {
+          message: inn,
+          userId: auth?.user?._id,
+          projectId: id,
+          prompt: llmChatHistory,
+        },
+        {
+          withCredentials: true,
+        }
+      );
+      console.log(userQueryResult.data.data);
+
+      if (userQueryResult?.data?.data?.initialResponse.length > 0) {
+        setLlmChatHistory((prev) => [
+          ...prev,
+          { role: "user", parts: [{ text: inn }] },
+        ]);
+        setLlmChatHistory((prev) => [
+          ...prev,
+          {
+            role: "model",
+            parts: [
+              {
+                text: JSON.stringify(userQueryResult?.data?.data),
+              },
+            ],
+          },
+        ]);
       }
-    );
-    console.log(userQueryResult.data.data);
-
-    if (
-      userQueryResult?.data?.data?.initialResponse.length > 0
-    ) {
-      setLlmChatHistory((prev) => [
-        ...prev,
-        { role: "user", parts: [{ text: inn }] },
-      ]);
-      setLlmChatHistory((prev) => [
-        ...prev,
-        {
-          role: "model",
-          parts: [
-            {
-              text: JSON.stringify(userQueryResult?.data?.data),
-            },
-          ],
-        },
-      ]);
-    }
-    setChatMessages((prev) => prev.filter((c) => c.type !== "status"));
-    if (userQueryResult?.data?.data?.initialResponse.length > 0) {
-      await typeMessage({
-        text: userQueryResult.data.data.initialResponse,
-        sender: "system",
-        setChatMessages,
-        type: "normal",
-        autoScroll,
-        bottomRef,
-      });
-    }
-    if (
-      userQueryResult?.data?.data?.entities?.length > 0 &&
-      userQueryResult?.data?.data?.relationships?.length > 0
-    ) {
-      let nodes = userQueryResult?.data?.data?.entities.map((t) => ({
-        id: t.name.toLowerCase(),
-        type: "tableNode",
-        position: t.pos,
-        data: {
-          title: t?.name,
-          fields: t?.fields,
-          code: t?.code?.length ? t.code : null,
+      setChatMessages((prev) => prev.filter((c) => c.type !== "status"));
+      if (userQueryResult?.data?.data?.initialResponse.length > 0) {
+        await typeMessage({
+          text: userQueryResult.data.data.initialResponse,
+          sender: "system",
+          setChatMessages,
+          type: "normal",
+          autoScroll,
+          bottomRef,
+        });
+      }
+      if (
+        userQueryResult?.data?.data?.entities?.length > 0 &&
+        userQueryResult?.data?.data?.relationships?.length > 0
+      ) {
+        let nodes = userQueryResult?.data?.data?.entities.map((t) => ({
           id: t.name.toLowerCase(),
-          description: t?.description ? t.description : null,
-          theme,
-          setSelectedDb, // pass the setter
-          selectedDb,
-          setDbOpen,
-          setSelectedDbData,
-          setRelationshipsOpen,
-          setChatOpen,
-          loading,
-          setCopyOpen,
-        },
-      }));
+          type: "tableNode",
+          position: t.pos,
+          data: {
+            title: t?.name,
+            fields: t?.fields,
+            code: t?.code?.length ? t.code : null,
+            id: t.name.toLowerCase(),
+            description: t?.description ? t.description : null,
+            theme,
+            setSelectedDb, // pass the setter
+            selectedDb,
+            setDbOpen,
+            index,
+            setIndex,
+            setSelectedDbData,
+            setRelationshipsOpen,
+            setChatOpen,
+            loading,
+            setCopyOpen,
+          },
+        }));
 
-      let edges = userQueryResult?.data?.data?.relationships.map((t) => ({
-        id: uuidv4(),
-        source: t?.source.toLowerCase(),
-        target: t?.target.toLowerCase(),
-        data: { type: t?.type, description: t?.description },
-        style: { stroke: "gray", strokeWidth: 2 },
-      }));
-      nodes.forEach((node) => {
-        setLlmCodeFromServer((prev) => prev + node.data.code);
-      });
-      setNodes(nodes);
-      setEdges(edges);
+        let edges = userQueryResult?.data?.data?.relationships.map((t) => ({
+          id: uuidv4(),
+          source: t?.source.toLowerCase(),
+          target: t?.target.toLowerCase(),
+          data: { type: t?.type, description: t?.description },
+          style: { stroke: "gray", strokeWidth: 2 },
+        }));
+        nodes.forEach((node) => {
+          setLlmCodeFromServer((prev) => prev + node.data.code);
+        });
+        setSelectedDbData(nodes[0]);
 
-      setSelectedDbData(nodes[0]);
+        setNodes(nodes);
+        setEdges(edges);
 
-      setFitViewChangeTracker((prev) => prev + 1);
-      setTimeout(() => {
-        fitView({ padding: 0.2, duration: 800 }); // smooth zoom
-      }, 50);
-      setIsCallingEditApi(true);
+        setFitViewChangeTracker((prev) => prev + 1);
+        setTimeout(() => {
+          fitView({ padding: 0.2, duration: 800 }); // smooth zoom
+        }, 50);
+        setIsCallingEditApi(true);
+      }
+      if (userQueryResult?.data?.data?.finalExplanation.length > 0) {
+        setLlmChatHistory((prev) => [
+          ...prev,
+          {
+            role: "model",
+            parts: [
+              {
+                text: JSON.stringify(
+                  userQueryResult?.data?.data?.finalExplanation
+                ),
+              },
+            ],
+          },
+        ]);
+
+        await typeMessage({
+          text: userQueryResult.data.data.finalExplanation,
+          sender: "system",
+          type: "normal",
+          setChatMessages,
+          bottomRef,
+          autoScroll,
+        });
+      }
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      toast.error(error.response.data.message);
     }
-    if (userQueryResult?.data?.data?.finalExplanation.length > 0) {
-      setLlmChatHistory((prev) => [
-        ...prev,
-        {
-          role: "model",
-          parts: [
-            {
-              text: JSON.stringify(
-                userQueryResult?.data?.data?.finalExplanation
-              ),
-            },
-          ],
-        },
-      ]);
-
-      await typeMessage({
-        text: userQueryResult.data.data.finalExplanation,
-        sender: "system",
-        type: "normal",
-        setChatMessages,
-        bottomRef,
-        autoScroll,
-      });
-    }
-
-    setLoading(false);
   };
 
   // detect user scroll
@@ -456,6 +496,11 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
+    if (nodes.length > 0 && !selectedDbData?.id) {
+      setSelectedDbData(nodes[0]);
+    }
+  }, [nodes]);
+  useEffect(() => {
     if (aiPrompt && aiPrompt.length > 0) {
       (async () => {
         handleInputSubmit({ preventDefault: () => {} }, true, aiPrompt);
@@ -466,6 +511,9 @@ const Dashboard = () => {
   }, [aiPrompt]);
 
   useEffect(() => {
+    if (aiPrompt && aiPrompt.length <= 0) {
+      return;
+    }
     (async () => {
       dispatch(setDashboardPageLoading(true));
       try {
@@ -507,6 +555,8 @@ const Dashboard = () => {
                 setRelationshipsOpen,
                 setChatOpen,
                 loading,
+                index,
+                setIndex,
                 setCopyOpen,
               },
             };
@@ -516,6 +566,9 @@ const Dashboard = () => {
           nodes.forEach((node) => {
             code += node.data.code;
           });
+          setSelectedDbData(nodes[0]);
+          console.log(selectedDbData);
+
           setLlmCodeFromServer(code);
           setNodes(nodes);
           let edges = res?.data?.data?.edges.map((e) => {
@@ -535,18 +588,18 @@ const Dashboard = () => {
         const chat = await axios.get(
           `${import.meta.env.VITE_BACKEND_URL}/conversation/chat/${id}`
         );
-
         if (chat.data.success) {
           setChatMessages(chat?.data?.data);
         }
         dispatch(setChatLoading(false));
-        bottomRef.current.scrollIntoView({ behavior: "smooth" });
       } catch (error) {
+        console.log("unable to fetch chat", error);
+
         toast.error("Unable to fetch Chat");
         dispatch(setChatLoading(false));
       }
     })();
-  }, [id, dispatch]);
+  }, [id, dispatch, aiPrompt]);
   // For socket connection
   useEffect(() => {
     const newSocket = io("http://localhost:5000", {
@@ -598,6 +651,22 @@ const Dashboard = () => {
       inputRef.current.focus();
     }
   }, []);
+
+  useEffect(() => {
+    if (!initialScrollDone.current && chatMessages.length > 0) {
+      const scrollToBottom = () => {
+        // bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+        chatContainerRef.current.scrollTop =
+          chatContainerRef.current.scrollHeight;
+        initialScrollDone.current = true; // mark as done
+      };
+
+      // Wait for DOM to render fully (especially dynamic Markdown)
+      const id = requestAnimationFrame(scrollToBottom);
+
+      return () => cancelAnimationFrame(id);
+    }
+  }, [chatMessages]);
 
   useEffect(() => {
     if (nodes.length > 0 || edges.length > 0) {
@@ -707,29 +776,35 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="flex-1 h-full w-full bg-[#171717]  rounded-lg flex-shrink-0">
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              fitView
-              onInit={(reactFlowInstance) => {
-                reactFlowInstance.fitView({ padding: 0.2, duration: 800 });
-              }}
-              minZoom={0.1}
-              maxZoom={2}
-              proOptions={{ hideAttribution: true }}
-              nodeTypes={nodeTypes}
-            >
-              <Background variant="dots" gap={20} size={1} color={"black"} />
-              <Controls
-                showZoom={true}
-                showFitView={true}
-                showInteractive={true}
-                position="bottom-right"
-                className="bg-[#171717] border-[0.5px] border-[#262626]"
-              />
-            </ReactFlow>
+            {loadingSlice?.setEntityLoading ? (
+              <div className="flex items-center justify-center w-full h-full">
+                <SpinnerLoader />
+              </div>
+            ) : (
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                fitView
+                onInit={(reactFlowInstance) => {
+                  reactFlowInstance.fitView({ padding: 0.2, duration: 800 });
+                }}
+                minZoom={0.1}
+                maxZoom={2}
+                proOptions={{ hideAttribution: true }}
+                nodeTypes={nodeTypes}
+              >
+                <Background variant="dots" gap={20} size={1} color={"black"} />
+                <Controls
+                  showZoom={true}
+                  showFitView={true}
+                  showInteractive={true}
+                  position="bottom-right"
+                  className="bg-[#171717] border-[0.5px] border-[#262626]"
+                />
+              </ReactFlow>
+            )}
             {/* </div> */}
           </div>
           <form

@@ -1,3 +1,4 @@
+import pubClient from "../app.js";
 import Project from "../models/project.model.js";
 
 export const createProject = async (req, res) => {
@@ -117,7 +118,7 @@ export const deleteProject = async (req, res) => {
         message: "Unauthorized to delete this project",
       });
     }
-
+    pubClient.publish("deleteProject", JSON.stringify({ projectId: id }));
     await Project.findByIdAndDelete(req.params.id);
     res
       .status(200)

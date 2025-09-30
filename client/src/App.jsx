@@ -73,13 +73,12 @@ const App = () => {
       </div>
     );
   }
-
   return (
     <div
       id="scroll-container"
       data-scroll-container
       ref={containerRef}
-      className="bg-black min-h-screen relative w-full overflow-x-hidden"
+      className="bg-black min-h-screen relative w-full overflow-hidden"
     >
       <Navbar />
       <div data-scroll-section>

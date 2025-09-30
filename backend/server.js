@@ -40,8 +40,9 @@ console.log("CLIENT SECRET:", process.env.GOOGLE_CLIENT_SECRET);
 
 const processErrorHandler = async () => {
   while (true) {
+    let res;
     try {
-      const res = await pubClient.lPop("errorQueue");
+      let res = await pubClient.lPop("errorQueue");
       if (!res) {
         await sleep(1000);
         continue;

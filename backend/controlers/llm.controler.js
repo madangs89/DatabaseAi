@@ -168,6 +168,14 @@ There must be a 120px gap between schemas (both horizontally and vertically) and
         completionTokens: candidatesTokenCount,
       })
     );
+    pubClient.publish(
+      "fullLLMResponse",
+      JSON.stringify({
+        data: json,
+        projectId,
+        userId,
+      })
+    );
     client.set(smallLLMResponse?.dbConvKey, JSON.stringify(json));
     return res.json({
       data: json,

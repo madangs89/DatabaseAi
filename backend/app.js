@@ -201,6 +201,7 @@ subClient.subscribe("nodesAndEdges", async (data) => {
         new: true,
       }
     );
+    console.log("saved to node and edges");
   } catch (error) {
     const ErrorQueueData = {
       payload: JSON.parse(data),
@@ -244,4 +245,17 @@ subClient.subscribe("token", async (data) => {
     pubClient.rPush("errorQueue", JSON.stringify(ErrorQueueData));
   }
 });
+
+subClient.subscribe("deleteProject", async (data) => {
+  try {
+    const { projectId } = JSON.parse(data);
+    if (!projectId) return;
+    await Conversation.deleteMany({ projectId });
+    await SchemaVersion.deleteMany({ projectId });
+    console.log(`Deleted all data for project ${projectId}`);
+  } catch (error) {
+    console.error("Error deleting project data:", error);
+  }
+});
+
 export default pubClient;
