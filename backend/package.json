@@ -23,6 +23,7 @@
     "express": "^5.1.0",
     "googleapis": "^160.0.0",
     "ioredis": "^5.8.0",
+    "json5": "^2.2.3",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.18.1",
     "redis": "^5.8.2",
