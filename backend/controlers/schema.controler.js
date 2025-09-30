@@ -4,7 +4,6 @@ import SchemaVersion from "../models/schema.model.js";
 export const getSchemaById = async (req, res) => {
   try {
     const { projectId } = req.params;
-
     if (!projectId) {
       return res
         .status(400)

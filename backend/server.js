@@ -11,6 +11,8 @@ import projectRouter from "./routes/project.routes.js";
 import Conversation from "./models/conversatoin.model.js";
 import SchemaVersion from "./models/schema.model.js";
 import Usage from "./models/usage.model.js";
+import schemaRouter from "./routes/schema.routes.js";
+import conversationRouter from "./routes/conversation.routes.js";
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 app.use(express.json());
 app.use(
@@ -30,6 +32,8 @@ app.get("/", (req, res) => {
 app.use("/", llmRouter);
 app.use("/auth", authRouter);
 app.use("/project", projectRouter);
+app.use("/schema", schemaRouter);
+app.use("/conversation", conversationRouter);
 
 console.log("CLIENT ID:", process.env.GOOGLE_CLIENT_ID);
 console.log("CLIENT SECRET:", process.env.GOOGLE_CLIENT_SECRET);

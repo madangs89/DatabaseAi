@@ -52,7 +52,6 @@ export const createDBWithLlmCall = async (req, res) => {
         console.log("Cache hit");
         // const d = await getApiCodes(cachedData);
         cachedData = JSON.parse(cachedData);
-
         pubClient.publish(
           "fullLLMResponse",
           JSON.stringify({
