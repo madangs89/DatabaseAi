@@ -7,20 +7,20 @@ const MessageSchema = new mongoose.Schema(
       required: true,
     },
     text: { type: String, required: true }, // human-readable
-    createdAt: { type: Date, default: Date.now },
   },
-  { _id: false }
+  { _id: false, timestamps: true }
 );
-const ConversationSchema = new mongoose.Schema({
-  projectId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Project",
-    index: true,
+const ConversationSchema = new mongoose.Schema(
+  {
+    projectId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Project",
+      index: true,
+    },
+    messages: [MessageSchema],
   },
-  messages: [MessageSchema],
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
-});
+  { timestamps: true }
+);
 
 const Conversation = mongoose.model("Conversation", ConversationSchema);
 export default Conversation;

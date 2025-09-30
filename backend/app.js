@@ -8,6 +8,7 @@ export const httpServer = createServer(app);
 import { createClient } from "redis";
 
 import { createAdapter } from "@socket.io/redis-adapter";
+import Conversation from "./models/conversatoin.model.js";
 
 export const io = new Server(httpServer, {
   cors: {
@@ -46,6 +47,67 @@ io.on("connection", (socket) => {
     console.log("a user disconnected: " + userId);
     pubClient.hDel("onlineUsers", userId);
   });
+});
+
+subClient.subscribe("userChat", async (data) => {
+  const { message, projectId } = JSON.parse(data);
+  if (!projectId) return;
+  try {
+    const conversation = await Conversation.findOneAndUpdate(
+      { projectId },
+      {
+        $push: {
+          messages: {
+            role: "user",
+            text: message,
+          },
+        },
+      },
+      {
+        upsert: true,
+        new: true,
+      }
+    );
+    console.log("saved user message to database successfully:", conversation);
+  } catch (error) {
+    const ErrorQueueData = {
+      payload: JSON.parse(data),
+      reason: "userChat",
+      retrievalCount: 0,
+    };
+    console.log(error, "pushing to error queue");
+    pubClient.rPush("errorQueue", JSON.stringify(ErrorQueueData));
+  }
+});
+subClient.subscribe("smallLLMResponse", async (data) => {
+  const { message, projectId } = JSON.parse(data);
+  if (!projectId) return;
+  try {
+    const conversation = await Conversation.findOneAndUpdate(
+      { projectId },
+      {
+        $push: {
+          messages: {
+            role: "system",
+            text: message,
+          },
+        },
+      },
+      {
+        upsert: true,
+        new: true,
+      }
+    );
+    console.log("saved user message to database successfully:", conversation);
+  } catch (error) {
+    const ErrorQueueData = {
+      payload: JSON.parse(data),
+      reason: "smallLLMResponse",
+      retrievalCount: 0,
+    };
+    console.log(error, "pushing to error queue");
+    pubClient.rPush("errorQueue", JSON.stringify(ErrorQueueData));
+  }
 });
 
 export default pubClient;

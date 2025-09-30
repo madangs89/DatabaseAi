@@ -6,7 +6,9 @@ import { ai, getApiCodes, getConvKey } from "../utils/lll.service.js";
 import { GoogleGenAI, Type } from "@google/genai";
 export const createDBWithLlmCall = async (req, res) => {
   try {
-    const { prompt, message, userId } = req.body;
+    const { prompt, message, userId, projectId } = req.body;
+
+    pubClient.publish("userChat", JSON.stringify({ message, projectId }));
 
     console.log(prompt, message, userId);
 
@@ -14,19 +16,24 @@ export const createDBWithLlmCall = async (req, res) => {
       return res
         .status(400)
         .json({ message: "Prompt is required", success: false });
-    console.log("prompt", prompt);
-    console.log("message", message);
     const smallLLMResponse = await getConvKey(prompt, message);
-    console.log("smallLLM", smallLLMResponse);
+
+    if (smallLLMResponse?.initialResponse) {
+      pubClient.publish(
+        "smallLLMResponse",
+        JSON.stringify({
+          message: smallLLMResponse?.initialResponse,
+          projectId,
+        })
+      );
+    }
     if (smallLLMResponse?.isDbCall === false) {
       smallLLMResponse.entities = [];
       smallLLMResponse.relationships = [];
       smallLLMResponse.finalExplanation = "";
       smallLLMResponse.migrationPlan = "";
-      console.log("return ing the response", smallLLMResponse);
       return res.json({ data: smallLLMResponse, success: true });
     }
-
     let id = await pubClient.hGet("onlineUsers", userId);
     const { socketId } = JSON.parse(id);
     sendMessage2(
@@ -38,29 +45,28 @@ export const createDBWithLlmCall = async (req, res) => {
       if (cachedData) {
         console.log("Cache hit");
         // const d = await getApiCodes(cachedData);
-        // return res.status(200).json({
-        //   message: "Cache hit",
-        //   success: true,
-        //   data: d,
-        // });
+        cachedData = JSON.parse(cachedData);
+
+        pubClient.publish(
+          "fullLLMResponse",
+          JSON.stringify({
+            data: cachedData,
+            projectId,
+          })
+        );
+
         return res.status(200).json({
           message: "Cache hit",
           success: true,
-          data: JSON.parse(cachedData),
+          data: cachedData,
         });
       }
     }
 
     let it;
     if (id) {
-      console.log(socketId, "socketid");
       let index = 0;
-
-      const newIt = setInterval(() => {
-        sendMessage(socketId, index++);
-      }, 100);
-      clearInterval(newIt);
-
+      sendMessage(socketId, index++);
       it = setInterval(() => {
         sendMessage(socketId, index++);
       }, 15000);
@@ -92,6 +98,7 @@ There must be a 120px gap between schemas (both horizontally and vertically) and
     9. If the user asks to generate schemas for more than one database at the same time (e.g., "create Uber database in MongoDB and Postgres") → ask them to choose only one database before proceeding.
     10.The position in the JSON format represents the coordinates of an entity in the UI. It is required, and it is your job to assign positions such that: 1.No two schemas overlap. 2.Each schema has dimensions of 200-500px width and 200-500px height.
     11. Never use any user name, if user explicitly said also never use the username in the response. make sure your response irrespective of history every response must be able to cache the response.
+    12. Never include the position(entities.pos) details in the response.
     JSON format:
     {
       "initialResponse": "string -- Initial response from AI.It must be below 50 words. Just tell what u are going to do. here no need to express any feelings. Note: Fields under 'entities' are general, human-readable so developers can understand them irrespective of DB. Actual database-specific implementation is in the 'schemas' section. only give text in this field",

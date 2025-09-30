@@ -1,4 +1,5 @@
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const Chat = ({
   chatOpen,
@@ -34,33 +35,40 @@ const Chat = ({
                 ) : (
                   // 👇 Regular bubbles with markdown
                   <div
-                    className={`max-w-[90%] whitespace-pre-line px-4 py-2 rounded-lg ${
+                    className={`max-w-[98%] whitespace-pre-line px-4 py-2 flex items-center justify-center flex-col gap-2 rounded-lg ${
                       msg.sender === "user"
                         ? "bg-blue-600 text-white"
                         : "bg-[#232323] text-gray-200"
                     }`}
                   >
                     <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
                       components={{
-                        p: ({ node, ...props }) => {
-                          const text = String(props.children);
-                          if (/^[A-Z].*:$/g.test(text)) {
-                            return (
-                              <h3 className="font-bold text-white mt-2 mb-1">
-                                {text}
-                              </h3>
-                            );
-                          }
-                          return (
-                            <p {...props} className="mb-1 leading-relaxed" />
-                          );
-                        },
+                        p: ({ node, ...props }) => (
+                          <p className="my-0" {...props} />
+                        ),
+                        strong: ({ node, ...props }) => (
+                          <strong
+                            className="font-semibold text-white"
+                            {...props}
+                          />
+                        ),
                         ul: ({ node, ...props }) => (
-                          <ul {...props} className="list-disc ml-5 mb-1" />
+                          <ul
+                            className="flex flex-col list-disc gap-1"
+                            {...props}
+                          />
+                        ),
+                        ol: ({ node, ...props }) => (
+                          <ol
+                            className="flex flex-col list-decimal gap-1"
+                            {...props}
+                          />
                         ),
                         li: ({ node, ...props }) => (
-                          <li {...props} className="mb-0.5" />
+                          <li className="ml-4 my-0" {...props} />
                         ),
+                        
                       }}
                     >
                       {msg.text.replace(/\n{2,}/g, "\n")}

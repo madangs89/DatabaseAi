@@ -41,7 +41,7 @@ import CodeCopyOpen from "../components/CodeCopyOpen";
 import RelationShipDbOpen from "../components/RelationShipDbOpen";
 import DashboardRightNav from "../components/DashboardRightNav";
 import { useSelector } from "react-redux";
-import { useLocation } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 
 const TableNode = ({ data }) => {
   const {
@@ -155,10 +155,11 @@ const Dashboard = () => {
   const { fitView } = useReactFlow();
   const [socket, setSocket] = useState(null);
   const messageQueue = useRef(Promise.resolve());
-
   const location = useLocation();
   let { aiPrompt } = location.state || {};
   const auth = useSelector((state) => state?.auth);
+
+  const { id } = useParams();
 
   const tableData = [
     {
@@ -321,6 +322,7 @@ const Dashboard = () => {
       {
         message: inn,
         userId: auth?.user?._id,
+        projectId: id,
         prompt: isCallingEditApi == false ? llmChatHistory : [],
       }
     );
