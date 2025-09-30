@@ -6,17 +6,20 @@ import { ai, getApiCodes, getConvKey } from "../utils/lll.service.js";
 import { GoogleGenAI, Type } from "@google/genai";
 export const createDBWithLlmCall = async (req, res) => {
   try {
-    const { prompt, message, userId, projectId } = req.body;
-
+    const { prompt, message, projectId } = req.body;
+    const userId = req.user?._id;
     pubClient.publish("userChat", JSON.stringify({ message, projectId }));
-
     console.log(prompt, message, userId);
-
     if (!prompt)
       return res
         .status(400)
         .json({ message: "Prompt is required", success: false });
-    const smallLLMResponse = await getConvKey(prompt, message);
+    const smallLLMResponse = await getConvKey(
+      prompt,
+      message,
+      projectId,
+      userId
+    );
 
     if (smallLLMResponse?.initialResponse) {
       pubClient.publish(
@@ -35,13 +38,16 @@ export const createDBWithLlmCall = async (req, res) => {
       return res.json({ data: smallLLMResponse, success: true });
     }
     let id = await pubClient.hGet("onlineUsers", userId);
-    const { socketId } = JSON.parse(id);
-    sendMessage2(
-      socketId,
-      smallLLMResponse?.initialResponse || "working on your schema"
-    );
+    id = JSON.parse(id);
+    if (id) {
+      var { socketId } = id;
+      sendMessage2(
+        socketId,
+        smallLLMResponse?.initialResponse || "working on your schema"
+      );
+    }
     if (smallLLMResponse?.isDbCall === true && smallLLMResponse?.dbConvKey) {
-      const cachedData = await client.get(smallLLMResponse.dbConvKey);
+      let cachedData = await client.get(smallLLMResponse.dbConvKey);
       if (cachedData) {
         console.log("Cache hit");
         // const d = await getApiCodes(cachedData);
@@ -52,9 +58,9 @@ export const createDBWithLlmCall = async (req, res) => {
           JSON.stringify({
             data: cachedData,
             projectId,
+            userId,
           })
         );
-
         return res.status(200).json({
           message: "Cache hit",
           success: true,
@@ -63,7 +69,7 @@ export const createDBWithLlmCall = async (req, res) => {
       }
     }
 
-    let it;
+    var it;
     if (id) {
       let index = 0;
       sendMessage(socketId, index++);
@@ -144,14 +150,25 @@ There must be a 120px gap between schemas (both horizontally and vertically) and
     const response = await chat.sendMessage({
       message: smallLLMResponse?.dbPrompt,
     });
-    clearInterval(it);
-    console.log("Token usage:", response.usageMetadata);
-    console.log("prompt:", prompt);
-    console.log("message", message);
-    console.log("response", response?.candidates[0]?.content.parts[0]?.text);
+    if (it) {
+      clearInterval(it);
+    }
+
     let raw = response?.candidates[0]?.content.parts[0]?.text;
     raw = raw.replace(/```json|```/g, "").trim();
     let json = JSON.parse(raw);
+    const { promptTokenCount, totalTokenCount, candidatesTokenCount } =
+      response?.usageMetadata;
+    pubClient.publish(
+      "token",
+      JSON.stringify({
+        projectId,
+        userId,
+        promptTokens: promptTokenCount,
+        totalTokens: totalTokenCount,
+        completionTokens: candidatesTokenCount,
+      })
+    );
     client.set(smallLLMResponse?.dbConvKey, JSON.stringify(json));
     return res.json({
       data: json,

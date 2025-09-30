@@ -9,6 +9,8 @@ import express from "express";
 import authRouter from "./routes/auth.routes.js";
 import projectRouter from "./routes/project.routes.js";
 import Conversation from "./models/conversatoin.model.js";
+import SchemaVersion from "./models/schema.model.js";
+import Usage from "./models/usage.model.js";
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 app.use(express.json());
 app.use(
@@ -68,11 +70,53 @@ const processErrorHandler = async () => {
           { $push: { messages: { role: "system", text: message } } },
           { upsert: true, new: true }
         );
+      }
 
-        console.log("Processed failed message successfully:", payload);
+      if (reason == "nodesAndEdges") {
+        const { projectId, nodes, edges, userId } = payload;
+        if (!projectId || !userId || !nodes || !edges) continue;
+        await SchemaVersion.findOneAndUpdate(
+          {
+            projectId,
+          },
+          {
+            $set: {
+              nodes: nodes,
+              edges: edges,
+              ownerId: userId,
+            },
+          },
+          {
+            upsert: true,
+            new: true,
+          }
+        );
+      }
+      if (reason == "token") {
+        const {
+          projectId,
+          userId,
+          promptTokens,
+          totalTokens,
+          completionTokens,
+        } = payload;
+        if (!projectId || !userId || !promptTokens || !totalTokens) continue;
+        const usage = await Usage.findOne({ projectId });
+        if (!usage) {
+          usage = await Usage.create({
+            projectId,
+            ownerId: userId,
+            promptTokens,
+            totalTokens,
+            completionTokens,
+          });
+        }
+        usage.promptTokens += promptTokens;
+        usage.totalTokens += totalTokens;
+        usage.completionTokens += completionTokens;
+        await usage.save();
       }
     } catch (error) {
-      console.error("Error processing failed message:", error);
       if (res) {
         const failedData = JSON.parse(res);
         const ErrorQueueData = {

@@ -42,7 +42,13 @@ export const getProjects = async (req, res) => {
 
 export const getProjectById = async (req, res) => {
   try {
-    const project = await Project.findById(req.params.id);
+    const id = req.params.id;
+    if (!id) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Project id is required" });
+    }
+    const project = await Project.findById(id);
     if (!project) {
       return res
         .status(404)
@@ -79,13 +85,11 @@ export const updateProject = async (req, res) => {
     project.status = status || project.status;
     await project.save();
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: project,
-        message: "Project updated successfully",
-      });
+    res.status(200).json({
+      success: true,
+      data: project,
+      message: "Project updated successfully",
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -94,7 +98,13 @@ export const updateProject = async (req, res) => {
 // ✅ Delete a project
 export const deleteProject = async (req, res) => {
   try {
-    const project = await Project.findById(req.params.id);
+    const id = req.params.id;
+    if (!id) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Project id is required" });
+    }
+    const project = await Project.findById(id);
 
     if (!project) {
       return res

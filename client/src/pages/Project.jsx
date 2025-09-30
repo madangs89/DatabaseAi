@@ -122,6 +122,9 @@ export default function Project() {
         {
           title,
           description,
+        },
+        {
+          withCredentials: true,
         }
       );
       if (res.data.success) {
@@ -149,6 +152,9 @@ export default function Project() {
         {
           title,
           description,
+        },
+        {
+          withCredentials: true,
         }
       );
       if (res.data.success) {
@@ -235,9 +241,7 @@ export default function Project() {
   return (
     <div className="bg-black border-none text-gray-200 h-screen flex flex-col">
       {/* Header */}
-      <header
-        className="flex items-center justify-between border-b border-[#262626] px-6 py-4 bg-black "
-      >
+      <header className="flex items-center justify-between border-b border-[#262626] px-6 py-4 bg-black ">
         <div className="flex items-center gap-3 cursor-pointer">
           <svg
             className="text-white"

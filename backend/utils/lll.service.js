@@ -1,9 +1,10 @@
 import { GoogleGenAI, Type } from "@google/genai";
+import pubClient from "../app.js";
 export const ai = new GoogleGenAI({
   apiKey: "AIzaSyAlWQFfshR0bGzgXGvE2fs4QeU3__D42lg",
 });
 
-export const getConvKey = async (prompt, message) => {
+export const getConvKey = async (prompt, message, projectId, userId) => {
   try {
     if (!prompt) {
       return null;
@@ -60,8 +61,21 @@ json
     });
     const response = await chat.sendMessage({ message });
     let raw = response?.candidates[0]?.content.parts[0]?.text;
+    console.log("Token usage in get con key:", response.usageMetadata);
     raw = raw.replace(/```json|```/g, "").trim();
     let json = JSON.parse(raw);
+    const { promptTokenCount, totalTokenCount, candidatesTokenCount } =
+      response?.usageMetadata;
+    pubClient.publish(
+      "token",
+      JSON.stringify({
+        projectId,
+        userId,
+        promptTokens: promptTokenCount,
+        totalTokens: totalTokenCount,
+        completionTokens: candidatesTokenCount,
+      })
+    );
     return json;
   } catch (error) {
     console.error(error);

@@ -324,6 +324,9 @@ const Dashboard = () => {
         userId: auth?.user?._id,
         projectId: id,
         prompt: isCallingEditApi == false ? llmChatHistory : [],
+      },
+      {
+        withCredentials: true,
       }
     );
     console.log(userQueryResult.data.data);
@@ -384,8 +387,9 @@ const Dashboard = () => {
           setCopyOpen,
         },
       }));
+
       let edges = userQueryResult?.data?.data?.relationships.map((t) => ({
-        id: "e" + new Date().getTime() + Math.random(),
+        id: uuidv4(),
         source: t?.source.toLowerCase(),
         target: t?.target.toLowerCase(),
         data: { type: t?.type, description: t?.description },
@@ -394,7 +398,6 @@ const Dashboard = () => {
       nodes.forEach((node) => {
         setLlmCodeFromServer((prev) => prev + node.data.code);
       });
-
       setNodes(nodes);
       setEdges(edges);
 
