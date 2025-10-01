@@ -189,9 +189,18 @@ subClient.subscribe("fullLLMResponse", async (res) => {
         data: { type: t?.type, description: t?.description },
       }));
 
+      const initialResponse = data?.initialResponse;
+      const finalExplanation = data?.finalExplanation;
       pubClient.publish(
         "nodesAndEdges",
-        JSON.stringify({ nodes, edges, projectId, userId })
+        JSON.stringify({
+          nodes,
+          edges,
+          projectId,
+          userId,
+          initialResponse,
+          finalExplanation,
+        })
       );
     }
   } catch (error) {
@@ -217,10 +226,37 @@ subClient.subscribe("fullLLMResponse", async (res) => {
 });
 
 subClient.subscribe("nodesAndEdges", async (data) => {
-  const { nodes, edges, projectId, userId } = JSON.parse(data);
+  const { nodes, edges, projectId, userId, initialResponse, finalExplanation } =
+    JSON.parse(data);
   console.log("handle comes to nodes and edges");
 
-  if (!projectId || !userId || !nodes || !edges) return;
+  if (
+    !projectId ||
+    !userId ||
+    !nodes ||
+    !edges ||
+    !initialResponse ||
+    !finalExplanation
+  )
+    return;
+
+  const userDetails = await pubClient.hGet("onlineUsers", userId);
+  if (userDetails) {
+    const { socketId } = JSON.parse(userDetails);
+    if (socketId) {
+      io.to(socketId).emit(
+        "nodesAndEdgesData",
+        JSON.stringify({
+          nodes,
+          edges,
+          projectId,
+          initialResponse,
+          finalExplanation,
+        })
+      );
+    }
+  }
+
   console.log("reciving nodes and edges requrest");
   try {
     await SchemaVersion.findOneAndUpdate(

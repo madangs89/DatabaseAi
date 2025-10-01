@@ -9,4 +9,11 @@ export const store = configureStore({
     project: projectReducer,
     loading: loadingReducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredPaths: ["project.socket"], // ignore socket in state
+        ignoredActions: ["project/setSocket"], // ignore setSocket action
+      },
+    }),
 });

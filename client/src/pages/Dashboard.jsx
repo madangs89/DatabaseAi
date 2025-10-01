@@ -19,6 +19,7 @@ import {
   Cable,
   ChartBarIcon,
   CircleUser,
+  CloudLightning,
   Copy,
   DatabaseZap,
   Search,
@@ -50,6 +51,7 @@ import {
 } from "../redux/slice/loadingSlice";
 import SpinnerLoader from "../components/loaders/SpinnerLoader";
 import toast from "react-hot-toast";
+import MonacoEditor from "../components/MonacoEditor";
 
 const TableNode = ({ data }) => {
   const {
@@ -203,7 +205,7 @@ const Dashboard = () => {
   const messageQueue = useRef(Promise.resolve());
   const [index, setIndex] = useState(0);
   const { id } = useParams();
-
+  const [isEditingDbCall, setIsEditingDbCall] = useState(false);
   const socket = useSelector((state) => state?.project?.socket);
 
   const tableData = [
@@ -378,133 +380,140 @@ const Dashboard = () => {
     }, 100);
 
     try {
-      const userQueryResult = await axios.post(
-        "http://localhost:5000/create-db",
-        {
-          message: inn,
-          userId: auth?.user?._id,
-          prompt: llmChatHistory,
-          projectId: id,
-        },
-        {
-          withCredentials: true,
+      console.log("is calling editing api", isEditingDbCall);
+
+      if (isEditingDbCall) {
+        console.log("isCallingEditApi");
+      } else {
+        const userQueryResult = await axios.post(
+          "http://localhost:5000/create-db",
+          {
+            message: inn,
+            userId: auth?.user?._id,
+            prompt: llmChatHistory,
+            projectId: id,
+          },
+          {
+            withCredentials: true,
+          }
+        );
+        console.log(userQueryResult.data);
+
+        if (userQueryResult?.data?.data?.initialResponse.length > 0) {
+          setLlmChatHistory((prev) => [
+            ...prev,
+            { role: "user", parts: [{ text: inn }] },
+          ]);
+          setLlmChatHistory((prev) => [
+            ...prev,
+            {
+              role: "model",
+              parts: [
+                {
+                  text: JSON.stringify(userQueryResult?.data?.data),
+                },
+              ],
+            },
+          ]);
         }
-      );
-      console.log(userQueryResult.data);
-
-      if (userQueryResult?.data?.data?.initialResponse.length > 0) {
-        setLlmChatHistory((prev) => [
-          ...prev,
-          { role: "user", parts: [{ text: inn }] },
-        ]);
-        setLlmChatHistory((prev) => [
-          ...prev,
-          {
-            role: "model",
-            parts: [
-              {
-                text: JSON.stringify(userQueryResult?.data?.data),
-              },
-            ],
-          },
-        ]);
-      }
-      setChatMessages((prev) => prev.filter((c) => c.type !== "status"));
-      if (userQueryResult?.data?.data?.initialResponse.length > 0) {
-        await typeMessage({
-          text: userQueryResult.data.data.initialResponse,
-          sender: "system",
-          setChatMessages,
-          type: "normal",
-          autoScroll,
-          bottomRef,
-          isWritting,
-          setIsWritting,
-          messageQueue,
-        });
-      }
-      if (
-        userQueryResult?.data?.data?.entities?.length > 0 &&
-        userQueryResult?.data?.data?.relationships?.length > 0
-      ) {
-        let nodes = userQueryResult?.data?.data?.entities.map((t) => ({
-          id: t.name.toLowerCase(),
-          type: "tableNode",
-          position: t.pos,
-          data: {
-            title: t?.name,
-            fields: t?.fields,
-            code: t?.code?.length ? t.code : null,
+        setChatMessages((prev) => prev.filter((c) => c.type !== "status"));
+        if (userQueryResult?.data?.data?.initialResponse.length > 0) {
+          await typeMessage({
+            text: userQueryResult.data.data.initialResponse,
+            sender: "system",
+            setChatMessages,
+            type: "normal",
+            autoScroll,
+            bottomRef,
+            isWritting,
+            setIsWritting,
+            messageQueue,
+          });
+        }
+        if (
+          userQueryResult?.data?.data?.entities?.length > 0 &&
+          userQueryResult?.data?.data?.relationships?.length > 0
+        ) {
+          let nodes = userQueryResult?.data?.data?.entities.map((t) => ({
             id: t.name.toLowerCase(),
-            description: t?.description ? t.description : null,
-            theme,
-            setSelectedDb, // pass the setter
-            selectedDb,
-            setDbOpen,
-            index,
-            setIndex,
-            setSelectedDbData,
-            setRelationshipsOpen,
-            setChatOpen,
-            loading,
-            setCopyOpen,
-          },
-        }));
+            type: "tableNode",
+            position: t.pos,
+            data: {
+              title: t?.name,
+              fields: t?.fields,
+              code: t?.code?.length ? t.code : null,
+              id: t.name.toLowerCase(),
+              description: t?.description ? t.description : null,
+              theme,
+              setSelectedDb, // pass the setter
+              selectedDb,
+              setDbOpen,
+              index,
+              setIndex,
+              setSelectedDbData,
+              setRelationshipsOpen,
+              setChatOpen,
+              loading,
+              setCopyOpen,
+            },
+          }));
 
-        let edges = userQueryResult?.data?.data?.relationships.map((t) => ({
-          id: uuidv4(),
-          source: t?.source.toLowerCase(),
-          target: t?.target.toLowerCase(),
-          data: { type: t?.type, description: t?.description },
-          style: { stroke: "gray", strokeWidth: 2 },
-        }));
-        nodes.forEach((node) => {
-          setLlmCodeFromServer((prev) => prev + node.data.code);
-        });
-        setSelectedDbData(nodes[0]);
+          let edges = userQueryResult?.data?.data?.relationships.map((t) => ({
+            id: uuidv4(),
+            source: t?.source.toLowerCase(),
+            target: t?.target.toLowerCase(),
+            data: { type: t?.type, description: t?.description },
+            style: { stroke: "gray", strokeWidth: 2 },
+          }));
+          nodes.forEach((node) => {
+            setLlmCodeFromServer((prev) => prev + node.data.code);
+          });
+          setSelectedDbData(nodes[0]);
 
-        setNodes(nodes);
-        setEdges(edges);
+          setNodes(nodes);
+          setEdges(edges);
 
-        setFitViewChangeTracker((prev) => prev + 1);
-        setTimeout(() => {
-          fitView({ padding: 0.2, duration: 800 }); // smooth zoom
-        }, 50);
-        setIsCallingEditApi(true);
+          setFitViewChangeTracker((prev) => prev + 1);
+          setTimeout(() => {
+            fitView({ padding: 0.2, duration: 800 }); // smooth zoom
+          }, 50);
+
+          setIsEditingDbCall(true);
+        }
+        if (userQueryResult?.data?.data?.finalExplanation.length > 0) {
+          setLlmChatHistory((prev) => [
+            ...prev,
+            {
+              role: "model",
+              parts: [
+                {
+                  text: JSON.stringify(
+                    userQueryResult?.data?.data?.finalExplanation
+                  ),
+                },
+              ],
+            },
+          ]);
+          setIsEditingDbCall(true);
+          await typeMessage({
+            text: userQueryResult.data.data.finalExplanation,
+            sender: "system",
+            type: "normal",
+            setChatMessages,
+            bottomRef,
+            autoScroll,
+            isWritting,
+            setIsWritting,
+            messageQueue,
+          });
+        }
+        setLoading(false);
       }
-      if (userQueryResult?.data?.data?.finalExplanation.length > 0) {
-        setLlmChatHistory((prev) => [
-          ...prev,
-          {
-            role: "model",
-            parts: [
-              {
-                text: JSON.stringify(
-                  userQueryResult?.data?.data?.finalExplanation
-                ),
-              },
-            ],
-          },
-        ]);
-
-        await typeMessage({
-          text: userQueryResult.data.data.finalExplanation,
-          sender: "system",
-          type: "normal",
-          setChatMessages,
-          bottomRef,
-          autoScroll,
-          isWritting,
-          setIsWritting,
-          messageQueue,
-        });
-      }
-      setLoading(false);
     } catch (error) {
       console.log(error);
+      toast.error("Something went wrong");
       setChatMessages((prev) => prev.filter((c) => c.type !== "status"));
       setLoading(false);
-      toast.error("Something went wrong");
     }
   };
   const handleScroll = () => {
@@ -578,8 +587,6 @@ const Dashboard = () => {
               code += node.data.code;
             });
             setSelectedDbData(nodes[0]);
-            console.log(selectedDbData);
-
             setLlmCodeFromServer(code);
             setNodes(nodes);
             let edges = res?.data?.data?.edges.map((e) => {
@@ -587,6 +594,9 @@ const Dashboard = () => {
             });
             setEdges(edges);
           }
+          console.log("setting is calling editing api true");
+
+          setIsEditingDbCall(true);
           dispatch(setEntityLoading(false));
         } catch (error) {
           toast.error("Unable to fetch schema");
@@ -682,6 +692,113 @@ const Dashboard = () => {
         }
       });
     }
+    return () => {
+      if (socket) {
+        socket.off("statusUpdate");
+      }
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("nodesAndEdgesData", async (data) => {
+        const { nodes, edges, projectId, initialResponse, finalExplanation } =
+          JSON.parse(data);
+        console.log("handle comes to nodes and edges", nodes, edges);
+
+        if (projectId == id && isEditingDbCall == false) {
+          console.log("both project ids are same so it is adding here");
+          setChatMessages((prev) => prev.filter((c) => c.type !== "status"));
+          setLlmChatHistory((prev) => [
+            ...prev,
+            {
+              role: "model",
+              parts: [
+                {
+                  text: JSON.stringify(initialResponse),
+                },
+              ],
+            },
+          ]);
+          await typeMessage({
+            text: initialResponse,
+            sender: "system",
+            type: "normal",
+            setChatMessages,
+            bottomRef,
+            autoScroll,
+            isWritting,
+            setIsWritting,
+            messageQueue,
+          });
+
+          let nod = nodes.map((i) => {
+            return {
+              id: i.id.toLowerCase(),
+              type: "tableNode",
+              position: i.position,
+              data: {
+                ...i.data,
+                theme,
+                setSelectedDb, // pass the setter
+                selectedDb,
+                setDbOpen,
+                setSelectedDbData,
+                setRelationshipsOpen,
+                setChatOpen,
+                loading,
+                index,
+                setIndex,
+                setCopyOpen,
+              },
+            };
+          });
+          let code = "";
+          nodes.forEach((node) => {
+            code += node.data.code;
+          });
+          setSelectedDbData(nodes[0]);
+          setLlmCodeFromServer(code);
+          setNodes(nod);
+          dispatch(setEntityLoading(false));
+          let edg = edges.map((e) => {
+            return { ...e, style: { stroke: "gray", strokeWidth: 2 } };
+          });
+          setEdges(edg);
+          setLlmChatHistory((prev) => [
+            ...prev,
+            {
+              role: "model",
+              parts: [
+                {
+                  text: JSON.stringify(finalExplanation),
+                },
+              ],
+            },
+          ]);
+          await typeMessage({
+            text: finalExplanation,
+            sender: "system",
+            type: "normal",
+            setChatMessages,
+            bottomRef,
+            autoScroll,
+            isWritting,
+            setIsWritting,
+            messageQueue,
+          });
+          setChatMessages((prev) => prev.filter((c) => c.type !== "status"));
+          setIsEditingDbCall(true);
+          setLoading(false);
+        }
+      });
+    }
+
+    return () => {
+      if (socket) {
+        socket.off("nodesAndEdgesData");
+      }
+    };
   }, [socket]);
 
   useEffect(() => {
@@ -784,148 +901,164 @@ const Dashboard = () => {
         setSelectedTab={setSelectedTab}
       />
       <div className="w-full h-full overflow-hidden flex">
-        {/* LEFT HALF: ReactFlow canvas */}
-        <div className="w-[67%] overflow-hidden p-2 flex-shrink-0 items-center justify-center gap-4  border-r-[0.5px] border-[#262626] h-full flex flex-col">
-          {/* Nav for left half */}
-          <div className="h-12 w-full bg-inherit overflow-hidden flex items-center justify-between px-4">
-            {/* Left: Title */}
-            <h2 className="text-white text-2xl font-bold">ER Diagram</h2>
-            {/* Right: Search + Buttons */}
-            <div className="flex items-center gap-2">
-              {/* Search Box */}
-              <div className="flex items-center bg-[#1c1c1c] border border-[#333] rounded-md px-2 py-1">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-4 h-4 text-[#525252]"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1110.5 3a7.5 7.5 0 016.15 13.65z"
-                  />
-                </svg>
+        {selectedTab == "api" ? (
+          <MonacoEditor />
+        ) : (
+          <>
+            <div className="w-[67%] overflow-hidden p-2 flex-shrink-0 items-center justify-center gap-4  border-r-[0.5px] border-[#262626] h-full flex flex-col">
+              {/* Nav for left half */}
+              <div className="h-12 w-full bg-inherit overflow-hidden flex items-center justify-between px-4">
+                {/* Left: Title */}
+                <h2 className="text-white text-2xl font-bold">ER Diagram</h2>
+                {/* Right: Search + Buttons */}
+                <div className="flex items-center gap-2">
+                  {/* Search Box */}
+                  <div className="flex items-center bg-[#1c1c1c] border border-[#333] rounded-md px-2 py-1">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-4 h-4 text-[#525252]"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1110.5 3a7.5 7.5 0 016.15 13.65z"
+                      />
+                    </svg>
+                    <input
+                      type="text"
+                      placeholder="Search entities..."
+                      className="bg-transparent placeholder:text-[#525252] outline-none text-sm text-white px-2"
+                    />
+                  </div>
+                  {/* Plus Button */}
+                  <button className="w-8 h-8 flex items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]">
+                    +
+                  </button>
+
+                  {/* Share Button */}
+                  <button className="w-8 h-8 flex items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-4 h-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 12v.01M12 20h.01M20 12v.01M12 4h.01M16.24 7.76L20 12l-3.76 4.24M7.76 16.24L4 12l3.76-4.24M12 20V4m8 8H4"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 h-full w-full bg-[#171717]  rounded-lg flex-shrink-0">
+                {loadingSlice?.setEntityLoading ? (
+                  <div className="flex items-center justify-center w-full h-full">
+                    <SpinnerLoader />
+                  </div>
+                ) : (
+                  <ReactFlow
+                    nodes={nodes}
+                    edges={edges}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    fitView
+                    onInit={(reactFlowInstance) => {
+                      reactFlowInstance.fitView({
+                        padding: 0.2,
+                        duration: 800,
+                      });
+                    }}
+                    minZoom={0.1}
+                    maxZoom={2}
+                    proOptions={{ hideAttribution: true }}
+                    nodeTypes={nodeTypes}
+                  >
+                    <Background
+                      variant="dots"
+                      gap={20}
+                      size={1}
+                      color={"black"}
+                    />
+                    <Controls
+                      showZoom={true}
+                      showFitView={true}
+                      showInteractive={true}
+                      position="bottom-right"
+                      className="bg-[#171717] border-[0.5px] border-[#262626]"
+                    />
+                  </ReactFlow>
+                )}
+                {/* </div> */}
+              </div>
+              <form
+                onSubmit={handleInputSubmit}
+                className="h-12 w-[98%] bg-[#171717] px-2  flex gap-2 items-center rounded-lg border-t-[0.5px] border-[#262626]"
+              >
+                <SearchIcon className="w-5 h-5 text-[#525252]" />
                 <input
                   type="text"
-                  placeholder="Search entities..."
-                  className="bg-transparent placeholder:text-[#525252] outline-none text-sm text-white px-2"
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Create a database for instagram clone..."
+                  className="flex-1 border-none placeholder:text-[#525252] outline-none bg-transparent text-white"
                 />
-              </div>
-              {/* Plus Button */}
-              <button className="w-8 h-8 flex items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]">
-                +
-              </button>
-
-              {/* Share Button */}
-              <button className="w-8 h-8 flex items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+                <button
+                  className="flex items-center justify-center"
+                  type="submit"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M4 12v.01M12 20h.01M20 12v.01M12 4h.01M16.24 7.76L20 12l-3.76 4.24M7.76 16.24L4 12l3.76-4.24M12 20V4m8 8H4"
-                  />
-                </svg>
-              </button>
+                  {" "}
+                  {loading ? (
+                    <Loader />
+                  ) : (
+                    <ArrowUp className="w-5 cursor-pointer p-1 h-5 transition-all duration-200 ease-linear text-black bg-white rounded-full " />
+                  )}
+                </button>
+              </form>
             </div>
-          </div>
-          <div className="flex-1 h-full w-full bg-[#171717]  rounded-lg flex-shrink-0">
-            {loadingSlice?.setEntityLoading ? (
-              <div className="flex items-center justify-center w-full h-full">
-                <SpinnerLoader />
-              </div>
-            ) : (
-              <ReactFlow
-                nodes={nodes}
+
+            <div className="w-1/2 relative h-full  flex-col overflow-hidden bg-[#171717] flex gap-2  justify-center">
+              <DashboardRightNav
+                chatOpen={chatOpen}
+                dbOpen={dbOpen}
+                copyOpen={copyOpen}
+                relationshipsOpen={relationshipsOpen}
+                setChatOpen={setChatOpen}
+                setDbOpen={setDbOpen}
+                setCopyOpen={setCopyOpen}
+                setRelationshipsOpen={setRelationshipsOpen}
+                selectedDb={selectedDb}
+              />
+              <Chat
+                chatOpen={chatOpen}
+                chatMessages={chatMessages}
+                chatContainerRef={chatContainerRef}
+                handleScroll={handleScroll}
+                bottomRef={bottomRef}
+              />
+              <DatabaseOpen dbOpen={dbOpen} selectedDbData={selectedDbData} />
+              <CodeCopyOpen
+                llmCodeFromServer={llmCodeFromServer}
+                copyOpen={copyOpen}
+              />
+              <RelationShipDbOpen
+                relationshipsOpen={relationshipsOpen}
                 edges={edges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                fitView
-                onInit={(reactFlowInstance) => {
-                  reactFlowInstance.fitView({ padding: 0.2, duration: 800 });
-                }}
-                minZoom={0.1}
-                maxZoom={2}
-                proOptions={{ hideAttribution: true }}
-                nodeTypes={nodeTypes}
-              >
-                <Background variant="dots" gap={20} size={1} color={"black"} />
-                <Controls
-                  showZoom={true}
-                  showFitView={true}
-                  showInteractive={true}
-                  position="bottom-right"
-                  className="bg-[#171717] border-[0.5px] border-[#262626]"
-                />
-              </ReactFlow>
-            )}
-            {/* </div> */}
-          </div>
-          <form
-            onSubmit={handleInputSubmit}
-            className="h-12 w-[98%] bg-[#171717] px-2  flex gap-2 items-center rounded-lg border-t-[0.5px] border-[#262626]"
-          >
-            <SearchIcon className="w-5 h-5 text-[#525252]" />
-            <input
-              type="text"
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Create a database for instagram clone..."
-              className="flex-1 border-none placeholder:text-[#525252] outline-none bg-transparent text-white"
-            />
-            <button className="flex items-center justify-center" type="submit">
-              {" "}
-              {loading ? (
-                <Loader />
-              ) : (
-                <ArrowUp className="w-5 cursor-pointer p-1 h-5 transition-all duration-200 ease-linear text-black bg-white rounded-full " />
-              )}
-            </button>
-          </form>
-        </div>
-        {/* RIGHT HALF: Red div */}
-        <div className="w-1/2 relative h-full  flex-col overflow-hidden bg-[#171717] flex gap-2  justify-center">
-          <DashboardRightNav
-            chatOpen={chatOpen}
-            dbOpen={dbOpen}
-            copyOpen={copyOpen}
-            relationshipsOpen={relationshipsOpen}
-            setChatOpen={setChatOpen}
-            setDbOpen={setDbOpen}
-            setCopyOpen={setCopyOpen}
-            setRelationshipsOpen={setRelationshipsOpen}
-            selectedDb={selectedDb}
-          />
-          <Chat
-            chatOpen={chatOpen}
-            chatMessages={chatMessages}
-            chatContainerRef={chatContainerRef}
-            handleScroll={handleScroll}
-            bottomRef={bottomRef}
-          />
-          <DatabaseOpen dbOpen={dbOpen} selectedDbData={selectedDbData} />
-          <CodeCopyOpen
-            llmCodeFromServer={llmCodeFromServer}
-            copyOpen={copyOpen}
-          />
-          <RelationShipDbOpen
-            relationshipsOpen={relationshipsOpen}
-            edges={edges}
-            setSelectedRelationshipId={setSelectedRelationshipId}
-            setEdges={setEdges}
-            selectedRelationshipId={selectedRelationshipId}
-          />
-        </div>
+                setSelectedRelationshipId={setSelectedRelationshipId}
+                setEdges={setEdges}
+                selectedRelationshipId={selectedRelationshipId}
+              />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
