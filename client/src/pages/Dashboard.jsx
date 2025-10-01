@@ -709,6 +709,7 @@ const Dashboard = () => {
         JSON.stringify({
           userId: auth?.user?._id,
           location: "",
+          outCount: 1,
         })
       );
     };

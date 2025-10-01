@@ -38,7 +38,7 @@ io.on("connection", (socket) => {
   pubClient.hSet(
     "onlineUsers",
     userId,
-    JSON.stringify({ socketId: socket.id, location: "project" })
+    JSON.stringify({ socketId: socket.id, location: "project", outCount: 0 })
   );
 
   socket.on("EndConnection", async (data) => {
@@ -48,13 +48,17 @@ io.on("connection", (socket) => {
   });
 
   socket.on("locationUpdate", async (data) => {
-    const { location, userId } = JSON.parse(data);
+    let d = JSON.parse(data);
+    const { location, userId } = d;
     console.log("locationUpdate event received:", data);
 
     let savedDetails = await pubClient.hGet("onlineUsers", userId);
     if (savedDetails) {
       savedDetails = JSON.parse(savedDetails);
       savedDetails.location = location;
+      if (d.outCount != undefined) {
+        savedDetails.outCount = d.outCount;
+      }
       await pubClient.hSet("onlineUsers", userId, JSON.stringify(savedDetails));
     }
     console.log("savedDetails", savedDetails);
