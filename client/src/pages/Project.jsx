@@ -26,6 +26,7 @@ export default function Project() {
   const [aiPrompt, setAiPrompt] = useState("");
   const navigate = useNavigate();
   const [filteredProjects, setFilteredProjects] = useState(projects);
+  const auth = useSelector((state) => state?.auth);
 
   const [search, setSearch] = useState("");
   const dispatch = useDispatch();
@@ -34,6 +35,7 @@ export default function Project() {
   const [isSuggestionGenearting, setIsSuggestionGenearting] = useState(false);
   const [isPromptGenerating, setIsPromptGenerating] = useState(false);
 
+  const socket = useSelector((state) => state.project.socket);
   const handleFromSubmit = async (e) => {
     e.preventDefault();
     if (isEditing) {
@@ -237,6 +239,30 @@ export default function Project() {
       }
     })();
   }, []);
+
+  useEffect(() => {
+      if (!socket || !auth?.user?._id) return;
+    try {
+      socket.emit(
+        "locationUpdate",
+        JSON.stringify({
+          userId: auth?.user?._id,
+          location: "project",
+        })
+      );
+    } catch (error) {
+      console.log(error);
+    }
+    return () => {
+      socket.emit(
+        "locationUpdate",
+        JSON.stringify({
+          userId: auth?.user?._id,
+          location: "",
+        })
+      );
+    };
+  }, [socket, auth?.user?._id]);
 
   return (
     <div className="bg-black border-none text-gray-200 h-screen flex flex-col">

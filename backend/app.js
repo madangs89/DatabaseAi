@@ -24,7 +24,8 @@ const subClient = pubClient.duplicate();
 
 await pubClient.connect();
 await subClient.connect();
-console.log("Connected to Redis");
+
+console.log("Connected to Redis server");
 
 io.adapter(createAdapter(pubClient, subClient));
 
@@ -37,25 +38,42 @@ io.on("connection", (socket) => {
   pubClient.hSet(
     "onlineUsers",
     userId,
-    JSON.stringify({ socketId: socket.id })
+    JSON.stringify({ socketId: socket.id, location: "project" })
   );
 
-  socket.on("EndConnection", (data) => {
+  socket.on("EndConnection", async (data) => {
     console.log("EndConnection event received:", data); // Log the data for debugging
     // Handle any necessary cleanup here, such as removing the user from the online list
-    pubClient.hDel("onlineUsers", userId); // Example cleanup
+    await pubClient.hDel("onlineUsers", userId); // Example cleanup
   });
 
-  socket.on("disconnect", () => {
+  socket.on("locationUpdate", async (data) => {
+    const { location, userId } = JSON.parse(data);
+    console.log("locationUpdate event received:", data);
+
+    let savedDetails = await pubClient.hGet("onlineUsers", userId);
+    if (savedDetails) {
+      savedDetails = JSON.parse(savedDetails);
+      savedDetails.location = location;
+      await pubClient.hSet("onlineUsers", userId, JSON.stringify(savedDetails));
+    }
+    console.log("savedDetails", savedDetails);
+  });
+
+  socket.on("disconnect", async () => {
     console.log("a user disconnected: " + userId);
-    pubClient.hDel("onlineUsers", userId);
+    await pubClient.hDel("onlineUsers", userId);
   });
 });
 
 subClient.subscribe("userChat", async (data) => {
   try {
+    console.log("Handle comes to userChat requrest");
+
     const { message, projectId } = JSON.parse(data);
+
     if (!projectId) return;
+    console.log("reciving userChat requrest", projectId);
     const conversation = await Conversation.findOneAndUpdate(
       { projectId },
       {
@@ -71,7 +89,10 @@ subClient.subscribe("userChat", async (data) => {
         new: true,
       }
     );
+    console.log("saved to conversation");
   } catch (error) {
+    console.log("user Chat Error");
+
     const ErrorQueueData = {
       payload: JSON.parse(data),
       reason: "userChat",
@@ -82,8 +103,12 @@ subClient.subscribe("userChat", async (data) => {
 });
 subClient.subscribe("smallLLMResponse", async (data) => {
   try {
+    console.log("Handle comes to small requrest");
+
     const { message, projectId } = JSON.parse(data);
+
     if (!projectId) return;
+    console.log("reciving small requrest", projectId);
     const conversation = await Conversation.findOneAndUpdate(
       { projectId },
       {
@@ -99,7 +124,9 @@ subClient.subscribe("smallLLMResponse", async (data) => {
         new: true,
       }
     );
+    console.log("saved to conversation");
   } catch (error) {
+    console.log("small LLM Error");
     const ErrorQueueData = {
       payload: JSON.parse(data),
       reason: "smallLLMResponse",
@@ -111,8 +138,12 @@ subClient.subscribe("smallLLMResponse", async (data) => {
 
 subClient.subscribe("fullLLMResponse", async (res) => {
   try {
+    console.log("handle comes to full requrest");
+
     const { data, projectId, userId } = JSON.parse(res);
+
     if (!projectId || !userId) return;
+    console.log("reciving full requrest", projectId, userId);
     var isInitialFailed = true;
     var isFinalFailed = true;
     if (data?.initialResponse) {
@@ -183,7 +214,10 @@ subClient.subscribe("fullLLMResponse", async (res) => {
 
 subClient.subscribe("nodesAndEdges", async (data) => {
   const { nodes, edges, projectId, userId } = JSON.parse(data);
+  console.log("handle comes to nodes and edges");
+
   if (!projectId || !userId || !nodes || !edges) return;
+  console.log("reciving nodes and edges requrest");
   try {
     await SchemaVersion.findOneAndUpdate(
       {

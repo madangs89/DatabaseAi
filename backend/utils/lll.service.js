@@ -42,7 +42,7 @@ export const parseInvalidJson = (raw) => {
   }
 };
 
-export const getConvKey = async (prompt, message, projectId, userId) => {
+export const getConvKey = async (prompt, message, projectId, userId, res) => {
   try {
     if (!prompt) {
       return null;
@@ -120,7 +120,11 @@ json
     console.log("json", json);
     return json;
   } catch (error) {
+    console.log("erro in getconvo", error);
+
     console.error(error);
+
+    return res.json({ error: error.message });
   }
 };
 export const getApiCodes = async (req, res) => {
@@ -295,6 +299,6 @@ JSON structure:
     return res.json({ message: json, success: true });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Server error", success: false });
+    return res.status(500).json({ message: "Server error in getCon", success: false });
   }
 };

@@ -48,6 +48,7 @@ const processErrorHandler = async () => {
         continue;
       }
       const { payload, reason, retrievalCount } = JSON.parse(res);
+      console.log("Process handler called for :", reason);
 
       if (retrievalCount > 3) {
         console.warn("Max retries reached, skipping message:", payload);

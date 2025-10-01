@@ -10,6 +10,7 @@ import {
 
 import { GoogleGenAI, Type } from "@google/genai";
 export const createDBWithLlmCall = async (req, res) => {
+  let it;
   try {
     const { prompt, message, projectId } = req.body;
     const userId = req.user?._id;
@@ -23,8 +24,11 @@ export const createDBWithLlmCall = async (req, res) => {
       prompt,
       message,
       projectId,
-      userId
+      userId,
+      res
     );
+
+    console.log("smallLLMResponse", smallLLMResponse);
 
     if (smallLLMResponse?.initialResponse) {
       pubClient.publish(
@@ -74,7 +78,6 @@ export const createDBWithLlmCall = async (req, res) => {
       }
     }
 
-    var it;
     if (id) {
       let index = 0;
       console.log("socketId", socketId);
@@ -192,8 +195,13 @@ There must be a 120px gap between schemas (both horizontally and vertically) and
       success: true,
     });
   } catch (error) {
+    if (it) {
+      clearInterval(it);
+    }
     console.error(error);
-    return res.status(500).json({ message: "Server error", success: false });
+    return res
+      .status(500)
+      .json({ message: "Server error in main" + error, success: false });
   }
 };
 

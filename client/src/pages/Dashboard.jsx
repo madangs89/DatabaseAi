@@ -383,14 +383,14 @@ const Dashboard = () => {
         {
           message: inn,
           userId: auth?.user?._id,
-          projectId: id,
           prompt: llmChatHistory,
+          projectId: id,
         },
         {
           withCredentials: true,
         }
       );
-      console.log(userQueryResult.data.data);
+      console.log(userQueryResult.data);
 
       if (userQueryResult?.data?.data?.initialResponse.length > 0) {
         setLlmChatHistory((prev) => [
@@ -501,8 +501,10 @@ const Dashboard = () => {
       }
       setLoading(false);
     } catch (error) {
+      console.log(error);
+      setChatMessages((prev) => prev.filter((c) => c.type !== "status"));
       setLoading(false);
-      toast.error(error.response.data.message);
+      toast.error("Something went wrong");
     }
   };
   const handleScroll = () => {
@@ -601,19 +603,35 @@ const Dashboard = () => {
             setChatMessages(chat?.data?.data);
             console.log(chat?.data?.data);
 
+            console.log("chat", chat.data.data);
+
             let llmHistory = chat?.data?.data?.map((i) => {
-              if (i?.sender === "user") {
+              console.log("i", i.sender, i.text);
+
+              if (i?.sender == "user") {
                 return {
                   role: "user",
-                  parts: [{ text: i?.text }],
+                  parts: [{ text: JSON.stringify(i?.text) }],
                 };
               } else {
                 return {
                   role: "model",
-                  parts: [{ text: i?.text }],
+                  parts: [
+                    {
+                      text: JSON.stringify({
+                        isDbCall: false,
+                        dbPrompt: "",
+                        dbConvKey: "",
+                        initialResponse: i?.text,
+                      }),
+                    },
+                  ],
                 };
               }
             });
+
+            console.log("llm chat history", llmHistory);
+
             setLlmChatHistory(llmHistory);
           }
           dispatch(setChatLoading(false));
@@ -671,6 +689,30 @@ const Dashboard = () => {
       inputRef.current.focus();
     }
   }, []);
+
+  useEffect(() => {
+    if (!socket || !auth?.user?._id) return;
+    try {
+      socket.emit(
+        "locationUpdate",
+        JSON.stringify({
+          userId: auth?.user?._id,
+          location: "dashboard",
+        })
+      );
+    } catch (error) {
+      console.log(error);
+    }
+    return () => {
+      socket.emit(
+        "locationUpdate",
+        JSON.stringify({
+          userId: auth?.user?._id,
+          location: "",
+        })
+      );
+    };
+  }, [socket, auth?.user?._id]);
 
   useEffect(() => {
     if (!initialScrollDone.current && chatMessages.length > 0) {
