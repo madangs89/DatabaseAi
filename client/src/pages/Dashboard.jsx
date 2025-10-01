@@ -907,7 +907,7 @@ const Dashboard = () => {
           <>
             <div className="w-[67%] overflow-hidden p-2 flex-shrink-0 items-center justify-center gap-4  border-r-[0.5px] border-[#262626] h-full flex flex-col">
               {/* Nav for left half */}
-              <div className="h-12 w-full bg-inherit overflow-hidden flex items-center justify-between px-4">
+              <div className="h-12 w-full bg-inherit overflow-hidden flex items-center justify-between px-4 ">
                 {/* Left: Title */}
                 <h2 className="text-white text-2xl font-bold">ER Diagram</h2>
                 {/* Right: Search + Buttons */}
@@ -958,7 +958,7 @@ const Dashboard = () => {
                   </button>
                 </div>
               </div>
-              <div className="flex-1 h-full w-full bg-[#171717]  rounded-lg flex-shrink-0">
+              <div className="flex-1 h-full w-full bg-[#171717] rounded-lg flex-shrink-0">
                 {loadingSlice?.setEntityLoading ? (
                   <div className="flex items-center justify-center w-full h-full">
                     <SpinnerLoader />
