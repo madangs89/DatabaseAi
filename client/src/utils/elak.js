@@ -59,44 +59,51 @@ export const getElkLayout = async (nodes, edges) => {
   return { layoutedEdges, layoutedNodes };
 };
 
-export const typeMessage = ({
+export const typeMessage = async ({
   text,
   sender = "system",
   type = "normal",
   setChatMessages,
-  bottomRef,
-  autoScroll = false,
+  isWritting = false,
+  setIsWritting,
 }) => {
-  return new Promise((resolve) => {
-    const id = uuidv4();
+  const id = uuidv4();
+
+  // Wait until isWritting is false
+  while (isWritting) {
+    await new Promise((r) => setTimeout(r, 50)); // poll every 50ms
+  }
+
+  // Mark as writing
+  setIsWritting(true);
+
+  // Add empty message
+  setChatMessages((prev) => {
+    if (type === "status") {
+      const filtered = prev.filter((m) => m.type !== "status");
+      return [...filtered, { id, text, sender, type }];
+    }
+    return [...prev, { id, text: "", sender, type }];
+  });
+
+  // Type text character by character
+  await new Promise((resolve) => {
     let index = 0;
-
-    // Add empty message first
-    setChatMessages((prev) => {
-      if (type === "status") {
-        // Remove any old status bubbles before adding the new one
-        const filtered = prev.filter((m) => m.type !== "status");
-        return [...filtered, { id, text, sender, type }];
-      }
-      // Normal message → add with empty text, to simulate typing
-      return [...prev, { id, text: "", sender, type }];
-    });
-
-    let interval = setInterval(() => {
+    const interval = setInterval(() => {
       setChatMessages((prev) =>
-        prev.map((m) => {
-          if (m.id === id) {
-            return { ...m, text: text.slice(0, index++) };
-          }
-          return m;
-        })
+        prev.map((m) =>
+          m.id === id ? { ...m, text: text.slice(0, index++) } : m
+        )
       );
       if (index > text.length) {
         clearInterval(interval);
-        resolve(); // ✅ typing finished
+        resolve();
       }
     }, 6);
   });
+
+  // Finished typing
+  setIsWritting(false);
 };
 
 export const typeMessage2 = ({

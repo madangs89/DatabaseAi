@@ -5,6 +5,7 @@ const initialState = {
   projects: [],
   isError: null,
   isButtonLoading: false,
+  socket: null,
 };
 
 export const projectSlice = createSlice({
@@ -40,6 +41,9 @@ export const projectSlice = createSlice({
           : project
       );
     },
+    setSocket: (state, action) => {
+      state.socket = action.payload;
+    },
   },
 });
 
@@ -52,6 +56,7 @@ export const {
   addNewProject,
   removeProject,
   projectEditHandler,
+  setSocket,
 } = projectSlice.actions;
 
 export const projectReducer = projectSlice.reducer;

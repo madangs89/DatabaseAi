@@ -322,7 +322,13 @@ export default function Project() {
                     </div>
                     <div className="flex items-center gap-2 mt-2">
                       <button
-                        onClick={() => navigate(`/${project._id}/dashboard`)}
+                        onClick={() =>
+                          navigate(`/${project._id}/dashboard`, {
+                            state: {
+                              aiPrompt: "",
+                            },
+                          })
+                        }
                         className="bg-white text-black px-3 py-1.5 rounded-md text-sm font-medium shadow hover:bg-gray-200 transition"
                       >
                         Open

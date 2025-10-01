@@ -1,7 +1,12 @@
 import pubClient from "../app.js";
 import client from "../app.js";
 import { sendMessage, sendMessage2 } from "../utils/helpers.service.js";
-import { ai, getApiCodes, getConvKey } from "../utils/lll.service.js";
+import {
+  ai,
+  getApiCodes,
+  getConvKey,
+  parseInvalidJson,
+} from "../utils/lll.service.js";
 
 import { GoogleGenAI, Type } from "@google/genai";
 export const createDBWithLlmCall = async (req, res) => {
@@ -43,7 +48,8 @@ export const createDBWithLlmCall = async (req, res) => {
       var { socketId } = id;
       sendMessage2(
         socketId,
-        smallLLMResponse?.initialResponse || "working on your schema"
+        smallLLMResponse?.initialResponse || "working on your schema",
+        projectId
       );
     }
     if (smallLLMResponse?.isDbCall === true && smallLLMResponse?.dbConvKey) {
@@ -71,10 +77,13 @@ export const createDBWithLlmCall = async (req, res) => {
     var it;
     if (id) {
       let index = 0;
-      sendMessage(socketId, index++);
+      console.log("socketId", socketId);
+      console.log("projectId", projectId);
+
+      sendMessage(socketId, index++, projectId);
       it = setInterval(() => {
-        sendMessage(socketId, index++);
-      }, 15000);
+        sendMessage(socketId, index++, projectId);
+      }, 5000);
     }
 
     const chat = ai.chats.create({
@@ -155,7 +164,7 @@ There must be a 120px gap between schemas (both horizontally and vertically) and
 
     let raw = response?.candidates[0]?.content.parts[0]?.text;
     raw = raw.replace(/```json|```/g, "").trim();
-    let json = JSON.parse(raw);
+    let json = parseInvalidJson(raw);
     const { promptTokenCount, totalTokenCount, candidatesTokenCount } =
       response?.usageMetadata;
     pubClient.publish(
@@ -255,22 +264,22 @@ export const PromptGenerator = async (req, res) => {
       history: [],
       config: {
         systemInstruction: `
-        You are DBDescGen, an expert AI that generates **concise database-focused project LLm prompts**.
+      You are DBDescGen, an expert AI that generates **concise, production-ready database-focused project prompts** for any app or project.
 
 Task:
-Generate a short, clear, **maximum 70-word description** of the database for any app or project. Focus on entities, relationships, and core database functionality. 
+Generate a short, clear, **maximum 100-word description** of the database. Focus on **all essential entities required for a production-ready system**. Include core entities even if the user does not mention them. Prioritize entities based on real-world app standards.
 
 Rules:
 1. Respond in JSON format ONLY.
 2. Output **only one field**: "prompt".
-3. Do NOT include full schema, fields, or modules but u must need to include all production required entities.
-4. Be concise, professional, and database-focused.
-5. You must include the title in the response.
-6. No need to include relationship details.
+3. Include **all production-required entities** (e.g., Admin, User, Post, Comment, Like, Follow, Story, Reel, Hashtag, Notifications, etc. depending on app type). Do NOT omit important entities for brevity.
+4. Be concise, professional, database-focused, and human-readable.
+5. Include the **title of the project/app** in the response.
+6. No need to include relationships or fields, only entities in the description.
 
 JSON format:
 {
-  "prompt": "string -- a short, 70-word database-focused project prompt to generate the schema and code. and U Must includes all production required entities, no need of relationship details"
+  "prompt": "string -- a concise, 100-word database-focused project prompt that includes all production-required entities, ready to generate full schema and code not just description and not stick to simple entities"
 }
     `,
       },

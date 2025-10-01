@@ -192,18 +192,19 @@ const Dashboard = () => {
   const [llmCodeFromServer, setLlmCodeFromServer] = useState("");
   const bottomRef = useRef(null);
   const { fitView } = useReactFlow();
-  const [socket, setSocket] = useState(null);
-  const messageQueue = useRef(Promise.resolve());
   const location = useLocation();
   let { aiPrompt } = location.state || {};
   const auth = useSelector((state) => state?.auth);
   const initialScrollDone = useRef(false);
   const endRef = useRef(null);
   const dispatch = useDispatch();
+  const [isWritting, setIsWritting] = useState(false);
   const loadingSlice = useSelector((state) => state.loading);
-
+  const messageQueue = useRef(Promise.resolve());
   const [index, setIndex] = useState(0);
   const { id } = useParams();
+
+  const socket = useSelector((state) => state?.project?.socket);
 
   const tableData = [
     {
@@ -338,8 +339,10 @@ const Dashboard = () => {
   // Handling the submit function
   const handleInputSubmit = async (e, isAiPrompt = false, aiPrompt = "") => {
     e?.preventDefault();
+
+    if (loading) return;
     let inn;
-    if (isAiPrompt) {
+    if (isAiPrompt == true) {
       inn = aiPrompt;
     } else {
       inn = input;
@@ -355,10 +358,20 @@ const Dashboard = () => {
     setLoading(true);
 
     setInput("");
-    setChatMessages((prev) => [
-      ...prev,
-      { sender: "user", text: inn, id: uuidv4() },
-    ]);
+
+    console.log("setting inn", inn);
+
+    await new Promise((resolve) => {
+      setTimeout(() => {
+        setChatMessages((prev) => [
+          ...prev,
+          { sender: "user", text: inn, _id: uuidv4() },
+        ]);
+        resolve();
+      }, 100);
+    });
+
+    console.log("chat messages", chatMessages);
 
     setTimeout(() => {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -405,6 +418,9 @@ const Dashboard = () => {
           type: "normal",
           autoScroll,
           bottomRef,
+          isWritting,
+          setIsWritting,
+          messageQueue,
         });
       }
       if (
@@ -478,6 +494,9 @@ const Dashboard = () => {
           setChatMessages,
           bottomRef,
           autoScroll,
+          isWritting,
+          setIsWritting,
+          messageQueue,
         });
       }
       setLoading(false);
@@ -486,8 +505,6 @@ const Dashboard = () => {
       toast.error(error.response.data.message);
     }
   };
-
-  // detect user scroll
   const handleScroll = () => {
     if (!chatContainerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
@@ -503,145 +520,148 @@ const Dashboard = () => {
   useEffect(() => {
     if (aiPrompt && aiPrompt.length > 0) {
       (async () => {
-        handleInputSubmit({ preventDefault: () => {} }, true, aiPrompt);
-        aiPrompt = "";
-        return;
+        await handleInputSubmit({ preventDefault: () => {} }, true, aiPrompt);
+      })();
+    } else {
+      (async () => {
+        dispatch(setDashboardPageLoading(true));
+        try {
+          const res = await axios.get(
+            `${import.meta.env.VITE_BACKEND_URL}/project/${id}`,
+            { withCredentials: true }
+          );
+          if (res.data.success) {
+            setProjectTitle(res.data.data.title);
+          }
+          dispatch(setDashboardPageLoading(false));
+        } catch (error) {
+          toast.error("Unable to fetch project");
+          dispatch(setDashboardPageLoading(false));
+        }
+      })();
+      (async () => {
+        dispatch(setEntityLoading(true));
+        try {
+          const res = await axios.get(
+            `${import.meta.env.VITE_BACKEND_URL}/schema/${id}`,
+            { withCredentials: true }
+          );
+          if (res.data.success) {
+            console.log(res.data.data);
+
+            let nodes = res?.data?.data?.nodes.map((i) => {
+              return {
+                id: i.id.toLowerCase(),
+                type: "tableNode",
+                position: i.position,
+                data: {
+                  ...i.data,
+                  theme,
+                  setSelectedDb, // pass the setter
+                  selectedDb,
+                  setDbOpen,
+                  setSelectedDbData,
+                  setRelationshipsOpen,
+                  setChatOpen,
+                  loading,
+                  index,
+                  setIndex,
+                  setCopyOpen,
+                },
+              };
+            });
+
+            let code = "";
+            nodes.forEach((node) => {
+              code += node.data.code;
+            });
+            setSelectedDbData(nodes[0]);
+            console.log(selectedDbData);
+
+            setLlmCodeFromServer(code);
+            setNodes(nodes);
+            let edges = res?.data?.data?.edges.map((e) => {
+              return { ...e, style: { stroke: "gray", strokeWidth: 2 } };
+            });
+            setEdges(edges);
+          }
+          dispatch(setEntityLoading(false));
+        } catch (error) {
+          toast.error("Unable to fetch schema");
+          dispatch(setEntityLoading(false));
+        }
+      })();
+      (async () => {
+        try {
+          dispatch(setChatLoading(true));
+          const chat = await axios.get(
+            `${import.meta.env.VITE_BACKEND_URL}/conversation/chat/${id}`
+          );
+          if (chat.data.success) {
+            setChatMessages(chat?.data?.data);
+            console.log(chat?.data?.data);
+
+            let llmHistory = chat?.data?.data?.map((i) => {
+              if (i?.sender === "user") {
+                return {
+                  role: "user",
+                  parts: [{ text: i?.text }],
+                };
+              } else {
+                return {
+                  role: "model",
+                  parts: [{ text: i?.text }],
+                };
+              }
+            });
+            setLlmChatHistory(llmHistory);
+          }
+          dispatch(setChatLoading(false));
+        } catch (error) {
+          console.log("unable to fetch chat", error);
+
+          toast.error("Unable to fetch Chat");
+          dispatch(setChatLoading(false));
+        }
       })();
     }
-  }, [aiPrompt]);
+  }, [aiPrompt, id, dispatch]);
 
-  useEffect(() => {
-    if (aiPrompt && aiPrompt.length <= 0) {
-      return;
-    }
-    (async () => {
-      dispatch(setDashboardPageLoading(true));
-      try {
-        const res = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/project/${id}`,
-          { withCredentials: true }
-        );
-        if (res.data.success) {
-          setProjectTitle(res.data.data.title);
-        }
-        dispatch(setDashboardPageLoading(false));
-      } catch (error) {
-        toast.error("Unable to fetch project");
-        dispatch(setDashboardPageLoading(false));
-      }
-    })();
-    (async () => {
-      dispatch(setEntityLoading(true));
-      try {
-        const res = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/schema/${id}`,
-          { withCredentials: true }
-        );
-        if (res.data.success) {
-          console.log(res.data.data);
-
-          let nodes = res?.data?.data?.nodes.map((i) => {
-            return {
-              id: i.id.toLowerCase(),
-              type: "tableNode",
-              position: i.position,
-              data: {
-                ...i.data,
-                theme,
-                setSelectedDb, // pass the setter
-                selectedDb,
-                setDbOpen,
-                setSelectedDbData,
-                setRelationshipsOpen,
-                setChatOpen,
-                loading,
-                index,
-                setIndex,
-                setCopyOpen,
-              },
-            };
-          });
-
-          let code = "";
-          nodes.forEach((node) => {
-            code += node.data.code;
-          });
-          setSelectedDbData(nodes[0]);
-          console.log(selectedDbData);
-
-          setLlmCodeFromServer(code);
-          setNodes(nodes);
-          let edges = res?.data?.data?.edges.map((e) => {
-            return { ...e, style: { stroke: "gray", strokeWidth: 2 } };
-          });
-          setEdges(edges);
-        }
-        dispatch(setEntityLoading(false));
-      } catch (error) {
-        toast.error("Unable to fetch schema");
-        dispatch(setEntityLoading(false));
-      }
-    })();
-    (async () => {
-      try {
-        dispatch(setChatLoading(true));
-        const chat = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/conversation/chat/${id}`
-        );
-        if (chat.data.success) {
-          setChatMessages(chat?.data?.data);
-        }
-        dispatch(setChatLoading(false));
-      } catch (error) {
-        console.log("unable to fetch chat", error);
-
-        toast.error("Unable to fetch Chat");
-        dispatch(setChatLoading(false));
-      }
-    })();
-  }, [id, dispatch, aiPrompt]);
   // For socket connection
-  useEffect(() => {
-    const newSocket = io("http://localhost:5000", {
-      auth: {
-        userId: auth?.user?._id,
-      },
-    });
-    setSocket(newSocket);
-    return () => {
-      if (socket) {
-        console.log("Emitting EndConnection event...");
-        newSocket.emit("EndConnection", { userId: auth?.user?._id });
-        newSocket.close();
-      }
-    };
-  }, []);
-
   useEffect(() => {
     if (socket) {
       socket.on("statusUpdate", (data) => {
-        messageQueue.current = messageQueue.current.then(async () => {
-          if (data?.isScroll) {
-            await typeMessage({
-              text: data.message,
-              sender: "system",
-              type: "status",
-              setChatMessages,
-              autoScroll,
-              bottomRef,
-            });
-            bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-          } else {
-            await typeMessage({
-              text: data.message,
-              sender: "system",
-              type: "normal",
-              setChatMessages,
-              autoScroll,
-              bottomRef,
-            });
-          }
-        });
+        if (data.projectId == id) {
+          setLoading(true);
+          messageQueue.current = messageQueue.current.then(async () => {
+            if (data?.isScroll) {
+              await typeMessage({
+                text: data.message,
+                sender: "system",
+                type: "status",
+                setChatMessages,
+                autoScroll,
+                bottomRef,
+                isWritting,
+                setIsWritting,
+                messageQueue,
+              });
+              bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+            } else {
+              await typeMessage({
+                text: data.message,
+                sender: "system",
+                type: "normal",
+                setChatMessages,
+                autoScroll,
+                bottomRef,
+                isWritting,
+                setIsWritting,
+                messageQueue,
+              });
+            }
+          });
+        }
       });
     }
   }, [socket]);

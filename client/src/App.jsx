@@ -18,6 +18,8 @@ import { setAuthTrue } from "./redux/slice/authSlice";
 import Project from "./pages/Project";
 import { setPageLoading } from "./redux/slice/loadingSlice";
 import SpinnerLoader from "./components/loaders/SpinnerLoader";
+import { io } from "socket.io-client";
+import { setSocket } from "./redux/slice/projectSlice";
 
 const App = () => {
   const isAuth = useSelector((state) => state.auth.isAuth);
@@ -26,6 +28,9 @@ const App = () => {
   const location = useLocation();
   const scrollRef = useRef(null);
   const dispatch = useDispatch();
+
+  const projectSlice = useSelector((state) => state.project);
+  const auth = useSelector((state) => state.auth);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -43,6 +48,22 @@ const App = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (auth.user?._id) {
+      const newSocket = io("http://localhost:5000", {
+        auth: {
+          userId: auth?.user?._id,
+        },
+      });
+      dispatch(setSocket(newSocket));
+    }
+    return () => {
+      if (projectSlice?.socket) {
+        projectSlice?.socket.emit("EndConnection", { userId: auth?.user?._id });
+        projectSlice?.socket.close();
+      }
+    };
+  }, [auth]);
   // 👇 Update locomotive when route changes
   useEffect(() => {
     setTimeout(() => {
@@ -62,8 +83,8 @@ const App = () => {
       if (data?.data?.success) {
         dispatch(setAuthTrue(data?.data));
       }
-      dispatch(setPageLoading(false));
     })();
+    dispatch(setPageLoading(false));
   }, []);
 
   if (loadingSlice?.pageLoading) {
@@ -81,7 +102,7 @@ const App = () => {
       className="bg-black min-h-screen relative w-full overflow-hidden"
     >
       <Navbar />
-      <div data-scroll-section>
+      <div className="overflow-hidden " data-scroll-section>
         <Routes>
           <Route path="/" element={<Hero />} />
           <Route

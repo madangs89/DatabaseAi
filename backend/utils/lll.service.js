@@ -1,15 +1,54 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import pubClient from "../app.js";
-import  JSON5 from 'json5';
+import JSON5 from "json5";
 export const ai = new GoogleGenAI({
   apiKey: "AIzaSyAlWQFfshR0bGzgXGvE2fs4QeU3__D42lg",
 });
+
+function customParse(raw) {
+  const result = {};
+
+  // Match each "filename": "content"
+  const regex = /"([^"]+)":\s*"(.*?)"(?=,\n\s*"[^"]+":|,\n\s*}|$)/gs;
+  let match;
+
+  while ((match = regex.exec(raw)) !== null) {
+    const filename = match[1];
+    const rawContent = match[2];
+
+    // Unescape common JSON escape sequences
+    const content = rawContent
+      .replace(/\\"/g, '"') // unescape quotes
+      .replace(/\\n/g, "\n") // unescape newlines
+      .replace(/\\t/g, "\t") // unescape tabs
+      .replace(/\\\\/g, "\\"); // unescape backslashes
+
+    result[filename] = content;
+  }
+
+  return result;
+}
+
+export const parseInvalidJson = (raw) => {
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    try {
+      return JSON5.parse(raw);
+    } catch (error) {
+      console.warn("Falling back to custom parser...");
+      return customParse(raw);
+    }
+  }
+};
 
 export const getConvKey = async (prompt, message, projectId, userId) => {
   try {
     if (!prompt) {
       return null;
     }
+    console.log("prompt", prompt);
+
     const chat = ai.chats.create({
       model: "gemini-2.5-flash-lite",
       history: prompt,
@@ -247,12 +286,13 @@ JSON structure:
     const response = await chat.sendMessage({ message });
     let raw = response?.candidates[0]?.content.parts[0]?.text;
     raw = raw.replace(/```json|```/g, "").trim();
-    // let json = JSON5.parse(raw);
+    let json = parseInvalidJson(raw);
+
     // console.log(response.usageMetadata);
     // return json;
-    console.log(raw["package.json"]);
-    
-    return res.json({ message: raw, success: true });
+    // console.log(raw["package.json"]);
+
+    return res.json({ message: json, success: true });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Server error", success: false });
