@@ -835,12 +835,13 @@ const Dashboard = () => {
         "locationUpdate",
         JSON.stringify({
           userId: auth?.user?._id,
-          location: "",
-          outCount: 1,
+          location: "locationUpdate",
+          isStayOutCall: loading ? true : false,
+          projectId: id,
         })
       );
     };
-  }, [socket, auth?.user?._id]);
+  }, [socket, auth?.user?._id , loading]);
 
   useEffect(() => {
     if (!initialScrollDone.current && chatMessages.length > 0) {

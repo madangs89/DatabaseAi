@@ -107,7 +107,7 @@ const processErrorHandler = async () => {
           completionTokens,
         } = payload;
         if (!projectId || !userId || !promptTokens || !totalTokens) continue;
-        const usage = await Usage.findOne({ projectId });
+        let usage = await Usage.findOne({ projectId });
         if (!usage) {
           usage = await Usage.create({
             projectId,

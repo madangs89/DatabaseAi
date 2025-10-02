@@ -38,26 +38,45 @@ io.on("connection", (socket) => {
   pubClient.hSet(
     "onlineUsers",
     userId,
-    JSON.stringify({ socketId: socket.id, location: "project", outCount: 0 })
+    JSON.stringify({ socketId: socket.id, location: "project" })
   );
+  pubClient.hSet("location", userId, JSON.stringify({ data: [] }));
 
   socket.on("EndConnection", async (data) => {
     console.log("EndConnection event received:", data); // Log the data for debugging
     // Handle any necessary cleanup here, such as removing the user from the online list
-    await pubClient.hDel("onlineUsers", userId); // Example cleanup
+    await pubClient.hDel("onlineUsers", userId); // Example cleanup\
+    await pubClient.hDel("location", userId);
   });
 
   socket.on("locationUpdate", async (data) => {
     let d = JSON.parse(data);
     const { location, userId } = d;
-    console.log("locationUpdate event received:", data);
+    console.log("isStayOutCall", d?.isStayOutCall, location, userId);
 
     let savedDetails = await pubClient.hGet("onlineUsers", userId);
     if (savedDetails) {
       savedDetails = JSON.parse(savedDetails);
       savedDetails.location = location;
-      if (d.outCount != undefined) {
-        savedDetails.outCount = d.outCount;
+
+      if (d?.isStayOutCall && d?.projectId) {
+        let loc = await pubClient.hGet("location", userId);
+        if (loc) {
+          loc = JSON.parse(loc);
+          let isThere = false;
+          if (loc?.data && loc?.data?.length > 0) {
+            loc?.data.forEach((item) => {
+              if (item?.projectId == d?.projectId) {
+                isThere = true;
+              }
+            });
+          }
+          if (!isThere) {
+            loc.data.push({ projectId: d?.projectId, stayOut: true });
+          }
+          await pubClient.hSet("location", userId, JSON.stringify(loc));
+          console.log("location Updated", loc);
+        }
       }
       await pubClient.hSet("onlineUsers", userId, JSON.stringify(savedDetails));
     }
@@ -244,16 +263,28 @@ subClient.subscribe("nodesAndEdges", async (data) => {
   if (userDetails) {
     const { socketId } = JSON.parse(userDetails);
     if (socketId) {
-      io.to(socketId).emit(
-        "nodesAndEdgesData",
-        JSON.stringify({
-          nodes,
-          edges,
-          projectId,
-          initialResponse,
-          finalExplanation,
-        })
-      );
+      let loc = await pubClient.hGet("location", userId);
+      loc = loc ? JSON.parse(loc) : { data: [] };
+
+      if (loc?.data?.length > 0) {
+        loc?.data.forEach((item) => {
+          if (item?.projectId == projectId && item?.stayOut) {
+            io.to(socketId).emit(
+              "nodesAndEdgesData",
+              JSON.stringify({
+                nodes,
+                edges,
+                projectId,
+                initialResponse,
+                finalExplanation,
+              })
+            );
+          }
+        });
+      }
+
+      loc.data = loc.data.filter((i) => i?.projectId != projectId);
+      await pubClient.hSet("location", userId, JSON.stringify(loc));
     }
   }
 
@@ -320,7 +351,7 @@ subClient.subscribe("token", async (data) => {
       (!projectId || !userId || !promptTokens, !totalTokens, !completionTokens)
     )
       return;
-    const usage = await Usage.findOne({ projectId });
+    let usage = await Usage.findOne({ projectId });
     if (!usage) {
       usage = await Usage.create({
         projectId,
@@ -334,7 +365,10 @@ subClient.subscribe("token", async (data) => {
     usage.totalTokens += totalTokens;
     usage.completionTokens += completionTokens;
     await usage.save();
+    console.log("saved the token");
   } catch (error) {
+    console.log("token Error", error);
+
     const ErrorQueueData = {
       payload: JSON.parse(data),
       reason: "token",

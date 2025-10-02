@@ -48,11 +48,9 @@ export const createDBWithLlmCall = async (req, res) => {
     id = JSON.parse(id);
     if (id) {
       var { socketId } = id;
-      sendMessage2(
-        socketId,
-        smallLLMResponse?.initialResponse || "working on your schema",
-        projectId
-      );
+      if (smallLLMResponse?.initialResponse) {
+        sendMessage2(socketId, smallLLMResponse?.initialResponse, projectId);
+      }
     }
     if (smallLLMResponse?.isDbCall === true && smallLLMResponse?.dbConvKey) {
       let cachedData = await client.get(smallLLMResponse.dbConvKey);
@@ -143,7 +141,7 @@ There must be a 120px gap between schemas (both horizontally and vertically) and
           "description": "string"
         }
       ],
-    "finalExplanation": "Max 250 words -- A step-by-step explanation of the schema u designed and how it is useful for the app. Use numbered steps and numbered points. This must be included in every response. If no code is written, just send an empty string; otherwise, provide the full details. Note:Never give any coding part here. Only give text in this field",
+    "finalExplanation": " A step-by-step Max 500 words(in 500 words only u have to explain completely) explanation of the schema u designed and how it is useful for the app. Use numbered steps and numbered points. This must be included in every response. If no code is written, just send an empty string; otherwise, provide the full details. Note:Never give any coding part here. Only give text in this field",
       "migrationPlan": "string -- step-by-step SQL migration if schema updated"
     }
     Rules for code(Inside entities.code):
@@ -206,6 +204,14 @@ There must be a 120px gap between schemas (both horizontally and vertically) and
         userId: req.user._id,
         text: "Sorry for the inconvenience, Our Model is overLoaded please try again later",
       })
+    );
+    let id = await pubClient.hGet("onlineUsers", userId);
+    id = JSON.parse(id);
+    const { socketId } = id;
+    sendMessage2(
+      socketId,
+      "Something went wrong ,Sorry for the inconvenience Please try again later",
+      projectId
     );
     console.error(error);
     return res

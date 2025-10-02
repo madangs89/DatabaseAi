@@ -241,7 +241,7 @@ export default function Project() {
   }, []);
 
   useEffect(() => {
-      if (!socket || !auth?.user?._id) return;
+    if (!socket || !auth?.user?._id) return;
     try {
       socket.emit(
         "locationUpdate",
