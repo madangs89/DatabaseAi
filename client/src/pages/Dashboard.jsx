@@ -511,8 +511,7 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.log(error);
-      toast.error("Something went wrong");
-      setChatMessages((prev) => prev.filter((c) => c.type !== "status"));
+      toast.error("Something went wrong, Please Try Again Later");
       setLoading(false);
     }
   };
@@ -676,10 +675,14 @@ const Dashboard = () => {
               });
               bottomRef.current?.scrollIntoView({ behavior: "smooth" });
             } else {
+              let t;
+              if (data?.type == "error") {
+                t = "error";
+              }
               await typeMessage({
                 text: data.message,
                 sender: "system",
-                type: "normal",
+                type: t ? t : "normal",
                 setChatMessages,
                 autoScroll,
                 bottomRef,
@@ -796,9 +799,14 @@ const Dashboard = () => {
       socket.on("apiError", async (data) => {
         const { projectId, text } = JSON.parse(data);
         if (projectId == id) {
+          console.log("api error");
+          toast.error("api Error");
+          setChatMessages((prev) => {
+            const filtered = prev.filter((c) => c.type !== "status");
+            return [...filtered];
+          });
+
           setLoading(false);
-          setChatMessages((prev) => prev.filter((c) => c.type !== "status"));
-          toast.error(text || "Something went wrong, Please Try Again Later");
         }
       });
     }
@@ -841,7 +849,7 @@ const Dashboard = () => {
         })
       );
     };
-  }, [socket, auth?.user?._id , loading]);
+  }, [socket, auth?.user?._id, loading]);
 
   useEffect(() => {
     if (!initialScrollDone.current && chatMessages.length > 0) {

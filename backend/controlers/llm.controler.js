@@ -155,7 +155,7 @@ There must be a 120px gap between schemas (both horizontally and vertically) and
       },
     });
     const response = await chat.sendMessage({
-      message: smallLLMResponse?.dbPrompt,
+      message: smallLLMResponse?.dbPrompt
     });
     if (it) {
       clearInterval(it);
@@ -197,6 +197,7 @@ There must be a 120px gap between schemas (both horizontally and vertically) and
 
     const { projectId } = req.body;
 
+    const userId = req.user?._id;
     pubClient.publish(
       "apiError",
       JSON.stringify({
@@ -211,7 +212,8 @@ There must be a 120px gap between schemas (both horizontally and vertically) and
     sendMessage2(
       socketId,
       "Something went wrong ,Sorry for the inconvenience Please try again later",
-      projectId
+      projectId,
+      true
     );
     console.error(error);
     return res

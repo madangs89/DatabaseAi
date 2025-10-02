@@ -45,11 +45,21 @@ export const sendMessage = async (socket, index, projectId) => {
     type: "status",
   });
 };
-export const sendMessage2 = async (socket, msg, projectId) => {
+export const sendMessage2 = async (socket, msg, projectId, type) => {
   console.log(`emiting the msg ${msg}`);
-  io.to(socket).emit("statusUpdate", {
-    message: msg,
-    projectId,
-    isScroll: false,
-  });
+
+  if (type) {
+    io.to(socket).emit("statusUpdate", {
+      message: msg,
+      projectId,
+      isScroll: false,
+      type: "error",
+    });
+  } else {
+    io.to(socket).emit("statusUpdate", {
+      message: msg,
+      projectId,
+      isScroll: false,
+    });
+  }
 };

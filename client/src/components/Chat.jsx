@@ -47,6 +47,8 @@ const Chat = ({
                     className={`max-w-[90%] whitespace-pre-line px-4 py-2 flex items-center justify-center flex-col gap-2 rounded-lg ${
                       msg.sender === "user"
                         ? "bg-blue-600 text-white"
+                        : msg.type === "error"
+                        ? "bg-[#232323] text-red-500"
                         : "bg-[#232323] text-gray-200"
                     }`}
                   >

@@ -79,11 +79,17 @@ export const typeMessage = async ({
 
   // Add empty message
   setChatMessages((prev) => {
+    const filtered = prev.filter((m) => m.type !== "status");
+
     if (type === "status") {
-      const filtered = prev.filter((m) => m.type !== "status");
+      // Avoid adding status again if already last message is status
+      if (prev.length && prev[prev.length - 1].type === "status") {
+        return prev;
+      }
       return [...filtered, { id, text, sender, type }];
     }
-    return [...prev, { id, text: "", sender, type }];
+
+    return [...filtered, { id, text: "", sender, type }];
   });
 
   // Type text character by character
