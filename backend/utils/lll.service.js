@@ -9,22 +9,27 @@ function customParse(raw) {
   const result = {};
 
   // Match each "filename": "content"
-  const regex = /"([^"]+)":\s*"(.*?)"(?=,\n\s*"[^"]+":|,\n\s*}|$)/gs;
-  let match;
+  try {
+    const regex = /"([^"]+)":\s*"(.*?)"(?=,\n\s*"[^"]+":|,\n\s*}|$)/gs;
+    let match;
 
-  while ((match = regex.exec(raw)) !== null) {
-    const filename = match[1];
-    const rawContent = match[2];
+    while ((match = regex.exec(raw)) !== null) {
+      const filename = match[1];
+      const rawContent = match[2];
 
-    // Unescape common JSON escape sequences
-    const content = rawContent
-      .replace(/\\"/g, '"') // unescape quotes
-      .replace(/\\n/g, "\n") // unescape newlines
-      .replace(/\\t/g, "\t") // unescape tabs
-      .replace(/\\\\/g, "\\"); // unescape backslashes
+      // Unescape common JSON escape sequences
+      const content = rawContent
+        .replace(/\\"/g, '"') // unescape quotes
+        .replace(/\\n/g, "\n") // unescape newlines
+        .replace(/\\t/g, "\t") // unescape tabs
+        .replace(/\\\\/g, "\\"); // unescape backslashes
 
-    result[filename] = content;
+      result[filename] = content;
+    }
+  } catch (error) {
+    console.error("Error parsing JSON:", error);
   }
+  console.log("Custom parser work done");
 
   return result;
 }
@@ -42,12 +47,12 @@ export const parseInvalidJson = (raw) => {
   }
 };
 
-export const getConvKey = async (prompt, message, projectId, userId, res) => {
+export const getConvKey = async (prompt, message, projectId, userId) => {
   try {
     if (!prompt) {
       return null;
     }
-    console.log("prompt", prompt);
+    console.log("get con called");
 
     const chat = ai.chats.create({
       model: "gemini-2.5-flash-lite",
@@ -102,29 +107,29 @@ json
     });
     const response = await chat.sendMessage({ message });
     let raw = response?.candidates[0]?.content.parts[0]?.text;
-    console.log("Token usage in get con key:", response.usageMetadata);
     raw = raw.replace(/```json|```/g, "").trim();
     let json = JSON.parse(raw);
     const { promptTokenCount, totalTokenCount, candidatesTokenCount } =
       response?.usageMetadata;
-    pubClient.publish(
-      "token",
-      JSON.stringify({
-        projectId,
-        userId,
-        promptTokens: promptTokenCount,
-        totalTokens: totalTokenCount,
-        completionTokens: candidatesTokenCount,
-      })
-    );
-    console.log("json", json);
+    if (projectId && userId) {
+      pubClient.publish(
+        "token",
+        JSON.stringify({
+          projectId,
+          userId,
+          promptTokens: promptTokenCount,
+          totalTokens: totalTokenCount,
+          completionTokens: candidatesTokenCount,
+        })
+      );
+    }
+    console.log("success in get con");
+
     return json;
   } catch (error) {
     console.log("erro in getconvo", error);
 
     console.error(error);
-
-    return res.json({ error: error.message });
   }
 };
 export const getApiCodes = async (req, res) => {
@@ -299,6 +304,8 @@ JSON structure:
     return res.json({ message: json, success: true });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Server error in getCon", success: false });
+    return res
+      .status(500)
+      .json({ message: "Server error in getCon", success: false });
   }
 };

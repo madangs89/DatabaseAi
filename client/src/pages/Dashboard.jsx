@@ -792,11 +792,21 @@ const Dashboard = () => {
           setLoading(false);
         }
       });
+
+      socket.on("apiError", async (data) => {
+        const { projectId, text } = JSON.parse(data);
+        if (projectId == id) {
+          setLoading(false);
+          setChatMessages((prev) => prev.filter((c) => c.type !== "status"));
+          toast.error(text || "Something went wrong, Please Try Again Later");
+        }
+      });
     }
 
     return () => {
       if (socket) {
         socket.off("nodesAndEdgesData");
+        socket.off("apiError");
       }
     };
   }, [socket]);

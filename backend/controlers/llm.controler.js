@@ -24,11 +24,8 @@ export const createDBWithLlmCall = async (req, res) => {
       prompt,
       message,
       projectId,
-      userId,
-      res
+      userId
     );
-
-    console.log("smallLLMResponse", smallLLMResponse);
 
     if (smallLLMResponse?.initialResponse) {
       pubClient.publish(
@@ -36,6 +33,7 @@ export const createDBWithLlmCall = async (req, res) => {
         JSON.stringify({
           message: smallLLMResponse?.initialResponse,
           projectId,
+          userId,
         })
       );
     }
@@ -145,7 +143,7 @@ There must be a 120px gap between schemas (both horizontally and vertically) and
           "description": "string"
         }
       ],
-    "finalExplanation": "A step-by-step explanation of the schema u designed and how it is useful for the app. Use numbered steps and numbered points. This must be included in every response. If no code is written, just send an empty string; otherwise, provide the full details. Note:Never give any coding part here. Only give text in this field",
+    "finalExplanation": "Max 250 words -- A step-by-step explanation of the schema u designed and how it is useful for the app. Use numbered steps and numbered points. This must be included in every response. If no code is written, just send an empty string; otherwise, provide the full details. Note:Never give any coding part here. Only give text in this field",
       "migrationPlan": "string -- step-by-step SQL migration if schema updated"
     }
     Rules for code(Inside entities.code):
@@ -198,6 +196,17 @@ There must be a 120px gap between schemas (both horizontally and vertically) and
     if (it) {
       clearInterval(it);
     }
+
+    const { projectId } = req.body;
+
+    pubClient.publish(
+      "apiError",
+      JSON.stringify({
+        projectId,
+        userId: req.user._id,
+        text: "Sorry for the inconvenience, Our Model is overLoaded please try again later",
+      })
+    );
     console.error(error);
     return res
       .status(500)

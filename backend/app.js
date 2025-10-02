@@ -286,6 +286,30 @@ subClient.subscribe("nodesAndEdges", async (data) => {
   }
 });
 
+subClient.subscribe("apiError", async (data) => {
+  console.log("Control comes to api error");
+
+  try {
+    const { projectId, userId, text } = JSON.parse(data);
+    const userDetails = await pubClient.hGet("onlineUsers", userId);
+    if (userDetails) {
+      const { socketId } = JSON.parse(userDetails);
+      if (socketId) {
+        io.to(socketId).emit(
+          "apiError",
+          JSON.stringify({
+            text,
+            projectId,
+          })
+        );
+      }
+    }
+    console.log("Successfully sent api error");
+  } catch (error) {
+    console.log("Error while sending api error");
+  }
+});
+
 subClient.subscribe("token", async (data) => {
   try {
     console.log("reciving tokne requrest");

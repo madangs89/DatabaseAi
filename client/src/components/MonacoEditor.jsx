@@ -288,7 +288,16 @@ const MonacoEditor = () => {
         });
     };
     let t = convertObjectToArray(root);
-    setTree(t);
+
+    let final = [
+      {
+        type: "folder",
+        id: "root",
+        name: "backend",
+        children: [...t],
+      },
+    ];
+    setTree(final);
   }, []);
 
   return (
@@ -332,7 +341,7 @@ const MonacoEditor = () => {
                   onClick={() => openFile(item)}
                   className={`${
                     selectedFile?.id !== item?.id ? "hover:bg-[#1e1e1e]" : ""
-                  } text-[14px] border-[0.5px] min-w-[100px] overflow-hidden border-[#2a2a2a] px-4 py-3 cursor-pointer flex items-center justify-center gap-2 ${
+                  } text-[14px] border-[0.5px] min-w-[150px] overflow-hidden border-[#2a2a2a] px-4 py-3 cursor-pointer flex items-center justify-center gap-2 ${
                     selectedFile?.id === item?.id ? "bg-[#1e1e1e]" : ""
                   }`}
                 >
