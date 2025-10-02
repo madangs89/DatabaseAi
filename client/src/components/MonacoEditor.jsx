@@ -169,7 +169,7 @@ const TreeNode = ({
 
 const MonacoEditor = () => {
   const [tree, setTree] = useState({});
-  const [expandedFiles, setExpandedFiles] = useState(new Set());
+  const [expandedFiles, setExpandedFiles] = useState(new Set(["root"]));
   const [hoverId, setHoverId] = useState("");
 
   const [selectedFile, setSelectedFile] = useState(null);
