@@ -905,7 +905,7 @@ const Dashboard = () => {
           <MonacoEditor />
         ) : (
           <>
-            <div className="w-[67%] overflow-hidden p-2 flex-shrink-0 items-center justify-center gap-4  border-r-[0.5px] border-[#262626] h-full flex flex-col">
+            <div className="flex-1 overflow-hidden p-2 flex-shrink-0 items-center justify-center gap-4  border-r-[0.5px] border-[#262626] h-full flex flex-col">
               {/* Nav for left half */}
               <div className="h-12 w-full bg-inherit overflow-hidden flex items-center justify-between px-4 ">
                 {/* Left: Title */}
@@ -1025,7 +1025,7 @@ const Dashboard = () => {
               </form>
             </div>
 
-            <div className="w-1/2 relative h-full  flex-col overflow-hidden bg-[#171717] flex gap-2  justify-center">
+            <div className="w-[35%] relative h-full  flex-col overflow-hidden bg-[#171717] lg:flex hidden  gap-2  justify-center">
               <DashboardRightNav
                 chatOpen={chatOpen}
                 dbOpen={dbOpen}

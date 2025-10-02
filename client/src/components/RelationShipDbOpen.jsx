@@ -10,7 +10,7 @@ const RelationShipDbOpen = ({
   return (
     <>
       {relationshipsOpen && (
-        <div className="flex-1 text-white px-3  overflow-y-auto rounded-lg shadow-lg w-full max-w-md">
+        <div className="flex-1 text-white px-3  overflow-y-auto rounded-lg shadow-lg ">
           {edges?.length > 0 &&
             edges?.map((attr) => (
               <div
