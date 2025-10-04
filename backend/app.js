@@ -75,8 +75,11 @@ io.on("connection", (socket) => {
           if (!isThere) {
             loc.data.push({ projectId: d?.projectId, stayOut: true });
           }
-          await pubClient.hSet("location", userId, JSON.stringify(loc));
-          console.log("location Updated", loc);
+          if (loc.data.length > 0) {
+            await pubClient.hSet("location", userId, JSON.stringify(loc));
+          } else {
+            await pubClient.hDel("location", userId);
+          }
         }
       }
       await pubClient.hSet("onlineUsers", userId, JSON.stringify(savedDetails));
@@ -87,6 +90,7 @@ io.on("connection", (socket) => {
   socket.on("disconnect", async () => {
     console.log("a user disconnected: " + userId);
     await pubClient.hDel("onlineUsers", userId);
+    await pubClient.hDel("location", userId);
   });
 });
 
@@ -417,6 +421,8 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
             );
           }
           if (projectId) {
+            console.log("saving api code to database");
+
             await SchemaVersion.findOneAndUpdate(
               {
                 projectId,
@@ -431,6 +437,7 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
                 new: true,
               }
             );
+            console.log("saved api code to database");
           }
         }
       } else {
@@ -467,6 +474,8 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
               }
             }
             if (projectId) {
+              console.log("saving api code to database");
+
               await SchemaVersion.findOneAndUpdate(
                 {
                   projectId,
@@ -481,6 +490,7 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
                   new: true,
                 }
               );
+              console.log("saved api code to database");
             }
           }
         }

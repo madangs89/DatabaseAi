@@ -83,6 +83,8 @@ export const createDBWithLlmCall = async (req, res) => {
       }
     }
 
+    console.log("smallLLMResponse?.dbConvKey", smallLLMResponse?.dbConvKey);
+
     if (id) {
       let index = 0;
       console.log("socketId", socketId);
@@ -254,22 +256,48 @@ export const suggestionModel = async (req, res) => {
       history: [],
       config: {
         systemInstruction: `
-        You are DBDescGen, an expert AI that generates **concise database-focused project descriptions**.
+You are DBDescGen, an expert AI that generates concise, database-focused project descriptions.
 
 Task:
-Generate a short, clear, **maximum 70-word description** of the database for any app or project. Focus on entities, relationships, and core database functionality. 
+
+Generate a short, clear, maximum 70-word description of the database for any app or project. Focus on key entities, relationships, and core database functionality. Include core entities even if the user does not explicitly mention them. Prioritize real-world, production-ready design.
 
 Rules:
-1. Respond in JSON format ONLY.
-2. Output **only one field**: "description".
-3. Do NOT include full schema, fields, or modules.
-4. Be concise, professional, and database-focused.
-5. You must include the title in the response.
 
-JSON format:
+Respond in JSON format ONLY.
+
+Output only one field: "description".
+
+Include key entities required for production (e.g., Admin, User, Post, Comment, Order, Product, Payment, etc., depending on app type).
+
+Do not include full schema, fields, or modules.
+
+Be concise, professional, and database-focused.
+
+Include the title of the project/app in the response.
+
+If the user specifies a database (MongoDB, MySQL, PostgreSQL, Redis, Neo4j, etc.), mention it in the description.
+
+If no database is specified, default to PostgreSQL.
+
+Limit output to maximum 70 words.
+
+JSON Format Example:
+
+User says: "Social media app using MongoDB":
+
 {
-  "description": "string -- a short, 70-word database-focused project description. and U Must includes key entities"
+  "description": "Database for 'Social Media App' using MongoDB, including key entities: Admin, User, Post, Comment, Like, Follow, Story, Reel, Hashtag, Notifications. Designed for core database functionality, scalability, and performance in a real-world production environment."
 }
+
+
+User says: "E-commerce platform" (no DB specified):
+
+{
+  "description": "Database for 'E-Commerce Platform' using PostgreSQL, including key entities: Admin, User, Product, Category, Cart, Order, Payment, Shipment, Review, Inventory, Wishlist. Designed for core database functionality, relationships, and scalable production-ready performance."
+}
+
+
     `,
       },
     });
@@ -306,23 +334,45 @@ export const PromptGenerator = async (req, res) => {
       history: [],
       config: {
         systemInstruction: `
-      You are DBDescGen, an expert AI that generates **concise, production-ready database-focused project prompts** for any app or project.
+     You are DBDescGen, an expert AI that generates concise, production-ready database-focused project prompts for any app or project.
 
 Task:
-Generate a short, clear, **maximum 100-word description** of the database. Focus on **all essential entities required for a production-ready system**. Include core entities even if the user does not mention them. Prioritize entities based on real-world app standards.
+
+Generate a short, clear, maximum 100-word description of the database. Focus on all essential entities required for a production-ready system. Include core entities even if the user does not mention them. Prioritize entities based on real-world app standards.
 
 Rules:
-1. Respond in JSON format ONLY.
-2. Output **only one field**: "prompt".
-3. Include **all production-required entities** (e.g., Admin, User, Post, Comment, Like, Follow, Story, Reel, Hashtag, Notifications, etc. depending on app type). Do NOT omit important entities for brevity.
-4. Be concise, professional, database-focused, and human-readable.
-5. Include the **title of the project/app** in the response.
-6. No need to include relationships or fields, only entities in the description.
 
-JSON format:
+Respond in JSON format ONLY.
+
+Output only one field: "prompt".
+
+Include all production-required entities (e.g., Admin, User, Post, Comment, Like, Follow, Story, Reel, Hashtag, Notifications, etc., depending on app type). Do not omit important entities for brevity.
+
+Be concise, professional, database-focused, and human-readable.
+
+Include the title of the project/app in the response.
+
+If the user explicitly specifies a database (MongoDB, MySQL, PostgreSQL, Redis, Neo4j, etc.), include that database language in the description.
+
+If no database is mentioned, default to PostgreSQL.
+
+No need to include relationships or fields, only entities in the description.
+
+JSON Format Example:
+
+User says: "Social media app using MongoDB":
+
 {
-  "prompt": "string -- a concise, 100-word database-focused project prompt that includes all production-required entities, ready to generate full schema and code not just description and not stick to simple entities"
+  "prompt": "Create a database for 'Social Media App' using MongoDB. Include all essential entities for production: Admin, User, Post, Comment, Like, Follow, Story, Reel, Hashtag, Notifications, Messages, Media, Settings, Reports. Ensure the design supports scalability, performance, and real-world app requirements."
 }
+
+
+User says: "E-commerce platform" (no DB specified):
+
+{
+  "prompt": "Create a database for 'E-Commerce Platform' using PostgreSQL. Include all essential entities for production: Admin, User, Product, Category, Cart, Order, Payment, Shipment, Review, Inventory, Coupons, Wishlist, Notifications, Analytics. Ensure the design supports scalability, performance, and real-world app requirements."
+}
+
     `,
       },
     });
