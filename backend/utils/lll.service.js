@@ -281,9 +281,9 @@ If not specified, default to PostgreSQL.
 "middleware/auth.js"
 "middleware/errorHandler.js"
 "middleware/validate.js"
-"models/<Model>.js" (one per model)
-"controllers/<model>Controller.js" (one per model)
-"routes/<model>Routes.js" (one per model)
+"models/<Model>.js" (one per required model)
+"controllers/<model>Controller.js" (one per required model)
+"routes/<model>Routes.js" (one per required model)
 "routes/authRoutes.js" and "controllers/authController.js"
 "utils/jwt.js"
 "README.md"
@@ -314,11 +314,7 @@ A. Authentication
 4.A.6 Middleware: auth.isAuthenticated and auth.hasRole('admin').
 
 B. Validation & Security
-4.B.1 Input validation using Joi or celebrate on POST/PUT endpoints.
-4.B.2 Centralized error handling with consistent JSON error responses.
-4.B.3 Security middleware: helmet, rate limiting, CORS (configurable via env), and body size limits.
-4.B.4 Prevent NoSQL/SQL injection using parameterized queries or sanitization.
-4.B.5 HTTPS recommended; trust proxy handling included.
+4.B.1 Security middleware: helmet, rate limiting, CORS (configurable via env), and body size limits.
 
 C. API Endpoints
 4.C.1 For each model, implement full CRUD:
