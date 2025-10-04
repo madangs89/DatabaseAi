@@ -240,30 +240,6 @@ const Dashboard = () => {
       pos: { x: 900, y: 150 },
     },
   ];
-  // const entity = {
-  //   name: "Users",
-  //   description: "Stores user account information and login credentials.",
-  //   attributes: [
-  //     {
-  //       name: "id",
-  //       type: "INT",
-  //       note: "PRIMARY KEY",
-  //       description: "Unique identifier for each user.",
-  //     },
-  //     {
-  //       name: "username",
-  //       type: "VARCHAR(255)",
-  //       note: "UNIQUE",
-  //       description: "",
-  //     },
-  //     {
-  //       name: "email",
-  //       type: "VARCHAR(255)",
-  //       note: "NOT NULL",
-  //       description: "",
-  //     },
-  //   ],
-  // };
 
   // Convert to nodes
   const initialNodes = tableData.map((t) => ({
@@ -528,27 +504,28 @@ const Dashboard = () => {
     }
   }, [nodes]);
   useEffect(() => {
+    (async () => {
+      dispatch(setDashboardPageLoading(true));
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/project/${id}`,
+          { withCredentials: true }
+        );
+        if (res.data.success) {
+          setProjectTitle(res.data.data.title);
+        }
+        dispatch(setDashboardPageLoading(false));
+      } catch (error) {
+        toast.error("Unable to fetch project");
+        dispatch(setDashboardPageLoading(false));
+      }
+    })();
+
     if (aiPrompt && aiPrompt.length > 0) {
       (async () => {
         await handleInputSubmit({ preventDefault: () => {} }, true, aiPrompt);
       })();
     } else {
-      (async () => {
-        dispatch(setDashboardPageLoading(true));
-        try {
-          const res = await axios.get(
-            `${import.meta.env.VITE_BACKEND_URL}/project/${id}`,
-            { withCredentials: true }
-          );
-          if (res.data.success) {
-            setProjectTitle(res.data.data.title);
-          }
-          dispatch(setDashboardPageLoading(false));
-        } catch (error) {
-          toast.error("Unable to fetch project");
-          dispatch(setDashboardPageLoading(false));
-        }
-      })();
       (async () => {
         dispatch(setEntityLoading(true));
         try {
@@ -932,27 +909,7 @@ const Dashboard = () => {
                 {/* Right: Search + Buttons */}
                 <div className="flex items-center gap-2">
                   {/* Search Box */}
-                  <div className="flex items-center bg-[#1c1c1c] border border-[#333] rounded-md px-2 py-1">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="w-4 h-4 text-[#525252]"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1110.5 3a7.5 7.5 0 016.15 13.65z"
-                      />
-                    </svg>
-                    <input
-                      type="text"
-                      placeholder="Search entities..."
-                      className="bg-transparent placeholder:text-[#525252] outline-none text-sm text-white px-2"
-                    />
-                  </div>
+
                   {/* Plus Button */}
                   <button className="w-8 h-8 flex items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]">
                     +

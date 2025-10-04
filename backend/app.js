@@ -12,6 +12,7 @@ import { createAdapter } from "@socket.io/redis-adapter";
 import Conversation from "./models/conversatoin.model.js";
 import SchemaVersion from "./models/schema.model.js";
 import Usage from "./models/usage.model.js";
+import { getApiCodes } from "./utils/lll.service.js";
 
 export const io = new Server(httpServer, {
   cors: {
@@ -387,6 +388,48 @@ subClient.subscribe("deleteProject", async (data) => {
     console.log(`Deleted all data for project ${projectId}`);
   } catch (error) {
     console.error("Error deleting project data:", error);
+  }
+});
+
+subClient.subscribe("apiCode", async (apiCodeData) => {
+  try {
+    console.log("handle comes api code");
+    const { data, projectId, userId, dbConvKey } = JSON.parse(apiCodeData);
+
+    if (!projectId || !userId || !data || !dbConvKey) return;
+    console.log("reciving api code requrest", dbConvKey);
+
+    if (dbConvKey) {
+      let cachedData = await pubClient.get(`api:${dbConvKey}`);
+      if (cachedData) {
+        console.log("api code from cache", cachedData);
+      } else {
+        console.log("not got the cache in api code");
+
+        console.log("got the data in api code", data.entities);
+
+        if (data?.entities) {
+          console.log("got the entities in api code");
+
+          const nodes = data?.entities.map((t) => ({
+            id: t.name.toLowerCase(),
+            position: t.pos,
+            data: {
+              title: t?.name,
+              fields: t?.fields,
+              code: t?.code?.length ? t.code : null,
+              id: t.name.toLowerCase(),
+              description: t?.description ? t.description : null,
+            },
+          }));
+          console.log("called the get api in app service");
+          const rep = await getApiCodes(nodes);
+          console.log("api code response", rep);
+        }
+      }
+    }
+  } catch (error) {
+    console.log("api code Error", error);
   }
 });
 

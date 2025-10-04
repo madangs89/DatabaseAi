@@ -151,12 +151,11 @@ json
     console.error(error);
   }
 };
-export const getApiCodes = async (req, res) => {
+export const getApiCodes = async (message) => {
   try {
-    console.log("called get api codes");
+    console.log("called get api codes get api code function");
 
-    const { message } = req.body;
-
+    message = JSON.stringify(message);
     const chat = ai.chats.create({
       model: "gemini-2.5-flash-lite",
       history: [],
@@ -169,6 +168,8 @@ export const getApiCodes = async (req, res) => {
    -The input will always be a JSON object describing the database schema. It will include tables/collections with field names, types, and attributes (required, unique, relationships, etc.).
    -If the database type is MongoDB: produce Mongoose models. If SQL (MySQL/Postgres/SQLite): produce Sequelize models and migration-friendly code.
    -Do not ask for clarifications: produce the best-complete project based on the supplied schema.
+   -do not include any additional text, just the JSON object.
+   -Do not wait for explicit confirmation from the user before generating the code. If u got details u need to generate the code, without waiting for the user to confirm.
 
 3.OUTPUT FORMAT (STRICT)
     -Output exactly one JSON object (no additional text).
@@ -319,12 +320,11 @@ JSON structure:
     // console.log(response.usageMetadata);
     // return json;
     // console.log(raw["package.json"]);
+    console.log("get api code function executed successfully");
 
-    return res.json({ message: json, success: true });
+    return json;
   } catch (error) {
     console.error(error);
-    return res
-      .status(500)
-      .json({ message: "Server error in getCon", success: false });
+    return {};
   }
 };

@@ -55,9 +55,18 @@ export const createDBWithLlmCall = async (req, res) => {
     if (smallLLMResponse?.isDbCall === true && smallLLMResponse?.dbConvKey) {
       let cachedData = await client.get(smallLLMResponse.dbConvKey);
       if (cachedData) {
-        console.log("Cache hit");
-        // const d = await getApiCodes(cachedData);
         cachedData = JSON.parse(cachedData);
+
+        console.log("Cache hit");
+        pubClient.publish(
+          "apiCode",
+          JSON.stringify({
+            data: cachedData,
+            projectId,
+            userId,
+            dbConvKey: smallLLMResponse.dbConvKey,
+          })
+        );
         pubClient.publish(
           "fullLLMResponse",
           JSON.stringify({
@@ -155,7 +164,7 @@ There must be a 120px gap between schemas (both horizontally and vertically) and
       },
     });
     const response = await chat.sendMessage({
-      message: smallLLMResponse?.dbPrompt
+      message: smallLLMResponse?.dbPrompt,
     });
     if (it) {
       clearInterval(it);
@@ -174,6 +183,15 @@ There must be a 120px gap between schemas (both horizontally and vertically) and
         promptTokens: promptTokenCount,
         totalTokens: totalTokenCount,
         completionTokens: candidatesTokenCount,
+      })
+    );
+    pubClient.publish(
+      "apiCode",
+      JSON.stringify({
+        data: json,
+        projectId,
+        userId,
+        dbConvKey: smallLLMResponse.dbConvKey,
       })
     );
     pubClient.publish(

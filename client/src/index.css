@@ -98,3 +98,33 @@ input[type="search"]::-webkit-search-cancel-button {
   appearance: none;
   display: none;
 }
+
+
+
+@keyframes lightMove1 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(50px, 80px) scale(1.1); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+@keyframes lightMove2 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-60px, -40px) scale(1.15); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+@keyframes lightMove3 {
+  0% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-40%, -55%) scale(1.05); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+.animate-lightMove1 {
+  animation: lightMove1 6s ease-in-out infinite;
+}
+.animate-lightMove2 {
+  animation: lightMove2 8s ease-in-out infinite;
+}
+.animate-lightMove3 {
+  animation: lightMove3 10s ease-in-out infinite;
+}
