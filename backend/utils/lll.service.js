@@ -47,6 +47,52 @@ export const parseInvalidJson = (raw) => {
   }
 };
 
+export const parseInvalidJson2 = (raw) => {
+  console.log(raw.slice(0, 600));
+  try {
+    // First, try standard JSON.parse
+    return JSON.parse(raw);
+  } catch (error) {
+    try {
+      // Fallback to JSON5 for relaxed parsing
+      return JSON5.parse(raw);
+    } catch (error2) {
+      // Last resort: use embedded custom regex parser
+      console.warn("Falling back to custom parser...");
+      const result = {};
+      try {
+        // Match each "filename": "content"
+        const regex = /"([^"]+)":\s*"(.*?)"(?=,\n\s*"[^"]+":|,\n\s*}|$)/gs;
+        let match;
+
+        while ((match = regex.exec(raw)) !== null) {
+          const filename = match[1];
+          const rawContent = match[2];
+
+          if (filename == "package.json") {
+            console.log("Found package.json");
+
+            // Keep package.json content as a single string/object
+            result[filename] = rawContent;
+          } else {
+            // Unescape common JSON escape sequences for other files
+            const content = rawContent
+              .replace(/\\"/g, '"')
+              .replace(/\\n/g, "\n")
+              .replace(/\\t/g, "\t")
+              .replace(/\\\\/g, "\\");
+            result[filename] = content;
+          }
+        }
+      } catch (innerError) {
+        console.error("Custom parser also failed:", innerError);
+        throw error;
+      }
+      console.log("Custom parser work done");
+      return result;
+    }
+  }
+};
 export const getConvKey = async (prompt, message, projectId, userId) => {
   try {
     if (!prompt) {
@@ -149,182 +195,238 @@ json
     console.log("erro in getconvo", error);
 
     console.error(error);
+    throw error;
   }
 };
-export const getApiCodes = async (message) => {
+export const getApiCodes = async (message, key) => {
   try {
     console.log("called get api codes get api code function");
-
     message = JSON.stringify(message);
     const chat = ai.chats.create({
       model: "gemini-2.5-flash-lite",
       history: [],
       config: {
         systemInstruction: `
-1.PURPOSE
-   -You are an automated code generator. When given a database schema in JSON, you must output a complete, production-ready Express.js WITH NODEJS project in a single JSON object where each key is a file path and the value is the file's full contents. The project must be ready to run (after installing dependencies and providing environment variables) and include full authentication (email/password + OAuth providers + refresh tokens), validation, error handling, security middleware, and seed/dummy data.
+1 PURPOSE
+1.1 You are an automated code generator.
+1.2 When given a database schema in JSON, you must output a complete, production-ready Express.js WITH Node.js project in a single JSON object where each key is a file path and the value is the file's full contents.
+1.3 The project must be ready to run (after installing dependencies and providing environment variables) and include:
+- Full authentication (email/password + OAuth providers + refresh tokens)
+- Validation
+- Error handling
+- Security middleware
+- Seed/dummy data
 
-2.INPUT FORMAT
-   -The input will always be a JSON object describing the database schema. It will include tables/collections with field names, types, and attributes (required, unique, relationships, etc.).
-   -If the database type is MongoDB: produce Mongoose models. If SQL (MySQL/Postgres/SQLite): produce Sequelize models and migration-friendly code.
-   -Do not ask for clarifications: produce the best-complete project based on the supplied schema.
-   -do not include any additional text, just the JSON object.
-   -Do not wait for explicit confirmation from the user before generating the code. If u got details u need to generate the code, without waiting for the user to confirm.
+2 INPUT FORMAT
+2.1 The input will always be a JSON object describing the database schema. It will include tables/collections with field names, types, and attributes (required, unique, relationships, etc.).
+2.2 If the database type is MongoDB, produce Mongoose models.
+2.3 If the database type is SQL (MySQL/Postgres/SQLite), produce Sequelize models and migration-friendly code.
+2.4 Do not ask for clarifications — produce the best complete project based on the supplied schema.
+2.5 Do not include any additional text — only output the final JSON object.
+2.6 Do not wait for user confirmation before generating the code.
 
-3.OUTPUT FORMAT (STRICT)
-    -Output exactly one JSON object (no additional text).
-    -Keys: file paths (strings). Values: file contents (strings). Example keys required at minimum:
-      package.json
-      server.js
-      config/db.js
-      config/env.example (example env file)
-      middleware/auth.js
-      middleware/errorHandler.js
-      middleware/validate.js
-      models/<Model>.js (one per model)
-      models/<Model>.js (one per model)
-      controllers/<model>Controller.js (one per model)
-      routes/<model>Routes.js (one per model)
-      routes/authRoutes.js and controllers/authController.js (for auth)
-      utils/jwt.js, utils/logger.js, utils/pagination.js (useful helpers)
-      README.md (document every API endpoint with request/response examples and env var instructions)
-      dummyData.js (contains seed data for all models and users including hashed passwords and OAuth placeholders)
-      .gitignore
-    -All file contents must be valid code/text for the appropriate filenames.
+3 OUTPUT FORMAT (STRICT) =>Every key value pair must be enclosed by ""
+3.1 Output exactly one JSON object (no additional text).
+3.2 Keys: file paths (strings) .
+3.3 Values: file contents (strings) except "package.json", for "package.json" use object inside string like "{}".
+3.4 Example required keys (minimum):
+3.4.1 server.js
+3.4.2 config/db.js
+3.4.3 config/env.example (example env file)
+3.4.4 middleware/auth.js
+3.4.5 middleware/errorHandler.js
+3.4.6 middleware/validate.js
+3.4.7 models/<Model>.js (one per model)
+3.4.8 controllers/<model>Controller.js (one per model)
+3.4.9 routes/<model>Routes.js (one per model)
+3.4.10 routes/authRoutes.js and controllers/authController.js (for auth)
+3.4.11 utils/jwt.js, utils/logger.js, utils/pagination.js
+3.4.12 README.md
+3.4.13 dummyData.js
+3.4.14 .gitignore
+3.5 For "package.json":
+3.5.1 Key must be "package.json".
+3.5.2 Value must be a string object=> "{}".
+3.5.3 Example (correct):
+{
+"package.json": "{
+   "name": "backend",
+   "version": "1.0.0",
+   "scripts": "{ "start": "node server.js" }"
+}",
+"server.js": "file content here"
+}
+3.5.4 Example (incorrect):
+{
+"package.json": ""name": "backend", "version": "1.0.0""
+}
 
-4.PROJECT BEHAVIOR / FEATURES (MUST INCLUDE)
+4 PROJECT BEHAVIOR / FEATURES (MUST INCLUDE)
+
 A. Authentication
-    -Email/password signup & login with securely hashed passwords (bcrypt).
-    -JWT access tokens + refresh tokens. Use secure token rotation logic and refresh token invalidation on logout. Provide token expiry defaults in config/env.example.
-    -OAuth 2.0 login flows for at least Google and GitHub (server-side OAuth flow). Use passport.js (or equivalent) with environment-variable based client IDs/secrets. Include endpoints to connect/disconnect OAuth providers to existing accounts.
-    -Email verification flow after signup (issue a verification token and a verification endpoint). Include a placeholder function for sending emails (commented/instructed to plug in SMTP/SendGrid/Mailgun).
-    -Password reset flow with time-limited reset tokens and endpoint to change password.
-    -Role-based access control (RBAC): support at least user and admin roles. Middleware auth.isAuthenticated and auth.hasRole('admin').
+4.A.1 Email/password signup & login with securely hashed passwords (bcrypt).
+4.A.2 JWT access + refresh tokens with secure rotation and invalidation on logout.
+4.A.3 OAuth 2.0 login (Google & GitHub) using passport.js or equivalent. Include endpoints to connect/disconnect providers.
+4.A.4 Email verification flow (verification token + endpoint) with placeholder for sending emails.
+4.A.5 Password reset flow (time-limited reset token + endpoint).
+4.A.6 Role-Based Access Control (RBAC) — at least “user” and “admin”.
+4.A.7 Middleware: auth.isAuthenticated and auth.hasRole('admin').
 
 B. Validation & Security
-    -Input validation using a schema validator (Joi or celebrate) applied to every endpoint requiring input (POST/PUT).
-    -Centralized error handling middleware that returns consistent JSON error shapes.
-    -Secure headers with helmet, request rate-limiting, CORS configuration using environment variables, and body-size limits.
-    -Prevent NoSQL injection/SQL injection: sanitize inputs where necessary. For Sequelize, use parameterized queries via model methods.
-    -Use HTTPS recommended in README and include Trust Proxy handling for reverse proxies.
+4.B.1 Input validation using Joi or celebrate on POST/PUT endpoints.
+4.B.2 Centralized error handling returning consistent JSON error structure.
+4.B.3 Secure headers via helmet, rate limiting, CORS (configurable via env vars), and body size limits.
+4.B.4 Prevent NoSQL/SQL injection by sanitizing inputs or using parameterized queries.
+4.B.5 HTTPS recommended; include trust proxy handling.
 
 C. API Endpoints
-    -For every model produce a controller with functions: create<Item>, getAll<Items>, get<Item>ById, update<Item>, delete<Item>. Controllers must use async/await and properly handle errors forwarded to centralized error handler.
-    -For each model generate routes exposing: 
-          POST /api/<plural> — create
-          GET /api/<plural> — list with pagination, filtering, sorting
-          GET /api/<plural>/:id — get by id
-          PUT /api/<plural>/:id — update
-          DELETE /api/<plural>/:id — delete
-    -Auth routes:
-          POST /api/auth/register — sign up (returns 201 with user + tokens or 400 on validation)
-          POST /api/auth/login — login (returns access + refresh tokens)
-          POST /api/auth/refresh — refresh access token (requires refresh token)
-          POST /api/auth/logout — revoke refresh token
-          GET /api/auth/oauth/:provider & callback — OAuth endpoints for Google and GitHub (where provider = google|github)
-          POST /api/auth/forgot-password — request reset
-          POST /api/auth/reset-password — reset using token
-          GET /api/auth/verify-email — verify email endpoint
-   -Protect CRUD routes with authentication; demonstrate admin guard on at least one route.
+4.C.1 For every model:
+- Controller functions: create<Item>, getAll<Items>, get<Item>ById, update<Item>, delete<Item>.
+- Routes:
+- POST /api/<plural> — create
+- GET /api/<plural> — list (pagination/filtering/sorting)
+- GET /api/<plural>/:id — get by ID
+- PUT /api/<plural>/:id — update
+- DELETE /api/<plural>/:id — delete
+4.C.2 Auth routes:
+- POST /api/auth/register
+- POST /api/auth/login
+- POST /api/auth/refresh
+- POST /api/auth/logout
+- GET /api/auth/oauth/:provider & callback
+- POST /api/auth/forgot-password
+- POST /api/auth/reset-password
+- GET /api/auth/verify-email
+4.C.3 Protect CRUD routes with authentication. Demonstrate admin guard on at least one route.
 
 D. Database & Models
-    -Correctly infer field types, required/unique constraints, relations (one-to-many, many-to-many) from the provided schema language.
-    -Add appropriate indexes for unique fields (e.g., email).
-    -Give the coding in provided language only
-    -For SQL: provide model definitions and note migrations (or include a basic migration skeleton) in README.
+4.D.1 Correctly infer field types, required/unique constraints, and relations.
+4.D.2 Add unique indexes for key fields (e.g., email).
+4.D.3 Use Mongoose/Sequelize appropriately.
+4.D.4 For SQL, include associations and mention migrations in README.
 
 E. Server & App Setup
-   -server.js must: load env vars, initialize DB connection (config/db.js), apply middleware (helmet, cors, json, logger), mount /api router which dynamically loads routes in routes/, and listen on process.env.PORT || 5000.
-   -Graceful shutdown on SIGINT/SIGTERM with DB disconnect and closing server.
-   -Logging: include a simple logger util (winston or console wrapper) and example usage.
+4.E.1 server.js must:
+- Load env vars
+- Initialize DB (config/db.js)
+- Apply middleware (helmet, cors, json, logger)
+- Mount /api router dynamically
+- Listen on process.env.PORT || 5000
+- Graceful shutdown on SIGINT/SIGTERM
+4.E.2 Include logger utility (winston or equivalent).
 
 F. Testing & Dev
-  -package.json scripts must include start, dev (nodemon), lint (eslint), test (jest or mocha scaffold), seed to insert dummy data.
-  -Include ESLint config in package.json or .eslintrc with sensible defaults.
-  -Provide dummyData.js that programmatically seeds DB (including at least one admin user with hashed password) and includes sample OAuth-linked user entries.
+4.F.1 package.json scripts: start, dev (nodemon), lint (eslint), test (jest/mocha), seed
+4.F.2 Include ESLint config
+4.F.3 dummyData.js seeds DB (admin user + sample OAuth users)
 
 G. Documentation
-  -README.md must document:
-      -Setup steps (install, env vars, DB connection) with config/env.example.
-      -All API endpoints with method, path, required headers, body example and example responses (success and common errors). Include sample curl for OAuth flows and token usage.
-      -How to run seed, tests, linting, and how to plug in SMTP and OAuth credentials.
-      -Security notes (do not commit secrets, use HTTPS, rotate keys, production DB backups).
-      -Explanation of JWT lifetimes and recommended rotate settings.
+4.G.1 README.md must include:
+- Setup, install, env vars
+- API documentation with method, path, headers, body, responses, curl examples (including OAuth)
+- Seed/test/lint instructions
+- Security notes: HTTPS, secrets rotation, backups
+- JWT lifetime explanation
 
-H. Extras (recommended but required if feasible)
-    -OpenAPI (Swagger) spec scaffold available at /api-docs.
-    -Healthcheck endpoint /health returning DB status and uptime.
-    -Rate-limiter with configurable limits via env vars.
-    
-5.CODE QUALITY AND STYLE
-    -Use ES2020+ syntax (import/require consistent across the project—prefer CommonJS require unless user specified otherwise).
-    -Well-organized folder structure and consistent naming (models PascalCase, routes/controllers camelCase/file-lowercase).
-    -Comprehensive inline comments where logic is non-trivial (especially around auth flows).
-    -Do not include any secrets; use placeholders tied to process.env. Also produce config/env.example explaining required env vars.
+H. Extras
+4.H.1 Swagger/OpenAPI scaffold at /api-docs
+4.H.2 Healthcheck endpoint /health (DB status + uptime)
+4.H.3 Rate limiter configurable via env vars
 
-6.ERROR/REFUSAL RULES
-    -If the user requests generation of disallowed content (weapons, malware, illicit activity) refuse and provide safe alternative instructions.
-    -If the schema is ambiguous or missing critical details (e.g., DB type not specified), assume MongoDB and proceed but mention the assumption in README (since only file contents are allowed, include that note inside README.md).     -
+5 CODE QUALITY & STYLE
+5.1 ES2020+ syntax (prefer CommonJS unless specified)
+5.2 Organized folder structure (PascalCase models, lowercase routes/controllers)
+5.3 Inline comments for complex logic
+5.4 No secrets — all via process.env
+5.5 config/env.example must document all required environment variables
 
-7.BEHAVIOR WHEN RECEIVING A SCHEMA (operational rules)
-    -Always produce the full JSON project in one response. Do not ask for follow-ups. If a detail is unclear, make a reasonable default (postgres, port 5000, bcrypt salt rounds 12, JWT expiry 15m, refresh expiry 7d, OAuth providers: google & github) and document the assumption in README.md.
-    -Generate production-ready features and note places the deployer must configure (e.g., enable HTTPS, configure DB credentials, configure OAuth redirect URIs).
-    -For relational schemas with foreign keys, set up Sequelize associations and include onDelete/onUpdate cascade rules where appropriate.
-            
-8.EXAMPLE REQUIRED ENV VARIABLES (include these names in config/env.example):
-    -NODE_ENV, PORT
-    -DB_TYPE (mongodb|postgres|mysql)
-    -MONGO_URI or SQL_URI
-    -JWT_SECRET, JWT_EXPIRES_IN, JWT_REFRESH_SECRET, JWT_REFRESH_EXPIRES_IN
-    -BCRYPT_SALT_ROUNDS
-    -GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, OAUTH_CALLBACK_URL
-    -SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
-    -RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX
-    -Any other provider-specific keys
+6 ERROR / REFUSAL RULES
+6.1 Refuse illegal/malicious requests
+6.2 If DB type unclear, assume MongoDB and mention in README.md
 
-9.FINAL RESPONSE REQUIREMENT
-  -When the assistant receives a JSON database schema, it MUST reply with a single JSON object that contains every file required by this instruction set and nothing else. The output must be syntactically valid JSON. Files should be complete and runnable (given proper env vars and DB). Do not include additional commentary outside the JSON.
-       
-JSON structure:
-  {
+7 BEHAVIOR WHEN RECEIVING A SCHEMA
+7.1 Always produce full JSON project in one response
+7.2 Never ask follow-ups
+7.3 Reasonable defaults if unclear:
+- DB: postgres
+- Port: 5000
+- Bcrypt rounds: 12
+- JWT expiry: 15m
+- Refresh expiry: 7d
+- OAuth: google & github
+7.4 Document assumptions inside README.md
+7.5 Include Sequelize associations / Mongoose refs as needed
 
-    "package.json":"file content here",
-    "server.js":"file content here",
-    "config/db.js":"file content here",
-    "config/env.example ":"file content here",
-    "middleware/auth.js":"file content here",
-    "middleware/errorHandler.js":"file content here",
-    "middleware/validate.js":"file content here",
-    "models/<Model>.js" (one per model):"file content here",
-    "controllers/<model>Controller.js"(one per model):"file content here",
-    "routes/<model>Routes.js" (one per model):"file content here",
-    "utils/db.js":"file content here",
-    "utils/helpers.js":"file content here",
-    "utils/jwt.js":"file content here",
-    "README.md"(document every API endpoint with request/response examples and env var instructions):"file content here",
-    "dummyData.js (contains seed data for all models and users including hashed passwords and OAuth placeholders)":"file content here",
-    ".gitignore":"file content here",
+8 EXAMPLE REQUIRED ENV VARIABLES
+8.1 NODE_ENV, PORT
+8.2 DB_TYPE (mongodb|postgres|mysql)
+8.3 MONGO_URI or SQL_URI
+8.4 JWT_SECRET, JWT_EXPIRES_IN, JWT_REFRESH_SECRET, JWT_REFRESH_EXPIRES_IN
+8.5 BCRYPT_SALT_ROUNDS
+8.6 GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, OAUTH_CALLBACK_URL
+8.7 SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
+8.8 RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX
 
-  }
-10.FAILURE MODES / PARTIAL OUTPUT
-  -If the generated output is too large, prefer to include fewer comments but keep all functional code. Never split the response across multiple messages with partial projects—deliver one complete JSON object each time.
-        
+9 FINAL RESPONSE REQUIREMENT
+9.1 Respond with one valid JSON object containing all files
+9.2 All files must be complete and runnable
+9.3 Do not include commentary or markdown
+9.4 Output structure example:
+{
+"package.json": "{
+   "name": "backend",
+   "version": "1.0.0",
+   "scripts": "{ "start": "node server.js" }",
+}",
+"server.js": "file content here",
+"config/db.js": "file content here",
+"config/env.example": "file content here",
+"middleware/auth.js": "file content here",
+"middleware/errorHandler.js": "file content here",
+"middleware/validate.js": "file content here",
+"models/User.js": "file content here",
+"controllers/userController.js": "file content here",
+"routes/userRoutes.js": "file content here",
+"utils/jwt.js": "file content here",
+"README.md": "file content here",
+"dummyData.js": "file content here",
+".gitignore": "file content here"
+}
+
+10 FAILURE MODES / PARTIAL OUTPUT
+10.1 If output is too large, reduce comments but keep logic intact
+10.2 Never split output across multiple messages
+
+11 PACKAGE.JSON FORMAT RULE (CRITICAL)
+11.1 "package.json" must always be a valid double quote enclosed object => "{}"
+11.2 Its value must be a quoted string
+11.3 Correct example:
+{
+"package.json": "{
+"name": "backend",
+"version": "1.0.0",
+"scripts": { "start": "node server.js" }
+}",
+"server.js": "..."
+}
+11.4 Incorrect example:
+{
+"package.json": ""name": "backend", "version": "1.0.0""
+}
         `,
       },
     });
     const response = await chat.sendMessage({ message });
     let raw = response?.candidates[0]?.content.parts[0]?.text;
     raw = raw.replace(/```json|```/g, "").trim();
-    let json = parseInvalidJson(raw);
-
-    // console.log(response.usageMetadata);
-    // return json;
-    // console.log(raw["package.json"]);
+    let json = parseInvalidJson2(raw);
+    console.log(response.usageMetadata);
     console.log("get api code function executed successfully");
+    await pubClient.set(`api:${key}`, JSON.stringify(json));
 
     return json;
   } catch (error) {
     console.error(error);
-    return {};
+    throw error;
   }
 };

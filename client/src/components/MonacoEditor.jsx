@@ -3,7 +3,6 @@ import Editor from "@monaco-editor/react";
 import { ChevronDown, ChevronRight, File, Folder, X } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import {
-  setTree,
   toggleExpandable,
   setHoverId,
   openFile,
@@ -94,60 +93,68 @@ const TreeNode = ({
   openFile,
   selectedFile,
 }) => {
-  let indentSpace = { marginLeft: `${level * 10}px` };
+  const isFolder = nodes.type === "folder";
+  const isOpen = isFolder && expandedFiles.includes(nodes.id);
 
-  if (nodes.type == "folder") {
-    const isOpen = expandedFiles.has(nodes.id);
-    return (
-      <div className="space-y-2">
-        <div
-          key={nodes.id}
-          onClick={() => toggleExpandable(nodes.id)}
-          style={indentSpace}
-          className="flex items-center gap-2 cursor-pointer select-none hover:text-white"
-        >
-          {isOpen ? (
-            <ChevronDown className="w-4 h-4" />
-          ) : (
-            <ChevronRight className="w-4 h-4" />
-          )}
-          <Folder className="w-3 h-3" />
-          <span>{nodes.name}</span>
-        </div>
-        {isOpen &&
-          nodes.children &&
-          nodes.children.length > 0 &&
-          nodes.children.map((child) => (
-            <TreeNode
-              key={child.id}
-              toggleExpandable={toggleExpandable}
-              expandedFiles={expandedFiles}
-              nodes={child}
-              openFile={openFile}
-              selectedFile={selectedFile}
-              level={level + 1}
-            />
-          ))}
-      </div>
-    );
-  }
+  // Indentation for tree levels
+  const indentStyle = { paddingLeft: `${level * 16}px` };
 
   return (
-    <div
-      onClick={() => openFile(nodes)}
-      style={indentSpace}
-      key={nodes.id}
-      className={`flex items-center gap-2 cursor-pointer px-2 py-2 hover:text-white text-sm ${
-        selectedFile?.id == nodes?.id ? "bg-[#1e1e1e]" : ""
-      }`}
-    >
-      <File className="w-3 h-3" />
-      <span>{nodes.name}</span>
+    <div className="flex flex-col">
+      <div
+        key={nodes.id}
+        style={indentStyle}
+        className={`flex items-center gap-2 cursor-pointer select-none rounded-sm px-2 py-1
+          ${
+            selectedFile?.id === nodes?.id
+              ? "bg-[#2a2a2a] text-white"
+              : "text-[#a3a3a3] hover:bg-[#1e1e1e] hover:text-white"
+          }
+        `}
+        onClick={() =>
+          isFolder ? toggleExpandable(nodes.id) : openFile(nodes)
+        }
+      >
+        {isFolder ? (
+          <>
+            {isOpen ? (
+              <ChevronDown className="w-4 h-4" />
+            ) : (
+              <ChevronRight className="w-4 h-4" />
+            )}
+            <Folder className="w-4 h-4" />
+            <span className="truncate">{nodes.name}</span>
+          </>
+        ) : (
+          <>
+            <File className="w-4 h-4 ml-4" />
+            <span className="truncate">{nodes.name}</span>
+          </>
+        )}
+      </div>
+
+      {/* Render children if folder is open */}
+      {isFolder && isOpen && nodes.children && nodes.children.length > 0 && (
+        <div className="flex flex-col">
+          {nodes.children.map((child) => (
+            <TreeNode
+              key={child.id}
+              nodes={child}
+              level={level + 1}
+              toggleExpandable={toggleExpandable}
+              expandedFiles={expandedFiles}
+              openFile={openFile}
+              selectedFile={selectedFile}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
 
 const MonacoEditor = () => {
+  const socket = useSelector((state) => state?.project?.socket);
   const dispatch = useDispatch();
   const {
     tree,
@@ -157,67 +164,29 @@ const MonacoEditor = () => {
     selectedFileHistory,
     loadingState,
   } = useSelector((state) => state.monaco);
-
-  useEffect(() => {
-    let root = {};
-    Object.entries(fakeTreeStructure).forEach(([key, value]) => {
-      let parts = key.split("/");
-      let current = root;
-      let accumulated = "";
-      parts.forEach((part, index) => {
-        const isFile = index === parts.length - 1;
-        accumulated = accumulated ? `${accumulated}/${part}` : part;
-        if (!current[part]) {
-          if (isFile) {
-            current[part] = {
-              type: "file",
-              id: accumulated,
-              name: part,
-              content: value,
-            };
-          } else {
-            current[part] = {
-              type: "folder",
-              id: accumulated,
-              name: part,
-              children: {},
-            };
-          }
-        }
-        if (!isFile) {
-          current = current[part].children;
-        }
-      });
-    });
-
-    const convertObjectToArray = (obj) => {
-      return Object.values(obj)
-        .map((item) => {
-          if (item.type == "folder") {
-            return { ...item, children: convertObjectToArray(item.children) };
-          } else {
-            return { ...item };
-          }
-        })
-        .sort((a, b) => {
-          if (a.type == b.type) {
-            return a.name.localeCompare(b.name);
-          }
-          return a.type == "folder" ? -1 : 1;
-        });
-    };
-
-    let t = convertObjectToArray(root);
-    let final = [
-      {
-        type: "folder",
-        id: "root",
-        name: "backend",
-        children: [...t],
-      },
-    ];
-    dispatch(setTree(final));
-  }, [dispatch]);
+  const handleLanguage = (name) => {
+    if (name && name.length > 2) {
+      if (name.endsWith(".js")) return "javascript";
+      if (name.endsWith(".jsx")) return "javascript";
+      if (name.endsWith(".ts")) return "typescript";
+      if (name.endsWith(".tsx")) return "typescript";
+      if (name.endsWith(".css")) return "css";
+      if (name.endsWith(".html")) return "html";
+      if (name.endsWith(".json")) return "json";
+      if (name.endsWith(".md")) return "markdown";
+    }
+    return "plaintext";
+  };
+  const selectedFileHandler = () => {
+    if (selectedFile) {
+      if (selectedFile.name.endsWith(".json")) {
+        return JSON.parse(selectedFile.content);
+      } else {
+        return selectedFile.content;
+      }
+    }
+    return "// Select a file to view/edit"
+  };
 
   return (
     <div className="w-full h-screen overflow-hidden flex bg-[#0a0a0a] text-[#e5e5e5] font-sans">
@@ -226,35 +195,33 @@ const MonacoEditor = () => {
         <LoadingScreen state={loadingState} />
       ) : (
         <>
-          <div className="w-[28%] pt-2 px-3 flex-shrink-0 border-r overflow-hidden border-[#2a2a2a] bg-[#111111] h-full pb-20 justify-between flex flex-col">
-            <div>
-              <h2 className="text-white text-2xl font-bold">
-                Project Explorer
-              </h2>
-              <ul className="mt-3 gap-1 h-[400px] overflow-y-scroll flex flex-col text-sm text-[#a3a3a3]">
-                {tree &&
-                  tree.length > 0 &&
-                  tree.map((item) => (
-                    <TreeNode
-                      key={item.id}
-                      toggleExpandable={(id) => dispatch(toggleExpandable(id))}
-                      expandedFiles={expandedFiles}
-                      nodes={item}
-                      openFile={(node) => dispatch(openFile(node))}
-                      selectedFile={selectedFile}
-                      level={0}
-                    />
-                  ))}
-              </ul>
-            </div>
-            <div className="py-2 border-t items-center justify-center border-[#2a2a2a] text-xs text-[#737373]">
+          <div className="w-[22%] pt-2 border-r overflow-hidden border-[#2a2a2a] bg-[#111111] h-full pb-20 justify-between flex flex-col">
+            <h2 className="text-white ml-3 text-2xl font-bold">
+              Project Explorer
+            </h2>
+            <ul className="mt-3 flex-1 ml-3  gap-1  monaco overflow-y-scroll flex flex-col text-sm text-[#a3a3a3]">
+              {tree &&
+                tree.length > 0 &&
+                tree.map((item) => (
+                  <TreeNode
+                    key={item.id}
+                    toggleExpandable={(id) => dispatch(toggleExpandable(id))}
+                    expandedFiles={expandedFiles}
+                    nodes={item}
+                    openFile={(node) => dispatch(openFile(node))}
+                    selectedFile={selectedFile}
+                    level={0}
+                  />
+                ))}
+            </ul>
+            <div className="py-2 ml-3 border-t items-center justify-center border-[#2a2a2a] text-xs text-[#737373]">
               ⓘ Workspace ready
             </div>
           </div>
 
           {/* Editor Section */}
           <div className="flex-1 overflow-hidden flex flex-col">
-            <div className="flex items-center bg-[#111111] border-b overflow-x-scroll overflow-y-hidden border-[#2a2a2a] h-9 text-xs text-[#a3a3a3]">
+            <div className="flex items-center monaco2 bg-[#111111] border-b overflow-x-scroll overflow-y-hidden border-[#2a2a2a] h-12 text-xs text-[#a3a3a3]">
               {selectedFileHistory &&
                 selectedFileHistory.length > 0 &&
                 selectedFileHistory.map((item, index) => (
@@ -265,7 +232,7 @@ const MonacoEditor = () => {
                     onClick={() => dispatch(openFile(item))}
                     className={`${
                       selectedFile?.id !== item?.id ? "hover:bg-[#1e1e1e]" : ""
-                    } text-[14px] border-[0.5px] min-w-[150px] overflow-hidden border-[#2a2a2a] px-4 py-3 cursor-pointer flex items-center justify-center gap-2 ${
+                    } text-[14px] border-[0.5px] min-w-[250px] overflow-hidden border-[#2a2a2a] px-4 py-3 cursor-pointer flex items-center justify-center gap-2 ${
                       selectedFile?.id === item?.id ? "bg-[#1e1e1e]" : ""
                     }`}
                   >
@@ -276,7 +243,7 @@ const MonacoEditor = () => {
                           e.stopPropagation();
                           dispatch(closeFile(item));
                         }}
-                        className="w-3 h-3 text-[#a3a3a3] hover:text-white cursor-pointer"
+                        className="w-4 h-4 text-[#a3a3a3] hover:text-white cursor-pointer"
                       />
                     ) : (
                       <div className="w-3 h-3"></div>
@@ -291,6 +258,7 @@ const MonacoEditor = () => {
                 theme="vs-dark"
                 height="100%"
                 defaultLanguage="javascript"
+                language={handleLanguage(selectedFile?.name)}
                 value={
                   selectedFile
                     ? selectedFile.content

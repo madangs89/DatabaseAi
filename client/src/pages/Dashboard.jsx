@@ -35,7 +35,7 @@ import DashbordNav from "../components/DashbordNav";
 import { useRef } from "react";
 import { useEffect } from "react";
 import Loader from "../components/Loader";
-import { typeMessage } from "../utils/elak";
+import { apiCodeTreeFormatHandler, typeMessage } from "../utils/elak";
 import Chat from "../components/Chat";
 import DatabaseOpen from "../components/DatabaseOpen";
 import CodeCopyOpen from "../components/CodeCopyOpen";
@@ -52,6 +52,7 @@ import {
 import SpinnerLoader from "../components/loaders/SpinnerLoader";
 import toast from "react-hot-toast";
 import MonacoEditor from "../components/MonacoEditor";
+import { setLoadingState, setTree } from "../redux/slice/MonacoEditorSlice";
 
 const TableNode = ({ data }) => {
   const {
@@ -207,6 +208,7 @@ const Dashboard = () => {
   const { id } = useParams();
   const [isEditingDbCall, setIsEditingDbCall] = useState(false);
   const socket = useSelector((state) => state?.project?.socket);
+  const monacoSlice = useSelector((state) => state?.monaco);
 
   const tableData = [
     {
@@ -334,6 +336,7 @@ const Dashboard = () => {
     setDbOpen(false);
     setRelationshipsOpen(false);
     setLoading(true);
+    dispatch(setLoadingState(1));
 
     setInput("");
 
@@ -484,10 +487,14 @@ const Dashboard = () => {
           });
         }
         setLoading(false);
+        console.log("updating monaco slice ", monacoSlice.loadingState);
       }
     } catch (error) {
       console.log(error);
       toast.error("Something went wrong, Please Try Again Later");
+      if (monacoSlice?.tree.length <= 0) {
+        dispatch(setLoadingState(3));
+      }
       setLoading(false);
     }
   };
@@ -535,7 +542,6 @@ const Dashboard = () => {
           );
           if (res.data.success) {
             console.log(res.data.data);
-
             let nodes = res?.data?.data?.nodes.map((i) => {
               return {
                 id: i.id.toLowerCase(),
@@ -569,12 +575,26 @@ const Dashboard = () => {
               return { ...e, style: { stroke: "gray", strokeWidth: 2 } };
             });
             setEdges(edges);
+            try {
+              console.log("adding api codes");
+              if (Object.keys(res?.data?.data?.apiCodes).length > 0) {
+                const formatedTree = apiCodeTreeFormatHandler(
+                  res?.data?.data?.apiCodes
+                );
+                dispatch(setTree(formatedTree));
+                dispatch(setLoadingState(0));
+              }
+            } catch (error) {
+              console.log("error", error);
+            }
           }
           console.log("setting is calling editing api true");
 
           setIsEditingDbCall(true);
           dispatch(setEntityLoading(false));
         } catch (error) {
+          console.log(error);
+
           toast.error("Unable to fetch schema");
           dispatch(setEntityLoading(false));
         }
@@ -678,6 +698,15 @@ const Dashboard = () => {
       }
     };
   }, [socket]);
+
+  useEffect(() => {
+    if (monacoSlice?.tree.length <= 0) {
+      dispatch(setLoadingState(2));
+    }
+    if (monacoSlice?.tree.length > 0) {
+      dispatch(setLoadingState(0));
+    }
+  }, [nodes, edges, monacoSlice?.tree]);
 
   useEffect(() => {
     if (socket) {
@@ -880,6 +909,31 @@ const Dashboard = () => {
       );
     }
   }, [relationshipsOpen, chatOpen, dbOpen, copyOpen]);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("apiCode", async (data) => {
+        try {
+          console.log("apiCode", data);
+          data = JSON.parse(data);
+          const { projectId, code } = data;
+          console.log("reciving api code requrest", projectId);
+          const formatedTree = apiCodeTreeFormatHandler(code);
+          if (projectId == id) {
+            dispatch(setTree(formatedTree));
+            dispatch(setLoadingState(0));
+          }
+        } catch (error) {
+          console.log(error);
+        }
+      });
+    }
+    return () => {
+      if (socket) {
+        socket.off("apiCode");
+      }
+    };
+  }, [socket]);
 
   if (loadingSlice?.dashboardPageLoading) {
     return (

@@ -394,6 +394,7 @@ subClient.subscribe("deleteProject", async (data) => {
 subClient.subscribe("apiCode", async (apiCodeData) => {
   try {
     console.log("handle comes api code");
+
     const { data, projectId, userId, dbConvKey } = JSON.parse(apiCodeData);
 
     if (!projectId || !userId || !data || !dbConvKey) return;
@@ -401,12 +402,39 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
 
     if (dbConvKey) {
       let cachedData = await pubClient.get(`api:${dbConvKey}`);
+      cachedData = JSON.parse(cachedData);
       if (cachedData) {
-        console.log("api code from cache", cachedData);
+        const userDetails = await pubClient.hGet("onlineUsers", userId);
+        if (userDetails) {
+          const { socketId } = JSON.parse(userDetails);
+          if (socketId) {
+            io.to(socketId).emit(
+              "apiCode",
+              JSON.stringify({
+                code: cachedData,
+                projectId,
+              })
+            );
+          }
+          if (projectId) {
+            await SchemaVersion.findOneAndUpdate(
+              {
+                projectId,
+              },
+              {
+                $set: {
+                  apiCodes: cachedData,
+                },
+              },
+              {
+                upsert: true,
+                new: true,
+              }
+            );
+          }
+        }
       } else {
         console.log("not got the cache in api code");
-
-        console.log("got the data in api code", data.entities);
 
         if (data?.entities) {
           console.log("got the entities in api code");
@@ -423,8 +451,38 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
             },
           }));
           console.log("called the get api in app service");
-          const rep = await getApiCodes(nodes);
-          console.log("api code response", rep);
+          const rep = await getApiCodes(nodes, dbConvKey);
+          if (rep) {
+            const userDetails = await pubClient.hGet("onlineUsers", userId);
+            if (userDetails) {
+              const { socketId } = JSON.parse(userDetails);
+              if (socketId) {
+                io.to(socketId).emit(
+                  "apiCode",
+                  JSON.stringify({
+                    code: rep,
+                    projectId,
+                  })
+                );
+              }
+            }
+            if (projectId) {
+              await SchemaVersion.findOneAndUpdate(
+                {
+                  projectId,
+                },
+                {
+                  $set: {
+                    apiCodes: cachedData,
+                  },
+                },
+                {
+                  upsert: true,
+                  new: true,
+                }
+              );
+            }
+          }
         }
       }
     }

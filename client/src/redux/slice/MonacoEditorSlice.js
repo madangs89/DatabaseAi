@@ -1,12 +1,12 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  tree: {},
-  expandedFiles: new Set(["root"]),
+  tree: [],
+  expandedFiles: ["root"],
   hoverId: "",
   selectedFile: null,
   selectedFileHistory: [],
-  loadingState: 1,
+  loadingState: 0,
 };
 
 export const monacoSlice = createSlice({
@@ -18,10 +18,13 @@ export const monacoSlice = createSlice({
     },
     toggleExpandable: (state, action) => {
       const id = action.payload;
-      const newSet = new Set(state.expandedFiles);
-      if (newSet.has(id)) newSet.delete(id);
-      else newSet.add(id);
-      state.expandedFiles = newSet;
+      const set = new Set(state.expandedFiles);
+
+      if (set.has(id)) set.delete(id);
+      else set.add(id);
+
+      // Convert back to array to ensure immutability and proper re-render
+      state.expandedFiles = Array.from(set);
     },
     setHoverId: (state, action) => {
       state.hoverId = action.payload;
@@ -35,8 +38,14 @@ export const monacoSlice = createSlice({
         content: node.content,
       };
       const exists = state.selectedFileHistory.some((n) => n.id === node.id);
+
       if (!exists) {
-        state.selectedFileHistory = [...state.selectedFileHistory, node];
+        const sorted = [...state.selectedFileHistory, node].sort((a, b) => {
+          if (a.name < b.name) return -1;
+          if (a.name > b.name) return 1;
+          return 0;
+        });
+        state.selectedFileHistory = sorted;
       }
     },
     closeFile: (state, action) => {

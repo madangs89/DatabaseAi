@@ -202,7 +202,7 @@ There must be a 120px gap between schemas (both horizontally and vertically) and
         userId,
       })
     );
-    client.set(smallLLMResponse?.dbConvKey, JSON.stringify(json));
+    await client.set(smallLLMResponse?.dbConvKey, JSON.stringify(json));
     return res.json({
       data: json,
       token: response.usageMetadata,
@@ -239,7 +239,6 @@ There must be a 120px gap between schemas (both horizontally and vertically) and
       .json({ message: "Server error in main" + error, success: false });
   }
 };
-
 export const suggestionModel = async (req, res) => {
   console.log("hit the suggestion route");
   try {

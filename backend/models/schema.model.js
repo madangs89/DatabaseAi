@@ -17,6 +17,7 @@ const SchemaVersionSchema = new mongoose.Schema(
     edges: { type: Array, default: [], required: true },
     snapshot: { type: Array, default: [] },
     changeNotes: String,
+    apiCodes: { type: Object },
   },
   { timestamps: true }
 );

@@ -375,7 +375,48 @@ export default function Project() {
                   </div>
                 ))
               ) : (
-                <div className="col-span-full flex flex-col items-center justify-center text-center py-8 bg-[#1c1c1c] border border-[#333] rounded-2xl">
+                <div className="col-span-full relative flex flex-col items-center justify-center text-center py-8 bg-[#1c1c1c] border border-[#333] rounded-2xl">
+                  <div className="absolute inset-0 overflow-hidden">
+                    {/* Top-Left Blob */}
+                    <div
+                      className="
+      absolute -top-24 -left-24 
+      w-[200px] h-[200px]
+      sm:w-[100px] sm:h-[100px]
+      md:w-[200px] md:h-[200px]
+      bg-gradient-to-br from-white/10 to-transparent
+      rounded-full blur-[80px] sm:blur-[100px]
+      animate-lightMove1
+    "
+                    ></div>
+
+                    {/* Bottom-Right Blob */}
+                    <div
+                      className="
+      absolute -bottom-32 -right-32 
+      w-[250px] h-[250px]
+      sm:w-[150px] sm:h-[150px]
+      md:w-[200px] md:h-[200px]
+      bg-gradient-to-tr from-white/15 to-transparent
+      rounded-full blur-[90px] sm:blur-[120px]
+      animate-lightMove2
+    "
+                    ></div>
+
+                    {/* Center Blob */}
+                    <div
+                      className="
+      absolute top-1/2 left-1/2 
+      -translate-x-1/2 -translate-y-1/2
+      w-[180px] h-[180px]
+      sm:w-[250px] sm:h-[250px]
+      md:w-[300px] md:h-[300px]
+      bg-gradient-to-tl from-white/8 to-transparent
+      rounded-full blur-[70px] sm:blur-[90px]
+      animate-lightMove3
+    "
+                    ></div>
+                  </div>
                   <p className="text-gray-400 text-sm mb-2">
                     No projects found
                   </p>
