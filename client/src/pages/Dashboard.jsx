@@ -463,6 +463,7 @@ const Dashboard = () => {
           });
           setSelectedDbData(nodes[0]);
 
+          
           setNodes(nodes);
           setEdges(edges);
 
