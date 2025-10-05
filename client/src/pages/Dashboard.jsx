@@ -384,7 +384,10 @@ const Dashboard = () => {
         );
         console.log(userQueryResult.data);
 
-        if (userQueryResult?.data?.data?.initialResponse.length > 0) {
+        if (
+          userQueryResult?.data?.data?.initialResponse &&
+          userQueryResult?.data?.data?.initialResponse?.length > 0
+        ) {
           setLlmChatHistory((prev) => [
             ...prev,
             { role: "user", parts: [{ text: inn }] },
@@ -402,7 +405,10 @@ const Dashboard = () => {
           ]);
         }
         setChatMessages((prev) => prev.filter((c) => c.type !== "status"));
-        if (userQueryResult?.data?.data?.initialResponse.length > 0) {
+        if (
+          userQueryResult?.data?.data?.initialResponse &&
+          userQueryResult?.data?.data?.initialResponse?.length > 0
+        ) {
           await typeMessage({
             text: userQueryResult.data.data.initialResponse,
             sender: "system",
@@ -465,9 +471,15 @@ const Dashboard = () => {
             fitView({ padding: 0.2, duration: 800 }); // smooth zoom
           }, 50);
 
+          if (monacoSlice?.tree.length <= 0) {
+            dispatch(setLoadingState(2));
+          }
           setIsEditingDbCall(true);
         }
-        if (userQueryResult?.data?.data?.finalExplanation.length > 0) {
+        if (
+          userQueryResult?.data?.data?.finalExplanation &&
+          userQueryResult?.data?.data?.finalExplanation?.length > 0
+        ) {
           setLlmChatHistory((prev) => [
             ...prev,
             {
@@ -649,6 +661,9 @@ const Dashboard = () => {
         } catch (error) {
           console.log(error);
 
+          if (monacoSlice?.tree.length <= 0) {
+            dispatch(setLoadingState(3));
+          }
           toast.error("Unable to fetch schema");
           dispatch(setEntityLoading(false));
         }
@@ -752,13 +767,6 @@ const Dashboard = () => {
       }
     };
   }, [socket]);
-
-  useEffect(() => {
-    if (monacoSlice?.tree.length > 0) {
-      dispatch(setLoadingState(0));
-      toast.success("Backend Code Generated Successfully");
-    }
-  }, [monacoSlice?.tree, loading]);
 
   useEffect(() => {
     if (socket) {
@@ -976,6 +984,7 @@ const Dashboard = () => {
           if (projectId == id) {
             dispatch(setTree(formatedTree));
             dispatch(setLoadingState(0));
+            toast.success("Backend Code Generated Successfully");
           }
         } catch (error) {
           console.log(error);
