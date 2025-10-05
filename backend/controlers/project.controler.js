@@ -127,3 +127,38 @@ export const deleteProject = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+export const getIsApiCodeIsGenerating = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const userId = req.user._id;
+    console.log("Got teh api code status ", projectId, userId);
+
+    if (!projectId || !userId) {
+      return res.json({
+        success: false,
+        message: "Project id and user id is required",
+      });
+    }
+    const details = await pubClient.hGet("apiCodesStatus", userId);
+    console.log("details", details);
+
+    if (details) {
+      details = JSON.parse(details);
+      const { projects } = details;
+      const project = projects.find(
+        (p) => p?.projectId == projectId && p?.generating == true
+      );
+      if (project) {
+        return res.json({ success: true, isGenerating: project.generating });
+      }
+    }
+    return res.json({ success: true, isGenerating: false });
+  } catch (error) {
+    return res.json({
+      success: false,
+      message: "Unable to get is api code is generating",
+      error: error.message,
+    });
+  }
+};

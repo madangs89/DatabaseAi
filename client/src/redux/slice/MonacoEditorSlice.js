@@ -7,14 +7,27 @@ const initialState = {
   selectedFile: null,
   selectedFileHistory: [],
   loadingState: 0,
+  errorText: null,
 };
 
 export const monacoSlice = createSlice({
   name: "monaco",
   initialState,
   reducers: {
+    setAllToBegin: (state) => {
+      state.tree = [];
+      state.expandedFiles = ["root"];
+      state.hoverId = "";
+      state.selectedFile = null;
+      state.selectedFileHistory = [];
+      state.loadingState = 0;
+      state.errorText = null;
+    },
     setTree: (state, action) => {
       state.tree = action.payload;
+    },
+    setErrorText: (state, action) => {
+      state.errorText = action.payload;
     },
     toggleExpandable: (state, action) => {
       const id = action.payload;
@@ -77,6 +90,8 @@ export const {
   openFile,
   closeFile,
   setLoadingState,
+  setAllToBegin,
+  setErrorText,
 } = monacoSlice.actions;
 
 export const monacoReducer = monacoSlice.reducer;

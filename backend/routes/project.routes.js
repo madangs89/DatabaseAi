@@ -3,6 +3,7 @@ import { authMiddleware } from "../middelware/auth.middelware.js";
 import {
   createProject,
   deleteProject,
+  getIsApiCodeIsGenerating,
   getProjectById,
   getProjects,
   updateProject,
@@ -16,5 +17,10 @@ projectRouter.get("/", authMiddleware, getProjects); // Get all projects for use
 projectRouter.get("/:id", getProjectById); // Get single project
 projectRouter.put("/:id", authMiddleware, updateProject); // Update project
 projectRouter.delete("/:id", authMiddleware, deleteProject); // Delete project
+projectRouter.get(
+  "/api-code-status/:projectId",
+  authMiddleware,
+  getIsApiCodeIsGenerating
+); // Delete project
 
 export default projectRouter;

@@ -11,9 +11,12 @@ import {
   Settings,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { setAllToBegin } from "../redux/slice/MonacoEditorSlice";
 
 const DashbordNav = ({ selectedTab, setSelectedTab, projectTitle }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   return (
     <nav className="h-16 py-10   w-full pr-3 sticky left-0 top-0 z-[99999] bg-black border-b-[0.5px] border-[#262626] flex justify-between items-center ">
       <div className="flex gap-2 pl-2 justify-center items-center">
@@ -72,7 +75,10 @@ const DashbordNav = ({ selectedTab, setSelectedTab, projectTitle }) => {
           <Settings className="w-5 h-5" />
         </button>
         <button
-          onClick={() => navigate("/project")}
+          onClick={() => {
+            dispatch(setAllToBegin());
+            navigate("/project");
+          }}
           className="p-1.5 bg-[#525252] text-white inter-font font-semibold transition-all duration-200 ease-linear  rounded-md "
         >
           <ArrowLeft className="text-white w-5 h-5" />

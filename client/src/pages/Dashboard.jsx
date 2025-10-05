@@ -52,7 +52,11 @@ import {
 import SpinnerLoader from "../components/loaders/SpinnerLoader";
 import toast from "react-hot-toast";
 import MonacoEditor from "../components/MonacoEditor";
-import { setLoadingState, setTree } from "../redux/slice/MonacoEditorSlice";
+import {
+  setErrorText,
+  setLoadingState,
+  setTree,
+} from "../redux/slice/MonacoEditorSlice";
 
 const TableNode = ({ data }) => {
   const {
@@ -247,7 +251,9 @@ const Dashboard = () => {
   const initialNodes = tableData.map((t) => ({
     id: t.id,
     type: "tableNode",
-    position: t.pos,
+    position: t.pos?.x
+      ? t.pos
+      : { x: Math.random() * 500, y: Math.random() * 500 },
     code: t?.code ? t.code : null,
     description: t?.description ? t.description : null,
     data: {
@@ -416,7 +422,9 @@ const Dashboard = () => {
           let nodes = userQueryResult?.data?.data?.entities.map((t) => ({
             id: t.name.toLowerCase(),
             type: "tableNode",
-            position: t.pos,
+            position: t.pos?.x
+              ? t.pos
+              : { x: Math.random() * 500, y: Math.random() * 500 },
             data: {
               title: t?.name,
               fields: t?.fields,
@@ -495,6 +503,7 @@ const Dashboard = () => {
       if (monacoSlice?.tree.length <= 0) {
         dispatch(setLoadingState(3));
       }
+      dispatch(setErrorText("Something went wrong please try again"));
       setLoading(false);
     }
   };
@@ -546,7 +555,9 @@ const Dashboard = () => {
               return {
                 id: i.id.toLowerCase(),
                 type: "tableNode",
-                position: i.position,
+                position: i.position?.x
+                  ? i.position
+                  : { x: Math.random() * 500, y: Math.random() * 500 },
                 data: {
                   ...i.data,
                   theme,
@@ -575,17 +586,60 @@ const Dashboard = () => {
               return { ...e, style: { stroke: "gray", strokeWidth: 2 } };
             });
             setEdges(edges);
-            try {
-              console.log("adding api codes");
-              if (Object.keys(res?.data?.data?.apiCodes).length > 0) {
-                const formatedTree = apiCodeTreeFormatHandler(
-                  res?.data?.data?.apiCodes
+            console.log("adding api codes");
+            if (
+              (res?.data?.data?.apiCodes != null ||
+                res?.data?.data?.apiCodes != undefined) &&
+              Object.keys(res?.data?.data?.apiCodes).length > 0
+            ) {
+              const formatedTree = apiCodeTreeFormatHandler(
+                res?.data?.data?.apiCodes
+              );
+              dispatch(setTree(formatedTree));
+              console.log(
+                "setting set loading state to 0 after formatting tree"
+              );
+              dispatch(setLoadingState(0));
+            } else {
+              const apiCodeStatus = await axios.get(
+                `${
+                  import.meta.env.VITE_BACKEND_URL
+                }/project/api-code-status/${id}`,
+                { withCredentials: true }
+              );
+              console.log("api code status", apiCodeStatus);
+              console.log(apiCodeStatus.data);
+
+              if (apiCodeStatus?.data?.success) {
+                const status = apiCodeStatus?.data?.isGenerating;
+                console.log(status);
+
+                if (status) {
+                  console.log("setting set loading state to 2  status", status);
+
+                  dispatch(setLoadingState(2));
+                } else {
+                  dispatch(
+                    setErrorText(
+                      "Unable to fetch code. May be not generated yet. Please try again later"
+                    )
+                  );
+                  console.log(
+                    "setting set loading state to 0 in else of status block"
+                  );
+                  dispatch(setLoadingState(3));
+                }
+              } else {
+                dispatch(
+                  setErrorText(
+                    "Unable to fetch code. May be not generated yet. Please try again later"
+                  )
                 );
-                dispatch(setTree(formatedTree));
-                dispatch(setLoadingState(0));
+                console.log(
+                  "setting set loading state to 0 in else of status block"
+                );
+                dispatch(setLoadingState(3));
               }
-            } catch (error) {
-              console.log("error", error);
             }
           }
           console.log("setting is calling editing api true");
@@ -700,13 +754,11 @@ const Dashboard = () => {
   }, [socket]);
 
   useEffect(() => {
-    if (monacoSlice?.tree.length <= 0) {
-      dispatch(setLoadingState(2));
-    }
     if (monacoSlice?.tree.length > 0) {
       dispatch(setLoadingState(0));
+      toast.success("Backend Code Generated Successfully");
     }
-  }, [nodes, edges, monacoSlice?.tree]);
+  }, [monacoSlice?.tree, loading]);
 
   useEffect(() => {
     if (socket) {
@@ -745,7 +797,9 @@ const Dashboard = () => {
             return {
               id: i.id.toLowerCase(),
               type: "tableNode",
-              position: i.position,
+              position: i.position?.x
+                ? i.position
+                : { x: Math.random() * 500, y: Math.random() * 500 },
               data: {
                 ...i.data,
                 theme,
@@ -931,6 +985,38 @@ const Dashboard = () => {
     return () => {
       if (socket) {
         socket.off("apiCode");
+      }
+    };
+  }, [socket]);
+  useEffect(() => {
+    if (socket) {
+      socket.on("apiCodeError", async (data) => {
+        try {
+          console.log("apiCodeError", data);
+          data = JSON.parse(data);
+          const { projectId, text } = data;
+          if (projectId == id) {
+            dispatch(
+              setErrorText(text || "Something went wrong please try again")
+            );
+            dispatch(setLoadingState(3));
+          }
+        } catch (error) {
+          console.log(error);
+          data = JSON.parse(data);
+          const { projectId, text } = data;
+          if (projectId == id) {
+            dispatch(
+              setErrorText(text || "Something went wrong please try again")
+            );
+            dispatch(setLoadingState(3));
+          }
+        }
+      });
+    }
+    return () => {
+      if (socket) {
+        socket.off("apiCodeError");
       }
     };
   }, [socket]);

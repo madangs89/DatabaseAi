@@ -91,6 +91,7 @@ io.on("connection", (socket) => {
     console.log("a user disconnected: " + userId);
     await pubClient.hDel("onlineUsers", userId);
     await pubClient.hDel("location", userId);
+    await pubClient.hDel("apiCodesStatus", userId);
   });
 });
 
@@ -400,7 +401,6 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
     console.log("handle comes api code");
 
     const { data, projectId, userId, dbConvKey } = JSON.parse(apiCodeData);
-
     if (!projectId || !userId || !data || !dbConvKey) return;
     console.log("reciving api code requrest", dbConvKey);
 
@@ -409,6 +409,25 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
       cachedData = JSON.parse(cachedData);
       if (cachedData) {
         const userDetails = await pubClient.hGet("onlineUsers", userId);
+        if (projectId) {
+          console.log("saving api code to database");
+
+          const result = await SchemaVersion.findOneAndUpdate(
+            {
+              projectId,
+            },
+            {
+              $set: {
+                apiCodes: cachedData,
+              },
+            },
+            {
+              upsert: true,
+              new: true,
+            }
+          );
+          console.log("saved api code to database", result);
+        }
         if (userDetails) {
           const { socketId } = JSON.parse(userDetails);
           if (socketId) {
@@ -420,32 +439,32 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
               })
             );
           }
-          if (projectId) {
-            console.log("saving api code to database");
-
-            await SchemaVersion.findOneAndUpdate(
-              {
-                projectId,
-              },
-              {
-                $set: {
-                  apiCodes: cachedData,
-                },
-              },
-              {
-                upsert: true,
-                new: true,
-              }
-            );
-            console.log("saved api code to database");
-          }
         }
       } else {
         console.log("not got the cache in api code");
+        let apiCodeStatus = await pubClient.hGet("apiCodesStatus", userId);
+        if (apiCodeStatus) {
+          apiCodeStatus = JSON.parse(apiCodeStatus);
+          const { projects } = apiCodeStatus;
+          const project = projects.find((p) => p?.projectId == projectId);
+          if (!project) {
+            projects.push({ projectId, generating: true });
+            await pubClient.hSet(
+              "apiCodesStatus",
+              userId,
+              JSON.stringify({ projects })
+            );
+          }
+        } else {
+          await pubClient.hSet(
+            "apiCodesStatus",
+            userId,
+            JSON.stringify({ projects: [{ projectId, generating: true }] })
+          );
+        }
 
         if (data?.entities) {
           console.log("got the entities in api code");
-
           const nodes = data?.entities.map((t) => ({
             id: t.name.toLowerCase(),
             position: t.pos,
@@ -460,6 +479,24 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
           console.log("called the get api in app service");
           const rep = await getApiCodes(nodes, dbConvKey);
           if (rep) {
+            if (projectId) {
+              console.log("saving api code to database");
+              const result = await SchemaVersion.findOneAndUpdate(
+                {
+                  projectId,
+                },
+                {
+                  $set: {
+                    apiCodes: rep,
+                  },
+                },
+                {
+                  upsert: true,
+                  new: true,
+                }
+              );
+              console.log("saved api code to database", result);
+            }
             const userDetails = await pubClient.hGet("onlineUsers", userId);
             if (userDetails) {
               const { socketId } = JSON.parse(userDetails);
@@ -473,30 +510,44 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
                 );
               }
             }
-            if (projectId) {
-              console.log("saving api code to database");
 
-              await SchemaVersion.findOneAndUpdate(
-                {
-                  projectId,
-                },
-                {
-                  $set: {
-                    apiCodes: cachedData,
-                  },
-                },
-                {
-                  upsert: true,
-                  new: true,
-                }
+            let apiCodeStatus = await pubClient.hGet("apiCodesStatus", userId);
+            if (apiCodeStatus) {
+              apiCodeStatus = JSON.parse(apiCodeStatus);
+              const { projects } = apiCodeStatus;
+              const project = projects.filter(
+                (p) => p?.projectId == projectId && p?.generating == true
               );
-              console.log("saved api code to database");
+              if (project.length > 0) {
+                await pubClient.hSet(
+                  "apiCodesStatus",
+                  userId,
+                  JSON.stringify({ projects })
+                );
+              } else {
+                await pubClient.hDel("apiCodesStatus", userId);
+              }
             }
           }
         }
       }
     }
   } catch (error) {
+    const { userId, projectId } = JSON.parse(apiCodeData);
+    const userDetails = await pubClient.hGet("onlineUsers", userId);
+    if (userDetails) {
+      const { socketId } = JSON.parse(userDetails);
+      if (socketId) {
+        io.to(socketId).emit(
+          "apiCodeError",
+          JSON.stringify({
+            projectId,
+            text: "Models overloaded, please try again later",
+          })
+        );
+      }
+    }
+
     console.log("api code Error", error);
   }
 });

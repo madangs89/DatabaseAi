@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, steps } from "framer-motion";
+import { useSelector } from "react-redux";
 
 const messages = {
   1: [
@@ -27,6 +28,7 @@ const messages = {
 const LoadingScreen = ({ state }) => {
   const [message, setMessage] = useState("");
   const [progress, setProgress] = useState(0);
+  const monacoSlice = useSelector((state) => state.monaco);
 
   // Rotate messages periodically
   useEffect(() => {
@@ -58,34 +60,42 @@ const LoadingScreen = ({ state }) => {
       <div className="absolute inset-0 overflow-hidden">
         {/* Top-Left Blob */}
         <div
-          className="
-      absolute -top-24 -left-24 
+          className={`
+             absolute -top-24 -left-24 
       w-[200px] h-[200px]
       sm:w-[300px] sm:h-[300px]
       md:w-[400px] md:h-[400px]
-      bg-gradient-to-br from-white/10 to-transparent
+      bg-gradient-to-br ${
+        state === 3 ? "from-red-600" : "from-white/10"
+      } to-transparent
       rounded-full blur-[80px] sm:blur-[100px]
-      animate-lightMove1
-    "
+      animate-lightMove1`}
         ></div>
 
         {/* Bottom-Right Blob */}
         <div
-          className="
-      absolute -bottom-32 -right-32 
+          className={`
+            
+             absolute -bottom-32 -right-32 
       w-[250px] h-[250px]
       sm:w-[350px] sm:h-[350px]
       md:w-[500px] md:h-[500px]
-      bg-gradient-to-tr from-white/15 to-transparent
+      bg-gradient-to-tr ${
+        state === 3 ? "from-red-600" : "from-white/15"
+      } to-transparent
       rounded-full blur-[90px] sm:blur-[120px]
       animate-lightMove2
-    "
+
+
+            `}
         ></div>
 
         {/* Center Blob */}
         <div
-          className="
-      absolute top-1/2 left-1/2 
+          className={`
+            
+            
+             absolute top-1/2 left-1/2 
       -translate-x-1/2 -translate-y-1/2
       w-[180px] h-[180px]
       sm:w-[250px] sm:h-[250px]
@@ -93,18 +103,23 @@ const LoadingScreen = ({ state }) => {
       bg-gradient-to-tl from-white/8 to-transparent
       rounded-full blur-[70px] sm:blur-[90px]
       animate-lightMove3
-    "
+
+            `}
         ></div>
       </div>
 
       {/* Loader / Text */}
       {state === 3 ? (
-        <div className="relative z-10 text-center">
-          <h1 className="text-3xl font-bold text-red-500">⚠️ Error</h1>
-          <p className="mt-3 text-gray-300 max-w-md">{message}</p>
+        <div className="relative z-10 text-center flex flex-col items-center justify-center gap-4 p-6 rounded-xl shadow-xl   max-w-lg mx-auto">
+          <div className="text-red-500 text-6xl mb-2">⚠️</div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-red-500">
+            {monacoSlice?.errorText ||
+              "Unable to fetch code. May be not generated yet."}
+          </h1>
+          <p className="text-gray-300 text-sm sm:text-base">{message}</p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-5 px-6 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition"
+            className="mt-4 px-6 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium transition-all duration-300 shadow-md"
           >
             Retry
           </button>
