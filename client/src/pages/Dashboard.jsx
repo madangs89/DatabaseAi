@@ -1054,6 +1054,12 @@ const Dashboard = () => {
     };
   }, [socket]);
 
+  useEffect(() => {
+    if (monacoSlice.tree.length > 0) {
+      dispatch(setLoadingState(0));
+    }
+  }, [monacoSlice.tree, monacoSlice.loadingState, loading]);
+
   if (loadingSlice?.dashboardPageLoading) {
     return (
       <div className="flex justify-center bg-black items-center w-full h-screen">

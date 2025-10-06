@@ -214,7 +214,7 @@ const MonacoEditor = () => {
                   />
                 ))}
             </ul>
-            <div className="py-2 ml-3 border-t items-center justify-center border-[#2a2a2a] text-xs text-[#737373]">
+            <div className="py-2 ml-4 border-t items-center justify-center border-[#2a2a2a] text-xs text-[#737373]">
               ⓘ Workspace ready
             </div>
           </div>

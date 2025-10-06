@@ -397,6 +397,8 @@ subClient.subscribe("deleteProject", async (data) => {
 });
 
 subClient.subscribe("apiCode", async (apiCodeData) => {
+  console.log("Control comes to api code");
+
   try {
     console.log("handle comes api code");
 
@@ -408,10 +410,11 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
       let cachedData = await pubClient.get(`api:${dbConvKey}`);
       cachedData = JSON.parse(cachedData);
       if (cachedData) {
+        console.log("api code cache hit");
+
         const userDetails = await pubClient.hGet("onlineUsers", userId);
         if (projectId) {
           console.log("saving api code to database");
-
           const result = await SchemaVersion.findOneAndUpdate(
             {
               projectId,
@@ -426,7 +429,6 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
               new: true,
             }
           );
-          console.log("saved api code to database", result);
         }
         if (userDetails) {
           const { socketId } = JSON.parse(userDetails);
@@ -544,6 +546,7 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
       }
     }
   } catch (error) {
+    console.log("api code Error", error);
     const { userId, projectId } = JSON.parse(apiCodeData);
     const userDetails = await pubClient.hGet("onlineUsers", userId);
     if (userDetails) {
@@ -558,8 +561,6 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
         );
       }
     }
-
-    console.log("api code Error", error);
   }
 });
 

@@ -61,17 +61,26 @@ const DashbordNav = ({ selectedTab, setSelectedTab, projectTitle }) => {
       <div className="flex items-center justify-center gap-4 ">
         <button
           onClick={() => setSelectedTab("editor")}
-          className="p-1.5 bg-[#525252] text-white inter-font font-semibold transition-all duration-200 ease-linear  rounded-md "
+          className={`p-1.5 bg-[#525252] ${
+            selectedTab === "editor" ? "text-blue-500" : "text-white"
+          } inter-font font-semibold transition-all duration-200 ease-linear  rounded-md`}
         >
           <LayoutGrid className="w-5 h-5" />
         </button>
         <button
           onClick={() => setSelectedTab("api")}
-          className="p-1.5 bg-[#525252] text-white inter-font font-semibold transition-all duration-200 ease-linear  rounded-md "
+          className={`p-1.5 bg-[#525252]  ${
+            selectedTab === "api" ? "text-blue-500" : "text-white"
+          } inter-font font-semibold transition-all duration-200 ease-linear  rounded-md`}
         >
           <Code className="w-5 h-5" />
         </button>
-        <button className="p-1.5 bg-[#525252] text-white inter-font font-semibold transition-all duration-200 ease-linear  rounded-md ">
+        <button
+          onClick={() => setSelectedTab("setting")}
+          className={`p-1.5 bg-[#525252] ${
+            selectedTab === "setting" ? "text-blue-500" : "text-white"
+          } inter-font font-semibold transition-all duration-200 ease-linear  rounded-md `}
+        >
           <Settings className="w-5 h-5" />
         </button>
         <button

@@ -603,7 +603,6 @@ Refresh expiry: 7d
 
 
 `;
-
 const systemInstruction4 = `
 1 PURPOSE
 
@@ -786,7 +785,6 @@ Refresh expiry: 7d
   "package.json": ""name": "backend", "version": "1.0.0""
 }
 `;
-
 
 export const getApiCodes = async (message, key) => {
   try {
