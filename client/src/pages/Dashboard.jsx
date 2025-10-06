@@ -1037,6 +1037,22 @@ const Dashboard = () => {
       }
     };
   }, [socket]);
+  useEffect(() => {
+    if (socket) {
+      socket.on("apiCodeGenerating", async (data) => {
+        data = JSON.parse(data);
+        const { projectId } = data;
+        if (projectId == id) {
+          dispatch(setLoadingState(2));
+        }
+      });
+    }
+    return () => {
+      if (socket) {
+        socket.off("apiCodeGenerating");
+      }
+    };
+  }, [socket]);
 
   if (loadingSlice?.dashboardPageLoading) {
     return (

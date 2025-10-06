@@ -477,6 +477,18 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
             },
           }));
           console.log("called the get api in app service");
+          const userDetails = await pubClient.hGet("onlineUsers", userId);
+          if (userDetails) {
+            const { socketId } = JSON.parse(userDetails);
+            if (socketId) {
+              io.to(socketId).emit(
+                "apiCodeGenerating",
+                JSON.stringify({
+                  projectId,
+                })
+              );
+            }
+          }
           const rep = await getApiCodes(nodes, dbConvKey);
           if (rep) {
             if (projectId) {
@@ -510,7 +522,6 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
                 );
               }
             }
-
             let apiCodeStatus = await pubClient.hGet("apiCodesStatus", userId);
             if (apiCodeStatus) {
               apiCodeStatus = JSON.parse(apiCodeStatus);
