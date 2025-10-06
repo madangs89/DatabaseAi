@@ -463,7 +463,6 @@ const Dashboard = () => {
           });
           setSelectedDbData(nodes[0]);
 
-          
           setNodes(nodes);
           setEdges(edges);
 
@@ -726,6 +725,7 @@ const Dashboard = () => {
     if (socket) {
       socket.on("statusUpdate", (data) => {
         if (data.projectId == id) {
+          dispatch(setLoadingState(1));
           setLoading(true);
           messageQueue.current = messageQueue.current.then(async () => {
             if (data?.isScroll) {
@@ -778,7 +778,6 @@ const Dashboard = () => {
 
         if (projectId == id && isEditingDbCall == false) {
           console.log("both project ids are same so it is adding here");
-          setChatMessages((prev) => prev.filter((c) => c.type !== "status"));
           setLlmChatHistory((prev) => [
             ...prev,
             {
@@ -790,6 +789,10 @@ const Dashboard = () => {
               ],
             },
           ]);
+          setChatMessages((prev) => {
+            const filtered = prev.filter((c) => c.type !== "status");
+            return [...filtered];
+          });
           await typeMessage({
             text: initialResponse,
             sender: "system",
@@ -832,6 +835,7 @@ const Dashboard = () => {
           setSelectedDbData(nodes[0]);
           setLlmCodeFromServer(code);
           setNodes(nod);
+          dispatch(setLoadingState(2));
           dispatch(setEntityLoading(false));
           let edg = edges.map((e) => {
             return { ...e, style: { stroke: "gray", strokeWidth: 2 } };
@@ -848,6 +852,11 @@ const Dashboard = () => {
               ],
             },
           ]);
+          setChatMessages((prev) => {
+            const filtered = prev.filter((c) => c.type !== "status");
+            return [...filtered];
+          });
+
           await typeMessage({
             text: finalExplanation,
             sender: "system",
@@ -859,7 +868,6 @@ const Dashboard = () => {
             setIsWritting,
             messageQueue,
           });
-          setChatMessages((prev) => prev.filter((c) => c.type !== "status"));
           setIsEditingDbCall(true);
           setLoading(false);
         }
@@ -870,12 +878,11 @@ const Dashboard = () => {
         if (projectId == id) {
           console.log("api error");
           toast.error("api Error");
-          setChatMessages((prev) => {
-            const filtered = prev.filter((c) => c.type !== "status");
-            return [...filtered];
-          });
 
           setLoading(false);
+          if (monacoSlice?.tree?.length <= 0) {
+            dispatch(setLoadingState(3));
+          }
         }
       });
     }
