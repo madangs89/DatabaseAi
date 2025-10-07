@@ -35,9 +35,17 @@ const Chat = ({
                 {msg?.type === "status" ? (
                   // 👇 Custom single updating bubble
                   <div className="max-w-[80%] px-4 py-2 rounded-lg flex-col   text-gray-200 italic flex items-start gap-2">
-                    <span className="animate-pulse text-[#525252] ">
-                      {"Working on It..."}
-                    </span>
+                    <div className="flex items-center justify-center gap-3">
+                      <span className="animate-pulse text-[#525252] ">
+                        {"Working on It..."}
+                      </span>
+                      {msg?.text2 && (
+                        <span className="bg-white px-2 py-1 rounded-full text-[#525252] ">
+                          {msg?.text2}
+                        </span>
+                      )}
+                    </div>
+
                     <span className="text-[#737373]">{msg?.text}</span>
                   </div>
                 ) : (

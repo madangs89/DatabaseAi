@@ -1,6 +1,14 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Editor from "@monaco-editor/react";
-import { ChevronDown, ChevronRight, File, Folder, X } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ChevronDown,
+  ChevronRight,
+  File,
+  Folder,
+  X,
+} from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import {
   toggleExpandable,
@@ -164,6 +172,8 @@ const MonacoEditor = () => {
     selectedFileHistory,
     loadingState,
   } = useSelector((state) => state.monaco);
+
+  const [expandable, setExandable] = useState(false);
   const handleLanguage = (name) => {
     if (name && name.length > 2) {
       if (name.endsWith(".js")) return "javascript";
@@ -185,7 +195,7 @@ const MonacoEditor = () => {
         return selectedFile.content;
       }
     }
-    return "// Select a file to view/edit"
+    return "// Select a file to view/edit";
   };
 
   return (
@@ -195,10 +205,35 @@ const MonacoEditor = () => {
         <LoadingScreen state={loadingState} />
       ) : (
         <>
-          <div className="w-[22%] pt-2 border-r overflow-hidden border-[#2a2a2a] bg-[#111111] h-full pb-20 justify-between flex flex-col">
-            <h2 className="text-white ml-3 text-2xl font-bold">
-              Project Explorer
-            </h2>
+          <div
+            className={`${
+              expandable
+                ? "lg:w-[6%]  w-[10%]"
+                : "lg:w-[22%] md:[w-30%] w-[40%]"
+            } pt-2 border-r overflow-hidden border-[#2a2a2a] bg-[#111111] h-full pb-20 justify-between flex flex-col`}
+          >
+            <div
+              className={`flex items-center w-full ${
+                !expandable ? "justify-between" : "justify-end"
+              } pr-2`}
+            >
+              {!expandable && (
+                <h2 className="text-white ml-3 md:text-xl text-md lg:text-2xl font-bold">
+                  Project Explorer
+                </h2>
+              )}
+              {!expandable ? (
+                <ArrowLeft
+                  onClick={() => setExandable(!expandable)}
+                  className="w-5 h-5  cursor-pointer text-white"
+                />
+              ) : (
+                <ArrowRight
+                  onClick={() => setExandable(!expandable)}
+                  className="w-5 h-5  cursor-pointer text-white"
+                />
+              )}
+            </div>
             <ul className="mt-3 flex-1 ml-3  gap-1  monaco overflow-y-scroll flex flex-col text-sm text-[#a3a3a3]">
               {tree &&
                 tree.length > 0 &&

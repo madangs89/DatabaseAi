@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence, steps } from "framer-motion";
 import { useSelector } from "react-redux";
+import { CircleCheck } from "lucide-react";
 
 const messages = {
   1: [
@@ -29,6 +30,12 @@ const LoadingScreen = ({ state }) => {
   const [message, setMessage] = useState("");
   const [progress, setProgress] = useState(0);
   const monacoSlice = useSelector((state) => state.monaco);
+
+  useEffect(() => {
+    if (monacoSlice.loadingState <= 0 || monacoSlice.loadingState ==3) {
+      state = 0;
+    }
+  }, [monacoSlice, state]);
 
   // Rotate messages periodically
   useEffect(() => {
@@ -107,6 +114,23 @@ const LoadingScreen = ({ state }) => {
             `}
         ></div>
       </div>
+
+      {state == 1 && (
+        <div className="absolute bg-white px-2 py-1 top-24 right-5  text-black flex items-center rounded-md  justify-center">
+          Estimated Time:3 min
+        </div>
+      )}
+      {state === 2 && (
+        <span className="absolute flex border top-24 right-5 items-center justify-center w-48 gap-2 rounded-md px-2 py-1 ">
+          <p>Schema Generation</p>
+          <CircleCheck className="w-5 h-5" />
+        </span>
+      )}
+      {state === 2 && (
+        <div className="absolute bg-white px-2 py-1 top-36 right-5  text-black flex items-center rounded-md  justify-center">
+          Estimated Time:4 min
+        </div>
+      )}
 
       {/* Loader / Text */}
       {state === 3 ? (

@@ -404,7 +404,10 @@ const Dashboard = () => {
             },
           ]);
         }
-        setChatMessages((prev) => prev.filter((c) => c.type !== "status"));
+        setChatMessages((prev) => {
+          const filtered = prev.filter((c) => c.type !== "status");
+          return [...filtered];
+        });
         if (
           userQueryResult?.data?.data?.initialResponse &&
           userQueryResult?.data?.data?.initialResponse?.length > 0
@@ -494,6 +497,10 @@ const Dashboard = () => {
             },
           ]);
           setIsEditingDbCall(true);
+          setChatMessages((prev) => {
+            const filtered = prev.filter((c) => c.type !== "status");
+            return [...filtered];
+          });
           await typeMessage({
             text: userQueryResult.data.data.finalExplanation,
             sender: "system",
@@ -511,6 +518,13 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.log(error);
+      setChatMessages((prev) => {
+        const filtered = prev.filter(
+          (c) => c?.type?.trim()?.toLowerCase() !== "status"
+        );
+        return filtered;
+      });
+
       toast.error("Something went wrong, Please Try Again Later");
       if (monacoSlice?.tree.length <= 0) {
         dispatch(setLoadingState(3));

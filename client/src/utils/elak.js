@@ -60,7 +60,6 @@ export const getElkLayout = async (nodes, edges) => {
   return { layoutedEdges, layoutedNodes };
 };
 
-
 export const typeMessage = async ({
   text,
   sender = "system",
@@ -89,7 +88,11 @@ export const typeMessage = async ({
     ) {
       const lastMsg = prev[prev.length - 1];
       // Update existing status message
-      return prev.map((m) => (m.id === lastMsg.id ? { ...m, text: "" } : m));
+      return prev.map((m) =>
+        m.id === lastMsg.id
+          ? { ...m, text: "", text2: "Estimated Time: 3 min" }
+          : m
+      );
     }
 
     // Otherwise, just append a new message

@@ -546,8 +546,9 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
       }
     }
   } catch (error) {
+    const { data, projectId, userId, dbConvKey } = JSON.parse(apiCodeData);
     console.log("api code Error", error);
-    const { userId, projectId } = JSON.parse(apiCodeData);
+
     const userDetails = await pubClient.hGet("onlineUsers", userId);
     if (userDetails) {
       const { socketId } = JSON.parse(userDetails);
@@ -559,6 +560,24 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
             text: "Models overloaded, please try again later",
           })
         );
+      }
+    }
+
+    let apiCodeStatus = await pubClient.hGet("apiCodesStatus", userId);
+    if (apiCodeStatus) {
+      apiCodeStatus = JSON.parse(apiCodeStatus);
+      const { projects } = apiCodeStatus;
+      const project = projects.filter(
+        (p) => p?.projectId == projectId && p?.generating == true
+      );
+      if (project.length > 0) {
+        await pubClient.hSet(
+          "apiCodesStatus",
+          userId,
+          JSON.stringify({ projects })
+        );
+      } else {
+        await pubClient.hDel("apiCodesStatus", userId);
       }
     }
   }

@@ -140,13 +140,13 @@ export const getIsApiCodeIsGenerating = async (req, res) => {
         message: "Project id and user id is required",
       });
     }
-    const details = await pubClient.hGet("apiCodesStatus", userId);
+    let details = await pubClient.hGet("apiCodesStatus", userId);
     console.log("details", details);
 
     if (details) {
       details = JSON.parse(details);
       const { projects } = details;
-      const project = projects.find(
+      let project = projects.find(
         (p) => p?.projectId == projectId && p?.generating == true
       );
       if (project) {
@@ -159,6 +159,7 @@ export const getIsApiCodeIsGenerating = async (req, res) => {
       success: false,
       message: "Unable to get is api code is generating",
       error: error.message,
+      isGenerating: false,
     });
   }
 };
