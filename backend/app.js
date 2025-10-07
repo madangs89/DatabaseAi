@@ -464,17 +464,16 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
             JSON.stringify({ projects: [{ projectId, generating: true }] })
           );
         }
-
         if (data?.entities) {
           console.log("got the entities in api code");
           const nodes = data?.entities.map((t) => ({
-            id: t.name.toLowerCase(),
-            position: t.pos,
+            id: t?.name.toLowerCase(),
+            position: t?.pos,
             data: {
               title: t?.name,
               fields: t?.fields,
               code: t?.code?.length ? t.code : null,
-              id: t.name.toLowerCase(),
+              id: t?.name.toLowerCase(),
               description: t?.description ? t.description : null,
             },
           }));

@@ -8,6 +8,7 @@ const initialState = {
   selectedFileHistory: [],
   loadingState: 0,
   errorText: null,
+  dbConvKey: null,
 };
 
 export const monacoSlice = createSlice({
@@ -21,10 +22,14 @@ export const monacoSlice = createSlice({
       state.selectedFile = null;
       state.selectedFileHistory = [];
       state.loadingState = 0;
+      state.dbConvKey = null;
       state.errorText = null;
     },
     setTree: (state, action) => {
       state.tree = action.payload;
+    },
+    setDbConvKey: (state, action) => {
+      state.dbConvKey = action.payload;
     },
     setErrorText: (state, action) => {
       state.errorText = action.payload;
@@ -92,6 +97,7 @@ export const {
   setLoadingState,
   setAllToBegin,
   setErrorText,
+  setDbConvKey,
 } = monacoSlice.actions;
 
 export const monacoReducer = monacoSlice.reducer;

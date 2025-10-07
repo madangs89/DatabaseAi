@@ -53,6 +53,7 @@ import SpinnerLoader from "../components/loaders/SpinnerLoader";
 import toast from "react-hot-toast";
 import MonacoEditor from "../components/MonacoEditor";
 import {
+  setDbConvKey,
   setErrorText,
   setLoadingState,
   setTree,
@@ -423,6 +424,13 @@ const Dashboard = () => {
             setIsWritting,
             messageQueue,
           });
+        }
+        console.log("dbconvokey", userQueryResult?.data?.data?.dbConvKey);
+
+        if (userQueryResult?.data?.data?.dbConvKey) {
+          if (userQueryResult?.data?.data?.projectId == id) {
+            dispatch(setDbConvKey(userQueryResult?.data?.data?.dbConvKey));
+          }
         }
         if (
           userQueryResult?.data?.data?.entities?.length > 0 &&
@@ -892,7 +900,6 @@ const Dashboard = () => {
         if (projectId == id) {
           console.log("api error");
           toast.error("api Error");
-
           setLoading(false);
           if (monacoSlice?.tree?.length <= 0) {
             dispatch(setLoadingState(3));

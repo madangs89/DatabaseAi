@@ -7,7 +7,6 @@ import {
   getConvKey,
   parseInvalidJson,
 } from "../utils/lll.service.js";
-
 import { GoogleGenAI, Type } from "@google/genai";
 export const createDBWithLlmCall = async (req, res) => {
   let it;
@@ -42,7 +41,12 @@ export const createDBWithLlmCall = async (req, res) => {
       smallLLMResponse.relationships = [];
       smallLLMResponse.finalExplanation = "";
       smallLLMResponse.migrationPlan = "";
-      return res.json({ data: smallLLMResponse, success: true });
+      return res.json({
+        data: smallLLMResponse,
+        success: true,
+        dbConvKey: smallLLMResponse?.dbConvKey,
+        projectId: projectId,
+      });
     }
     let id = await pubClient.hGet("onlineUsers", userId);
     id = JSON.parse(id);
@@ -56,7 +60,6 @@ export const createDBWithLlmCall = async (req, res) => {
       let cachedData = await client.get(smallLLMResponse.dbConvKey);
       if (cachedData) {
         cachedData = JSON.parse(cachedData);
-
         console.log("Cache hit");
         pubClient.publish(
           "apiCode",
@@ -75,6 +78,8 @@ export const createDBWithLlmCall = async (req, res) => {
             userId,
           })
         );
+        cachedData.dbConvKey = smallLLMResponse?.dbConvKey;
+        cachedData.projectId = projectId;
         return res.status(200).json({
           message: "Cache hit",
           success: true,
@@ -205,6 +210,8 @@ There must be a 120px gap between schemas (both horizontally and vertically) and
       })
     );
     await client.set(smallLLMResponse?.dbConvKey, JSON.stringify(json));
+    json.dbConvKey = smallLLMResponse?.dbConvKey;
+    json.projectId = projectId;
     return res.json({
       data: json,
       token: response.usageMetadata,
