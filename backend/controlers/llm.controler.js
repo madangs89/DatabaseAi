@@ -60,6 +60,8 @@ export const createDBWithLlmCall = async (req, res) => {
       let cachedData = await client.get(smallLLMResponse.dbConvKey);
       if (cachedData) {
         cachedData = JSON.parse(cachedData);
+        cachedData.dbConvKey = smallLLMResponse?.dbConvKey;
+        cachedData.projectId = projectId;
         console.log("Cache hit");
         pubClient.publish(
           "apiCode",
@@ -78,8 +80,6 @@ export const createDBWithLlmCall = async (req, res) => {
             userId,
           })
         );
-        cachedData.dbConvKey = smallLLMResponse?.dbConvKey;
-        cachedData.projectId = projectId;
         return res.status(200).json({
           message: "Cache hit",
           success: true,
@@ -182,6 +182,9 @@ There must be a 120px gap between schemas (both horizontally and vertically) and
     let json = parseInvalidJson(raw);
     const { promptTokenCount, totalTokenCount, candidatesTokenCount } =
       response?.usageMetadata;
+
+    json.dbConvKey = smallLLMResponse?.dbConvKey;
+    json.projectId = projectId;
     pubClient.publish(
       "token",
       JSON.stringify({
@@ -210,8 +213,7 @@ There must be a 120px gap between schemas (both horizontally and vertically) and
       })
     );
     await client.set(smallLLMResponse?.dbConvKey, JSON.stringify(json));
-    json.dbConvKey = smallLLMResponse?.dbConvKey;
-    json.projectId = projectId;
+
     return res.json({
       data: json,
       token: response.usageMetadata,

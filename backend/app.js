@@ -216,6 +216,7 @@ subClient.subscribe("fullLLMResponse", async (res) => {
 
       const initialResponse = data?.initialResponse;
       const finalExplanation = data?.finalExplanation;
+      const dbConvKey = data?.dbConvKey;
       pubClient.publish(
         "nodesAndEdges",
         JSON.stringify({
@@ -225,6 +226,7 @@ subClient.subscribe("fullLLMResponse", async (res) => {
           userId,
           initialResponse,
           finalExplanation,
+          dbConvKey,
         })
       );
     }
@@ -251,8 +253,15 @@ subClient.subscribe("fullLLMResponse", async (res) => {
 });
 
 subClient.subscribe("nodesAndEdges", async (data) => {
-  const { nodes, edges, projectId, userId, initialResponse, finalExplanation } =
-    JSON.parse(data);
+  const {
+    nodes,
+    edges,
+    projectId,
+    userId,
+    initialResponse,
+    finalExplanation,
+    dbConvKey,
+  } = JSON.parse(data);
   console.log("handle comes to nodes and edges");
 
   if (
@@ -305,6 +314,7 @@ subClient.subscribe("nodesAndEdges", async (data) => {
           nodes: nodes,
           edges: edges,
           ownerId: userId,
+          dbConvKey: dbConvKey,
         },
       },
       {

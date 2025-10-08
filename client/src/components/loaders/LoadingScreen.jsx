@@ -40,6 +40,9 @@ const LoadingScreen = () => {
   const retryHandler = async () => {
     const { nodes, edges, dbConvKey } = monacoSlice;
     const { currentProjectId } = projectSlice;
+
+    console.log(nodes, edges, dbConvKey, currentProjectId);
+    
     if (!currentProjectId || !dbConvKey || !nodes.length || !edges.length) {
       return toast.error("Unable to retry");
     }

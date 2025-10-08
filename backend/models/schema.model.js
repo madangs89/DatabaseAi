@@ -18,6 +18,7 @@ const SchemaVersionSchema = new mongoose.Schema(
     snapshot: { type: Array, default: [] },
     changeNotes: String,
     apiCodes: { type: Object },
+    dbConvKey: { type: String },
   },
   { timestamps: true }
 );

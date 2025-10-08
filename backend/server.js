@@ -79,7 +79,7 @@ const processErrorHandler = async () => {
       }
 
       if (reason == "nodesAndEdges") {
-        const { projectId, nodes, edges, userId } = payload;
+        const { projectId, nodes, edges, userId, dbConvKey } = payload;
         if (!projectId || !userId || !nodes || !edges) continue;
         await SchemaVersion.findOneAndUpdate(
           {
@@ -90,6 +90,7 @@ const processErrorHandler = async () => {
               nodes: nodes,
               edges: edges,
               ownerId: userId,
+              dbConvKey: dbConvKey,
             },
           },
           {
