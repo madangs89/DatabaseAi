@@ -528,10 +528,8 @@ const Dashboard = () => {
     } catch (error) {
       console.log(error);
       setChatMessages((prev) => {
-        const filtered = prev.filter(
-          (c) => c?.type?.trim()?.toLowerCase() !== "status"
-        );
-        return filtered;
+        const filtered = prev.filter((c) => c.type !== "status");
+        return [...filtered];
       });
 
       toast.error("Something went wrong, Please Try Again Later");
@@ -548,6 +546,15 @@ const Dashboard = () => {
     const isAtBottom = scrollHeight - scrollTop <= clientHeight + 150; // 50px threshold
     setAutoScroll(isAtBottom);
   };
+
+  useEffect(() => {
+    if (loading == false) {
+      setChatMessages((prev) => {
+        const filtered = prev.filter((c) => c.type !== "status");
+        return [...filtered];
+      });
+    }
+  }, [loading]);
 
   useEffect(() => {
     if (nodes.length > 0 && !selectedDbData?.id) {

@@ -91,7 +91,6 @@ io.on("connection", (socket) => {
     console.log("a user disconnected: " + userId);
     await pubClient.hDel("onlineUsers", userId);
     await pubClient.hDel("location", userId);
-    await pubClient.hDel("apiCodesStatus", userId);
   });
 });
 
@@ -500,7 +499,11 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
               );
             }
           }
+          console.log("called get api code function now with nodes");
+        
           const rep = await getApiCodes(nodes, dbConvKey);
+          console.log("got the code back now with nodes");
+
           if (rep) {
             if (projectId) {
               console.log("saving api code to database");
@@ -538,7 +541,7 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
               apiCodeStatus = JSON.parse(apiCodeStatus);
               const { projects } = apiCodeStatus;
               const project = projects.filter(
-                (p) => p?.projectId == projectId && p?.generating == true
+                (p) => p?.projectId == projectId
               );
               if (project.length > 0) {
                 await pubClient.hSet(

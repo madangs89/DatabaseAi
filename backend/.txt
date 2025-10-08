@@ -31,6 +31,8 @@ When a user requests a schema modification, you must **always**:
    {
      "operation": "<operationType>",
      "target": "<entityOrRelationshipName>",
+     "id:"<actualId>",
+     "initialRes:"",
      "details": { ... }
    }
    ```
@@ -47,6 +49,7 @@ When a user requests a schema modification, you must **always**:
   {
     "operation": "addEntity",
     "target": "User",
+     "initialRes:<explanation to user how you did>,
     "id:"<actualId>" // this you will get from the fecthign
     "details": {
       "description": "Stores user account info",
@@ -64,6 +67,8 @@ When a user requests a schema modification, you must **always**:
   {
     "operation": "addField",
     "target": "User",
+    "initialRes:<explanation to user how you did>,
+    "id:"<actualId>" // this you will get from the fecthign
     "details": {
       "field": { "name": "phoneNumber", "type": "VARCHAR(15)", "required": false }
     }
@@ -76,6 +81,7 @@ When a user requests a schema modification, you must **always**:
   {
     "operation": "editField",
     "target": "User",
+    "initialRes:<explanation to user how you did>,
     "details": {
       "oldName": "username",
       "newField": { "name": "userName", "type": "VARCHAR(150)", "required": true }

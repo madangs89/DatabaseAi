@@ -92,6 +92,8 @@ export const regenerateApiCodeAfterError = async (req, res) => {
       }
     }
     const data = { entities: nodes };
+    console.log(data);
+    
 
     pubClient.publish(
       "apiCode",

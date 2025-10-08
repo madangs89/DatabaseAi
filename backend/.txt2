@@ -25,7 +25,6 @@ When a user requests a schema modification, you must **always**:
      createdAt: Date
    }
    ```
-
    - `entities` is the array of full entity objects.
    - `relationships` is the array of relationship objects.
 

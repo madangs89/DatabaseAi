@@ -41,8 +41,16 @@ const LoadingScreen = () => {
     const { nodes, edges, dbConvKey } = monacoSlice;
     const { currentProjectId } = projectSlice;
 
-    console.log(nodes, edges, dbConvKey, currentProjectId);
-    
+    const newNode = nodes.map((t) => ({
+      id: t?.id,
+      position: t?.position,
+      title: t?.data?.title,
+      name: t?.data?.title,
+      fields: t?.data?.fields,
+      code: t?.data?.code?.length ? t.data.code : null,
+      description: t?.data?.description ? t.data.description : null,
+    }));
+
     if (!currentProjectId || !dbConvKey || !nodes.length || !edges.length) {
       return toast.error("Unable to retry");
     }
@@ -51,7 +59,7 @@ const LoadingScreen = () => {
         `${import.meta.env.VITE_BACKEND_URL}/schema/regenerate`,
         {
           projectId: currentProjectId,
-          nodes: nodes,
+          nodes: newNode,
           dbConvKey: dbConvKey,
         },
         { withCredentials: true }
@@ -166,7 +174,7 @@ const LoadingScreen = () => {
       )}
 
       {/* Loader / Text */}
-      {state === 3 ? (
+      {state === 3 && monacoSlice.nodes.length > 0 ? (
         <div className="relative z-10 text-center flex flex-col items-center justify-center gap-4 p-6 rounded-xl shadow-xl   max-w-lg mx-auto">
           <div className="text-red-500 text-6xl mb-2">⚠️</div>
           <h1 className="text-2xl sm:text-3xl font-bold text-red-500">
