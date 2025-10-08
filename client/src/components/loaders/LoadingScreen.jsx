@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence, steps } from "framer-motion";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { CircleCheck } from "lucide-react";
+import toast from "react-hot-toast";
+import axios from "axios";
+import { setLoadingState } from "../../redux/slice/MonacoEditorSlice";
 
 const messages = {
   1: [
@@ -26,16 +29,43 @@ const messages = {
   ],
 };
 
-const LoadingScreen = ({ state }) => {
+const LoadingScreen = () => {
   const [message, setMessage] = useState("");
   const [progress, setProgress] = useState(0);
   const monacoSlice = useSelector((state) => state.monaco);
+  const projectSlice = useSelector((state) => state.project);
+  const dispatch = useDispatch();
+  const state = monacoSlice.loadingState;
 
-  useEffect(() => {
-    if (monacoSlice.loadingState <= 0 || monacoSlice.loadingState ==3) {
-      state = 0;
+  const retryHandler = async () => {
+    const { nodes, edges, dbConvKey } = monacoSlice;
+    const { currentProjectId } = projectSlice;
+    if (!currentProjectId || !dbConvKey || !nodes.length || !edges.length) {
+      return toast.error("Unable to retry");
     }
-  }, [monacoSlice, state]);
+    try {
+      const result = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/schema/regenerate`,
+        {
+          projectId: currentProjectId,
+          nodes: nodes,
+          dbConvKey: dbConvKey,
+        },
+        { withCredentials: true }
+      );
+      console.log(result);
+      if (result?.data?.success) {
+        toast.success(result?.data?.message);
+        if (result?.data?.apiCodeStatus) {
+          dispatch(setLoadingState(result?.data?.apiCodeStatus));
+        }
+      }
+    } catch (error) {
+      console.log(error);
+      dispatch(setLoadingState(0));
+      toast.error("Unable to retry Please try again later");
+    }
+  };
 
   // Rotate messages periodically
   useEffect(() => {
@@ -142,7 +172,7 @@ const LoadingScreen = ({ state }) => {
           </h1>
           <p className="text-gray-300 text-sm sm:text-base">{message}</p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={retryHandler}
             className="mt-4 px-6 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium transition-all duration-300 shadow-md"
           >
             Retry

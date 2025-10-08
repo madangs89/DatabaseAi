@@ -8,6 +8,8 @@ const initialState = {
   selectedFileHistory: [],
   loadingState: 0,
   errorText: null,
+  nodes: [],
+  edges: [],
   dbConvKey: null,
 };
 
@@ -22,8 +24,12 @@ export const monacoSlice = createSlice({
       state.selectedFile = null;
       state.selectedFileHistory = [];
       state.loadingState = 0;
-      state.dbConvKey = null;
+      (state.nodes = []), (state.edges = []), (state.dbConvKey = null);
       state.errorText = null;
+    },
+    setSliceNodes: (state, action) => {
+      state.nodes = action.payload.nodes;
+      state.edges = action.payload.edges;
     },
     setTree: (state, action) => {
       state.tree = action.payload;
@@ -92,6 +98,7 @@ export const {
   setTree,
   toggleExpandable,
   setHoverId,
+  setSliceNodes,
   openFile,
   closeFile,
   setLoadingState,

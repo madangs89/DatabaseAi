@@ -13,6 +13,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { setAllToBegin } from "../redux/slice/MonacoEditorSlice";
+import { setCurrentProjectId } from "../redux/slice/projectSlice";
 
 const DashbordNav = ({ selectedTab, setSelectedTab, projectTitle }) => {
   const navigate = useNavigate();
@@ -86,6 +87,7 @@ const DashbordNav = ({ selectedTab, setSelectedTab, projectTitle }) => {
         <button
           onClick={() => {
             dispatch(setAllToBegin());
+            dispatch(setCurrentProjectId(null));
             navigate("/project");
           }}
           className="p-1.5 bg-[#525252] text-white inter-font font-semibold transition-all duration-200 ease-linear  rounded-md "

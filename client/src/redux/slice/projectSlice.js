@@ -6,6 +6,7 @@ const initialState = {
   isError: null,
   isButtonLoading: false,
   socket: null,
+  currentProjectId: null,
 };
 
 export const projectSlice = createSlice({
@@ -17,6 +18,9 @@ export const projectSlice = createSlice({
     },
     setProjects: (state, action) => {
       state.projects = action.payload;
+    },
+    setCurrentProjectId: (state, action) => {
+      state.currentProjectId = action.payload;
     },
     addNewProject: (state, action) => {
       console.log(action.payload);
@@ -51,6 +55,7 @@ export const projectSlice = createSlice({
 export const {
   setIsButtonLoading,
   setIsError,
+  setCurrentProjectId,
   setProjects,
   setIsLoading,
   addNewProject,

@@ -111,6 +111,7 @@ export const regenerateApiCodeAfterError = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Unable to Regenerate again, Please Try again later",
+      apiCodeStatus: 3,
     });
   }
 };

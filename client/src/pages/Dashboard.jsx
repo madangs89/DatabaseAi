@@ -56,8 +56,10 @@ import {
   setDbConvKey,
   setErrorText,
   setLoadingState,
+  setSliceNodes,
   setTree,
 } from "../redux/slice/MonacoEditorSlice";
+import { setCurrentProjectId } from "../redux/slice/projectSlice";
 
 const TableNode = ({ data }) => {
   const {
@@ -1080,6 +1082,18 @@ const Dashboard = () => {
       dispatch(setLoadingState(0));
     }
   }, [monacoSlice.tree, monacoSlice.loadingState, loading]);
+
+  useEffect(() => {
+    if (nodes.length > 0 || edges.length > 0) {
+      dispatch(setSliceNodes({ nodes, edges }));
+    }
+  }, [nodes, edges, dispatch]);
+
+  useEffect(() => {
+    if (id.length > 0) {
+      dispatch(setCurrentProjectId(id));
+    }
+  }, [id, dispatch]);
 
   if (loadingSlice?.dashboardPageLoading) {
     return (
