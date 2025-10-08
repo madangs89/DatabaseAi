@@ -4,6 +4,7 @@ import {
   deleteSchemaById,
   getSchemaById,
   regenerateApiCodeAfterError,
+  SaveSchemaCode,
 } from "../controlers/schema.controler.js";
 
 const schemaRouter = express.Router();
@@ -11,4 +12,5 @@ const schemaRouter = express.Router();
 schemaRouter.get("/:projectId", getSchemaById);
 schemaRouter.delete("/:projectId", authMiddleware, deleteSchemaById);
 schemaRouter.post("/regenerate", authMiddleware, regenerateApiCodeAfterError);
+schemaRouter.patch("/update-code", authMiddleware, SaveSchemaCode);
 export default schemaRouter;

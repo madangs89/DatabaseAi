@@ -4,9 +4,9 @@ const DatabaseOpen = ({ dbOpen, selectedDbData }) => {
   return (
     <>
       {dbOpen && (
-        <div className=" flex-1 text-white px-3 overflow-y-auto  rounded-lg shadow-lg w-full max-w-md">
+        <div className=" flex-1  text-white px-3 overflow-y-auto  rounded-lg shadow-lg w-full">
           {selectedDbData && selectedDbData.title ? (
-            <div className="mb-6">
+            <div className="mb-6 ">
               {/* Entity Details */}
               <div className="mb-4">
                 <label className="block text-sm text-gray-400 mb-1">

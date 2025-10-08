@@ -224,3 +224,20 @@ export const apiCodeTreeFormatHandler = (fakeTreeStructure) => {
 
   return final;
 };
+
+export const convertTreeToObject = (nodes) => {
+  const result = {};
+
+  const traverse = (nodes) => {
+    for (let node of nodes) {
+      if (node.type === "file") {
+        result[node.id] = node.content || "";
+      } else if (node.type === "folder" && node.children) {
+        traverse(node.children);
+      }
+    }
+  };
+
+  traverse(nodes);
+  return result;
+};

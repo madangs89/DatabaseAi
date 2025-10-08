@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Editor from "@monaco-editor/react";
+import axios from "axios";
 import {
   ArrowLeft,
   ArrowRight,
@@ -15,8 +16,12 @@ import {
   setHoverId,
   openFile,
   closeFile,
+  handleUpdateFileMonacoSlice,
+  setChangeToCode,
 } from "../redux/slice/MonacoEditorSlice";
 import LoadingScreen from "./loaders/LoadingScreen";
+import { convertTreeToObject } from "../utils/elak";
+import toast from "react-hot-toast";
 
 const fakeTreeStructure = {
   "package.json": `{
@@ -171,7 +176,10 @@ const MonacoEditor = () => {
     selectedFile,
     selectedFileHistory,
     loadingState,
+    changesToCode,
   } = useSelector((state) => state.monaco);
+
+  const projectSlice = useSelector((state) => state.project);
 
   const [expandable, setExandable] = useState(false);
   const handleLanguage = (name) => {
@@ -198,6 +206,35 @@ const MonacoEditor = () => {
     return "// Select a file to view/edit";
   };
 
+  const handleUpdate = (selectedFile, content) => {
+    console.log("handleUpdate", selectedFile, content);
+    if (!selectedFile.name || !selectedFile.id) {
+      return;
+    }
+    dispatch(handleUpdateFileMonacoSlice({ selectedFile, content }));
+  };
+
+  const handleSaveClick = async () => {
+    if (!projectSlice?.currentProjectId || tree.length == 0) {
+      return;
+    }
+    const ObjectTree = convertTreeToObject(tree[0].children);
+    console.log("tree", ObjectTree);
+    try {
+      const data = await axios.patch(
+        `${import.meta.env.VITE_BACKEND_URL}/schema/update-code`,
+        { code: ObjectTree, projectId: projectSlice?.currentProjectId },
+        { withCredentials: true }
+      );
+      if (data?.data?.success) {
+        dispatch(setChangeToCode(false));
+        toast.success("Code saved successfully");
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(error?.response?.data?.message || "Unable to save code");
+    }
+  };
   return (
     <div className="w-full h-screen overflow-hidden flex bg-[#0a0a0a] text-[#e5e5e5] font-sans">
       {/* Sidebar */}
@@ -249,14 +286,31 @@ const MonacoEditor = () => {
                   />
                 ))}
             </ul>
-            <div className="py-2 ml-4 border-t items-center justify-center border-[#2a2a2a] text-xs text-[#737373]">
-              ⓘ Workspace ready
+            <div className="flex py-2 px-0 items-center justify-center lg:justify-between border-t border-[#2a2a2a] w-full ">
+              <div className="ml-4 hidden lg:block  items-center justify-center  text-xs text-[#737373]">
+                ⓘ Workspace ready
+              </div>
+              {!changesToCode && (
+                <div className="ml-4 lg:hidden w-full  items-center justify-center  text-xs text-[#737373]">
+                  ⓘ Workspace ready
+                </div>
+              )}
+              {changesToCode ? (
+                <div
+                  onClick={handleSaveClick}
+                  className="py-1 cursor-pointer text-sm mr-4 bg-green-500 px-3 rounded-md"
+                >
+                  Save
+                </div>
+              ) : (
+                <div className="py-1 text-sm mr-4 w-3 h-7 bg-inherit px-3 rounded-md"></div>
+              )}
             </div>
           </div>
 
           {/* Editor Section */}
           <div className="flex-1 overflow-hidden flex flex-col">
-            <div className="flex items-center monaco2 bg-[#111111] border-b overflow-x-scroll overflow-y-hidden border-[#2a2a2a] h-12 text-xs text-[#a3a3a3]">
+            <div className="flex items-center monaco2 bg-[#111111] border-b overflow-x-scroll overflow-y-hidden border-[#2a2a2a] min-h-12 text-xs text-[#a3a3a3]">
               {selectedFileHistory &&
                 selectedFileHistory.length > 0 &&
                 selectedFileHistory.map((item, index) => (
@@ -293,6 +347,7 @@ const MonacoEditor = () => {
                 theme="vs-dark"
                 height="100%"
                 defaultLanguage="javascript"
+                onChange={(content) => handleUpdate(selectedFile, content)}
                 language={handleLanguage(selectedFile?.name)}
                 value={
                   selectedFile

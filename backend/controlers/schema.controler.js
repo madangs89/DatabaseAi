@@ -68,7 +68,7 @@ export const deleteSchemaById = async (req, res) => {
 export const regenerateApiCodeAfterError = async (req, res) => {
   try {
     const { projectId, nodes, dbConvKey } = req.body;
-    const userId = req.user_id;
+    const userId = req.user._id;
 
     if (!projectId || (nodes && nodes.length == 0) || !userId) {
       return res.status(400).json({
@@ -112,6 +112,47 @@ export const regenerateApiCodeAfterError = async (req, res) => {
       success: false,
       message: "Unable to Regenerate again, Please Try again later",
       apiCodeStatus: 3,
+    });
+  }
+};
+
+export const SaveSchemaCode = async (req, res) => {
+  try {
+    const { projectId, code } = req.body;
+    const userId = req.user._id;
+
+    console.log(code);
+
+    if (!projectId || !code) {
+      return res.status(400).json({
+        success: false,
+        message: "All Fields are required",
+      });
+    }
+    const schema = await SchemaVersion.findOne({
+      projectId: projectId,
+    });
+    if (!schema) {
+      return res
+        .status(404)
+        .json({ message: "Schema not found", success: false });
+    }
+    if (userId.toString() !== schema.ownerId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized to update this schema",
+      });
+    }
+    schema.apiCodes = code;
+    await schema.save();
+    return res
+      .status(200)
+      .json({ success: true, message: "Schema saved Successfully" });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong, Please try again!!",
     });
   }
 };

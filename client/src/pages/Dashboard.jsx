@@ -428,7 +428,6 @@ const Dashboard = () => {
           });
         }
         console.log("dbconvokey", userQueryResult?.data?.data?.dbConvKey);
-
         if (userQueryResult?.data?.data?.dbConvKey) {
           if (userQueryResult?.data?.data?.projectId == id) {
             dispatch(setDbConvKey(userQueryResult?.data?.data?.dbConvKey));
@@ -610,7 +609,6 @@ const Dashboard = () => {
                 },
               };
             });
-
             let code = "";
             nodes.forEach((node) => {
               code += node.data.code;
@@ -621,6 +619,12 @@ const Dashboard = () => {
             let edges = res?.data?.data?.edges.map((e) => {
               return { ...e, style: { stroke: "gray", strokeWidth: 2 } };
             });
+
+            if (res?.data?.data?.dbConvKey) {
+              if (res?.data?.data?.projectId == id) {
+                dispatch(setDbConvKey(res?.data?.data?.dbConvKey));
+              }
+            }
             setEdges(edges);
             console.log("adding api codes");
             if (

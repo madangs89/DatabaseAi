@@ -11,6 +11,7 @@ const initialState = {
   nodes: [],
   edges: [],
   dbConvKey: null,
+  changesToCode: false,
 };
 
 export const monacoSlice = createSlice({
@@ -25,7 +26,10 @@ export const monacoSlice = createSlice({
       state.selectedFileHistory = [];
       state.loadingState = 0;
       (state.nodes = []), (state.edges = []), (state.dbConvKey = null);
-      state.errorText = null;
+      (state.errorText = null), (state.changesToCode = false);
+    },
+    setChangeToCode: (state, action) => {
+      state.changesToCode = action.payload;
     },
     setSliceNodes: (state, action) => {
       state.nodes = action.payload.nodes;
@@ -91,6 +95,27 @@ export const monacoSlice = createSlice({
     setLoadingState: (state, action) => {
       state.loadingState = action.payload;
     },
+    handleUpdateFileMonacoSlice: (state, action) => {
+      const { selectedFile, content } = action.payload;
+      const updateHandler = (stateNodes, selectedFile, content) => {
+        for (let nodes of stateNodes) {
+          if (nodes.id === selectedFile.id && nodes.type === "file") {
+            nodes.content = content;
+            return true;
+          } else if (nodes.type === "folder" && nodes.children) {
+            if (updateHandler(nodes.children, selectedFile, content)) {
+              return true;
+            }
+          }
+        }
+        return false;
+      };
+
+      if (state.tree.length > 0 && state.tree[0]?.children) {
+        updateHandler(state.tree[0].children, selectedFile, content);
+        state.changesToCode = true;
+      }
+    },
   },
 });
 
@@ -105,6 +130,8 @@ export const {
   setAllToBegin,
   setErrorText,
   setDbConvKey,
+  handleUpdateFileMonacoSlice,
+  setChangeToCode,
 } = monacoSlice.actions;
 
 export const monacoReducer = monacoSlice.reducer;
