@@ -20,11 +20,11 @@ const DashbordNav = ({ selectedTab, setSelectedTab, projectTitle }) => {
   const dispatch = useDispatch();
   return (
     <nav className="h-16 py-10   w-full pr-3 sticky left-0 top-0 z-[99999] bg-black border-b-[0.5px] border-[#262626] flex justify-between items-center ">
-      <div className="flex gap-2 pl-2 justify-center items-center">
-        <div className="flex  flex-col justify-center ">
+      <div className="flex gap-2 pl-2 justify-center items-center flex-wrap">
+        <div className="flex flex-col justify-center w-full sm:w-auto">
           <div className="flex gap-1 justify-center items-center">
             <svg
-              className="text-white"
+              className="text-white flex-shrink-0"
               fill="none"
               height="23"
               viewBox="0 0 48 48"
@@ -36,13 +36,16 @@ const DashbordNav = ({ selectedTab, setSelectedTab, projectTitle }) => {
                 fill="currentColor"
               ></path>
             </svg>
-            <h1 className="text-lg inter-font text-white font-bold">
+            <h1 className="text-lg inter-font text-white font-bold truncate max-w-[150px] sm:max-w-full">
               {projectTitle}
             </h1>
           </div>
-          <p className="text-xs  text-neutral-400">main-branch</p>
+          <p className="text-xs text-neutral-400 truncate max-w-[150px] sm:max-w-full">
+            main-branch
+          </p>
         </div>
       </div>
+
       {/* <div className="flex text-sm flex-1 items-center justify-center gap-4">
         <button
           className={`${

@@ -324,7 +324,7 @@ export default function Project() {
                 filteredProjects.map((project, index) => (
                   <div
                     key={project._id}
-                    className="bg-[#1c1c1c] gap-3 max-h-[250px] p-4 rounded-lg border border-[#262626] hover:border-white/40 transition shadow justify-between flex flex-col"
+                    className="bg-[#1c1c1c] gap-3 max-h-[300px] lg:max-h-[250px] p-4 rounded-lg border border-[#262626] hover:border-white/40 transition shadow justify-between flex flex-col"
                   >
                     <div>
                       <p className="text-xs text-gray-500">
@@ -342,7 +342,7 @@ export default function Project() {
                       <h3 className="text-lg font-semibold mt-1 text-white">
                         {project.title}
                       </h3>
-                      <p className="text-gray-300 mt-1 line-clamp-6 text-sm">
+                      <p className="text-gray-300 mt-1 md:line-clamp-6 text-sm">
                         {project.description}
                       </p>
                     </div>

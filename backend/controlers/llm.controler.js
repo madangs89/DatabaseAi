@@ -216,7 +216,10 @@ There must be a 120px gap between schemas (both horizontally and vertically) and
         userId,
       })
     );
-    await client.set(smallLLMResponse?.dbConvKey, JSON.stringify(json));
+
+    if (json?.entities?.length > 0) {
+      await client.set(smallLLMResponse?.dbConvKey, JSON.stringify(json));
+    }
 
     return res.json({
       data: json,

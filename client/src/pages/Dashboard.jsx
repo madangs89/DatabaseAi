@@ -192,6 +192,7 @@ const Dashboard = () => {
   const [selectedRelationshipId, setSelectedRelationshipId] = useState("");
   const [selectedDb, setSelectedDb] = useState(null);
   const [selectedDbData, setSelectedDbData] = useState({});
+  const [isSaved, setIsSaved] = useState(0);
   const [fitViewChangeTracker, setFitViewChangeTracker] = useState(0);
   const [chatMessages, setChatMessages] = useState([]);
   const [isCallingEditApi, setIsCallingEditApi] = useState(false);
@@ -325,6 +326,12 @@ const Dashboard = () => {
 
   // All Refs
   const inputRef = useRef(null);
+
+  const saveEditHandler = () => {
+    setIsSaved(3);
+    // setIsSaved(1);
+  };
+
   // Handling the submit function
   const handleInputSubmit = async (e, isAiPrompt = false, aiPrompt = "") => {
     e?.preventDefault();
@@ -400,6 +407,7 @@ const Dashboard = () => {
             EditQuery?.data?.data?.id?.length > 0 &&
             EditQuery?.data?.data?.operation?.length > 0
           ) {
+            setIsSaved(2);
             switch (EditQuery?.data?.data?.operation) {
               case "addEntity":
                 {
@@ -834,6 +842,7 @@ const Dashboard = () => {
                 }
                 break;
             }
+            saveEditHandler();
             console.log("operation", EditQuery?.data?.data);
           }
           if (
@@ -1021,6 +1030,7 @@ const Dashboard = () => {
             messageQueue,
           });
         }
+        setIsSaved(1);
         setLoading(false);
         console.log("updating monaco slice ", monacoSlice.loadingState);
       } catch (error) {
@@ -1029,7 +1039,6 @@ const Dashboard = () => {
           const filtered = prev.filter((c) => c.type !== "status");
           return [...filtered];
         });
-
         toast.error("Something went wrong, Please Try Again Later");
         if (monacoSlice?.tree.length <= 0) {
           dispatch(setLoadingState(3));
@@ -1189,7 +1198,7 @@ const Dashboard = () => {
             }
           }
           console.log("setting is calling editing api true");
-
+          setIsSaved(1);
           setIsEditingDbCall(true);
           dispatch(setEntityLoading(false));
         } catch (error) {
@@ -1404,6 +1413,7 @@ const Dashboard = () => {
           });
           setIsEditingDbCall(true);
           setLoading(false);
+          setIsSaved(1);
         }
       });
 
@@ -1633,6 +1643,18 @@ const Dashboard = () => {
                 {/* Right: Search + Buttons */}
                 <div className="flex items-center gap-2">
                   {/* Search Box */}
+
+                  <div className="">
+                    {isSaved == 1 && (
+                      <p className="text-[#525252] text-sm mr-2">Saved</p>
+                    )}
+                    {isSaved == 2 && (
+                      <p className="text-[#525252] text-sm mr-2">Not Saved</p>
+                    )}
+                    {isSaved == 3 && (
+                      <p className="text-[#525252] text-sm mr-2">Saving..</p>
+                    )}
+                  </div>
 
                   {/* Plus Button */}
                   <button className="w-8 h-8 flex items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]">
