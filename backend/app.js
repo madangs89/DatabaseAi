@@ -466,12 +466,6 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
               JSON.stringify({ projects })
             );
           }
-        } else {
-          await pubClient.hSet(
-            "apiCodesStatus",
-            userId,
-            JSON.stringify({ projects: [{ projectId, generating: true }] })
-          );
         }
         if (data?.entities) {
           console.log("got the entities in api code");
@@ -500,7 +494,7 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
             }
           }
           console.log("called get api code function now with nodes");
-        
+
           const rep = await getApiCodes(nodes, dbConvKey);
           console.log("got the code back now with nodes");
 
@@ -540,9 +534,7 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
             if (apiCodeStatus) {
               apiCodeStatus = JSON.parse(apiCodeStatus);
               const { projects } = apiCodeStatus;
-              const project = projects.filter(
-                (p) => p?.projectId == projectId
-              );
+              const project = projects.filter((p) => p?.projectId != projectId);
               if (project.length > 0) {
                 await pubClient.hSet(
                   "apiCodesStatus",
@@ -579,9 +571,7 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
     if (apiCodeStatus) {
       apiCodeStatus = JSON.parse(apiCodeStatus);
       const { projects } = apiCodeStatus;
-      const project = projects.filter(
-        (p) => p?.projectId == projectId && p?.generating == true
-      );
+      const project = projects.filter((p) => p?.projectId !== projectId);
       if (project.length > 0) {
         await pubClient.hSet(
           "apiCodesStatus",
