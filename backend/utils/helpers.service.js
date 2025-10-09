@@ -32,10 +32,58 @@ const statusMessages = [
   "🙏 Thank you for your patience! Your database is now ready to use.",
   "🛠️ If you need further customization, you can always update your schema later.",
 ];
+const editingStatusMessages = [
+  // Initial steps
+  "✏️ Starting the editing process — getting everything ready...",
+  "🔍 Analyzing the requested changes to ensure accuracy.",
+  "🧠 Understanding the schema structure to apply edits intelligently.",
+  "🧭 Locating the exact entities, fields, or relationships to modify.",
+  "📌 Preparing a clean and safe environment to apply your edits.",
+
+  // Progress updates
+  "⚙️ Applying changes to the selected schema components...",
+  "🪄 Adjusting relationships, fields, and metadata as requested.",
+  "🔄 Rebuilding internal mappings to keep everything in sync.",
+  "📊 Ensuring that the updated structure stays logically consistent.",
+  "📝 Refining edits to align with schema best practices.",
+
+  // Validation and optimization
+  "✅ Verifying the integrity of all edits applied so far.",
+  "🧪 Testing the updated schema for conflicts or inconsistencies.",
+  "🛡️ Running validation checks to prevent schema-breaking changes.",
+  "🔗 Ensuring relationships remain valid and well-defined.",
+  "🧩 Re-optimizing the schema layout after your edits.",
+
+  // Finalization
+  "📦 Finalizing changes and preparing the updated schema...",
+  "✨ Polishing up your schema to reflect the new edits perfectly...",
+  "🔔 Double-checking that everything is consistent and stable.",
+  "🌿 The edits are seamlessly integrated into your schema.",
+  "⏳ Wrapping things up — your updated schema is nearly ready.",
+
+  // Completion
+  "🎉 All edits applied successfully — your schema is updated!",
+  "✅ Edits complete! Your schema now reflects the latest changes.",
+  "📤 Preparing the updated schema for export and integration.",
+  "🙏 Thank you for your patience — all changes are safely applied.",
+  "🛠️ You can continue refining your schema anytime with more edits.",
+];
 
 export const sendMessage = async (socket, index, projectId) => {
   index = index % statusMessages.length;
   const statusMessage = statusMessages[index];
+  console.log(`emiting the msg ${statusMessage}`);
+
+  io.to(socket).emit("statusUpdate", {
+    message: statusMessage,
+    isScroll: true,
+    projectId,
+    type: "status",
+  });
+};
+export const sendMessageEditing = async (socket, index, projectId) => {
+  index = index % editingStatusMessages.length;
+  const statusMessage = editingStatusMessages[index];
   console.log(`emiting the msg ${statusMessage}`);
 
   io.to(socket).emit("statusUpdate", {

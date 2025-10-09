@@ -367,14 +367,513 @@ const Dashboard = () => {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);
 
-    try {
-      console.log("is calling editing api", isEditingDbCall);
+    if (isEditingDbCall) {
+      try {
+        const formatedNode = nodes.map((n) => ({
+          id: n.id,
+          data: {
+            title: n.data.title,
+            fields: n.data.fields,
+            code: n.data.code,
+            description: n.data.description,
+          },
+        }));
 
-      if (isEditingDbCall) {
-        console.log("isCallingEditApi");
-      } else {
+        const EditQuery = await axios.patch(
+          `${import.meta.env.VITE_BACKEND_URL}/edit-db`,
+          {
+            message: inn,
+            projectId: id,
+            nodes: formatedNode,
+            edges: edges,
+          },
+          {
+            withCredentials: true,
+          }
+        );
+        console.log(EditQuery.data);
+        if (EditQuery?.data?.success) {
+          console.log(EditQuery.data.data);
+          if (
+            EditQuery?.data?.data?.operation &&
+            EditQuery?.data?.data?.id &&
+            EditQuery?.data?.data?.id?.length > 0 &&
+            EditQuery?.data?.data?.operation?.length > 0
+          ) {
+            switch (EditQuery?.data?.data?.operation) {
+              case "addEntity":
+                {
+                  const id =
+                    EditQuery?.data?.data?.target || EditQuery?.data?.data?.id;
+                  if (id.length <= 0) {
+                    return;
+                  }
+                  const newNodeData = {
+                    id: id.toLowerCase(),
+                    type: "tableNode",
+                    position: {
+                      x:
+                        Math.random() *
+                        ((nodes[nodes.length - 1]?.position?.x || 0) + 100),
+                      y:
+                        Math.random() *
+                        ((nodes[nodes.length - 1]?.position?.y || 0) + 100),
+                    },
+                    data: {
+                      id: EditQuery?.data?.data?.details?.title?.toLowerCase(),
+                      title: EditQuery?.data?.data?.details?.title,
+                      fields: EditQuery?.data?.data?.details?.fields,
+                      code: null,
+                      theme,
+                      selectedDb,
+                      loading,
+                      index: nodes.length,
+                      description: EditQuery?.data?.data?.details?.description,
+                    },
+                  };
+                  setNodes((prev) => [...prev, newNodeData]);
+                  toast.success(
+                    `${EditQuery?.data?.data?.details?.title} added Successfully`
+                  );
+                }
+                break;
+              case "addField":
+                {
+                  const id =
+                    EditQuery?.data?.data?.id?.toLowerCase() ||
+                    EditQuery?.data?.data?.target?.toLowerCase();
+                  if (id.length <= 0) {
+                    return;
+                  }
+                  setNodes((prev) => {
+                    return prev.map((n) => {
+                      if (n?.id?.toLowerCase() === id) {
+                        return {
+                          ...n,
+                          data: {
+                            ...n?.data,
+                            fields: [
+                              ...(n?.data?.fields ? n.data.fields : []),
+                              EditQuery?.data?.data?.details.field,
+                            ],
+                          },
+                        };
+                      }
+                      return n;
+                    });
+                  });
+                  toast.success(`Added Successfully`);
+                }
+                break;
+              case "addRelationship":
+                {
+                  const id = uuidv4();
+                  if (id.length <= 0) {
+                    return;
+                  }
+                  const newEdgeData = {
+                    id,
+                    source: EditQuery?.data?.data?.details?.from?.toLowerCase(),
+                    target: EditQuery?.data?.data?.details?.to?.toLowerCase(),
+                    data: {
+                      type: EditQuery?.data?.data?.details?.type,
+                      description: EditQuery?.data?.data?.details?.description,
+                      style: { stroke: "gray", strokeWidth: 2 },
+                    },
+                  };
+                  setEdges((prev) => [...prev, newEdgeData]);
+                  toast.success(
+                    `${
+                      EditQuery?.data?.data?.target
+                        ? EditQuery.data.data.target
+                        : ""
+                    } Added Successfully`
+                  );
+                }
+                break;
+              case "editField":
+                {
+                  const id =
+                    EditQuery?.data?.data?.id?.toLowerCase() ||
+                    EditQuery?.data?.data?.target?.toLowerCase();
+                  if (id.length <= 0) {
+                    return;
+                  }
+                  setNodes((prev) => {
+                    return prev.map((n) => {
+                      if (n?.id?.toLowerCase() == id) {
+                        return {
+                          ...n,
+                          data: {
+                            ...n?.data,
+                            fields: n.data.fields.map((f) => {
+                              if (
+                                f.name.toLowerCase() ==
+                                EditQuery?.data?.data?.details?.oldName.toLowerCase()
+                              ) {
+                                return {
+                                  ...f,
+                                  ...EditQuery?.data?.data?.details?.newField,
+                                };
+                              }
+                              return f;
+                            }),
+                          },
+                        };
+                      }
+                      return n;
+                    });
+                  });
+                  toast.success(`Edited Successfully`);
+                }
+                break;
+              case "editFieldType":
+                {
+                  const id =
+                    EditQuery?.data?.data?.id?.toLowerCase() ||
+                    EditQuery?.data?.data?.target?.toLowerCase();
+                  if (id.length <= 0) {
+                    return;
+                  }
+                  setNodes((prev) => {
+                    return prev.map((n) => {
+                      if (n?.id?.toLowerCase() == id) {
+                        return {
+                          ...n,
+                          data: {
+                            ...n?.data,
+                            fields: n.data.fields.map((f) => {
+                              if (
+                                f?.name.toLowerCase() ==
+                                EditQuery?.data?.data?.details?.fieldName.toLowerCase()
+                              ) {
+                                return {
+                                  ...f,
+                                  type: EditQuery?.data?.data?.details?.newType,
+                                };
+                              }
+                              return f;
+                            }),
+                          },
+                        };
+                      }
+                      return n;
+                    });
+                  });
+                  toast.success(`Edited field type Successfully`);
+                }
+                break;
+              case "editFieldConstraints":
+                {
+                  const id =
+                    EditQuery?.data?.data?.id?.toLowerCase() ||
+                    EditQuery?.data?.data?.target?.toLowerCase();
+                  if (!id || id.length <= 0) return;
+                  setNodes((prev) => {
+                    return prev.map((n) => {
+                      if (n?.id?.toLowerCase() === id) {
+                        return {
+                          ...n,
+                          data: {
+                            ...n.data,
+                            fields: n.data.fields.map((f) => {
+                              if (
+                                f?.name.toLowerCase() ===
+                                EditQuery?.data?.data?.details?.fieldName.toLowerCase()
+                              ) {
+                                return {
+                                  ...f,
+                                  ...EditQuery?.data?.data?.details
+                                    ?.constraints,
+                                };
+                              }
+                              return f;
+                            }),
+                          },
+                        };
+                      }
+                      return n;
+                    });
+                  });
+                  toast.success(`Field constraints updated successfully`);
+                }
+                break;
+              case "editEntityName":
+                {
+                  const id =
+                    EditQuery?.data?.data?.id?.toLowerCase() ||
+                    EditQuery?.data?.data?.target?.toLowerCase();
+                  if (!id || id.length <= 0) return;
+
+                  const newName = EditQuery?.data?.data?.details?.newName;
+
+                  setNodes((prev) => {
+                    return prev.map((n) => {
+                      if (n?.id?.toLowerCase() === id) {
+                        return {
+                          ...n,
+                          data: {
+                            ...n.data,
+                            id: newName.toLowerCase(), // Update node id
+                            title: newName, // Update displayed title
+                          },
+                        };
+                      }
+                      return n;
+                    });
+                  });
+
+                  setEdges((prev) =>
+                    prev.map((e) => {
+                      return {
+                        ...e,
+                        source:
+                          e.source.toLowerCase() ==
+                          EditQuery?.data?.data?.target.toLowerCase()
+                            ? newName.toLowerCase()
+                            : e.source,
+                        target:
+                          e.target.toLowerCase() ==
+                          EditQuery?.data?.data?.target.toLowerCase()
+                            ? newName.toLowerCase()
+                            : e.target,
+                      };
+                    })
+                  );
+
+                  toast.success(
+                    `Renamed entity '${EditQuery?.data?.data?.target}' to '${newName}'`
+                  );
+                }
+                break;
+              case "editEntityDescription":
+                {
+                  const id =
+                    EditQuery?.data?.data?.id?.toLowerCase() ||
+                    EditQuery?.data?.data?.target?.toLowerCase();
+                  if (!id || id.length <= 0) return;
+
+                  const newDescription =
+                    EditQuery?.data?.data?.details?.newDescription;
+
+                  setNodes((prev) => {
+                    return prev.map((n) => {
+                      if (n?.id?.toLowerCase() === id) {
+                        return {
+                          ...n,
+                          data: {
+                            ...n.data,
+                            description: newDescription, // Update description
+                          },
+                        };
+                      }
+                      return n;
+                    });
+                  });
+
+                  toast.success(
+                    `Updated the description of '${EditQuery?.data?.data?.target}' entity.`
+                  );
+                }
+                break;
+              case "editRelationship":
+                {
+                  const id = EditQuery?.data?.data?.id.toLowerCase();
+                  if (!id || id.length <= 0) return;
+
+                  const { type, from, to } =
+                    EditQuery?.data?.data?.details || {};
+
+                  setEdges((prev) => {
+                    return prev.map((e) => {
+                      if (e.id.toLowerCase() === id) {
+                        return {
+                          ...e,
+                          source: from?.toLowerCase() || e.source,
+                          target: to?.toLowerCase() || e.target,
+                          data: {
+                            ...e.data,
+                            type: type || e.data.type,
+                          },
+                        };
+                      }
+                      return e;
+                    });
+                  });
+
+                  toast.success(
+                    `Edited relationship ${EditQuery?.data?.data?.target}`
+                  );
+                }
+                break;
+              case "editRelationshipEndpoints":
+                {
+                  const id = EditQuery?.data?.data?.id.toLowerCase();
+                  if (!id || id.length <= 0) return;
+
+                  // Safely destructure details
+                  const { from, to } = EditQuery?.data?.data?.details || {};
+
+                  setEdges((prev) => {
+                    return prev.map((e) => {
+                      if (e?.id?.toLowerCase() === id) {
+                        return {
+                          ...e,
+                          source: from?.toLowerCase() || e.source,
+                          target: to?.toLowerCase() || e.target,
+                        };
+                      }
+                      return e;
+                    });
+                  });
+
+                  toast.success(
+                    `Updated the endpoints of '${EditQuery?.data?.data?.target}' relationship to connect '${from}' and '${to}'.`
+                  );
+                }
+                break;
+              case "editRelationshipCardinality":
+                {
+                  const id = EditQuery?.data?.data?.id.toLowerCase();
+                  if (!id || id.length <= 0) return;
+
+                  // Safely get new type
+                  const { newType } = EditQuery?.data?.data?.details || {};
+
+                  setEdges((prev) => {
+                    return prev.map((e) => {
+                      if (e.id.toLowerCase() === id) {
+                        return {
+                          ...e,
+                          data: {
+                            ...e.data,
+                            type: newType || e.data.type, // Update cardinality/type
+                          },
+                        };
+                      }
+                      return e;
+                    });
+                  });
+
+                  toast.success(
+                    `Changed relationship cardinality to '${newType}'`
+                  );
+                }
+                break;
+              case "deleteField":
+                {
+                  const id =
+                    EditQuery?.data?.data?.id?.toLowerCase() ||
+                    EditQuery?.data?.data?.target?.toLowerCase();
+                  if (!id || id.length <= 0) return;
+
+                  const { fieldName } = EditQuery?.data?.data?.details || {};
+
+                  setNodes((prev) => {
+                    return prev.map((n) => {
+                      if (n?.id?.toLowerCase() === id) {
+                        return {
+                          ...n,
+                          data: {
+                            ...n.data,
+                            fields: (n.data.fields || []).filter(
+                              (f) =>
+                                f?.name.toLowerCase() !==
+                                fieldName?.toLowerCase()
+                            ),
+                          },
+                        };
+                      }
+                      return n;
+                    });
+                  });
+
+                  toast.success(
+                    `Deleted field '${fieldName}' from '${EditQuery?.data?.data?.target}'`
+                  );
+                }
+                break;
+
+              case "deleteEntity":
+                {
+                  const id =
+                    EditQuery?.data?.data?.id?.toLowerCase() ||
+                    EditQuery?.data?.data?.target?.toLowerCase();
+                  if (!id || id.length <= 0) return;
+
+                  setNodes((prev) =>
+                    prev.filter((n) => n?.id?.toLowerCase() !== id)
+                  );
+
+                  setEdges((prev) =>
+                    prev.filter(
+                      (e) =>
+                        e.source.toLowerCase() !=
+                          EditQuery?.data?.data?.target ||
+                        e.target.toLowerCase() != EditQuery?.data?.data?.target
+                    )
+                  );
+
+                  toast.success(
+                    `Deleted '${EditQuery?.data?.data?.target}' entity`
+                  );
+                }
+                break;
+
+              case "deleteRelationship":
+                {
+                  const id = EditQuery?.data?.data?.id;
+                  if (!id || id.length <= 0) return;
+
+                  // Remove the edge with the given id
+                  setEdges((prev) => prev.filter((e) => e.id !== id));
+
+                  toast.success(
+                    `Deleted '${EditQuery?.data?.data?.target}' relationship`
+                  );
+                }
+                break;
+            }
+            console.log("operation", EditQuery?.data?.data);
+          }
+          if (
+            EditQuery?.data?.data?.initialResponse &&
+            EditQuery?.data?.data?.initialResponse?.length > 0
+          ) {
+            setChatMessages((prev) => {
+              const filtered = prev.filter((c) => c.type !== "status");
+              return [...filtered];
+            });
+            await typeMessage({
+              text: EditQuery?.data?.data?.initialResponse,
+              sender: "system",
+              setChatMessages,
+              type: "normal",
+              autoScroll,
+              bottomRef,
+              isWritting,
+              setIsWritting,
+              messageQueue,
+            });
+          }
+        }
+
+        setChatMessages((prev) => {
+          const filtered = prev.filter((c) => c.type !== "status");
+          return [...filtered];
+        });
+        setLoading(false);
+      } catch (error) {
+        toast.error("Something went wrong, Please Try Again Later");
+        console.log("Error while sending api error", error);
+        setLoading(false);
+      }
+    } else {
+      try {
+        console.log("is calling editing api", isEditingDbCall);
+
         const userQueryResult = await axios.post(
-          "http://localhost:5000/create-db",
+          `${import.meta.env.VITE_BACKEND_URL}/create-db`,
           {
             message: inn,
             userId: auth?.user?._id,
@@ -524,20 +1023,20 @@ const Dashboard = () => {
         }
         setLoading(false);
         console.log("updating monaco slice ", monacoSlice.loadingState);
-      }
-    } catch (error) {
-      console.log(error);
-      setChatMessages((prev) => {
-        const filtered = prev.filter((c) => c.type !== "status");
-        return [...filtered];
-      });
+      } catch (error) {
+        console.log(error);
+        setChatMessages((prev) => {
+          const filtered = prev.filter((c) => c.type !== "status");
+          return [...filtered];
+        });
 
-      toast.error("Something went wrong, Please Try Again Later");
-      if (monacoSlice?.tree.length <= 0) {
-        dispatch(setLoadingState(3));
+        toast.error("Something went wrong, Please Try Again Later");
+        if (monacoSlice?.tree.length <= 0) {
+          dispatch(setLoadingState(3));
+        }
+        dispatch(setErrorText("Something went wrong please try again"));
+        setLoading(false);
       }
-      dispatch(setErrorText("Something went wrong please try again"));
-      setLoading(false);
     }
   };
   const handleScroll = () => {
@@ -1177,7 +1676,7 @@ const Dashboard = () => {
                         duration: 800,
                       });
                     }}
-                    minZoom={0.1}
+                    minZoom={0.2}
                     maxZoom={2}
                     proOptions={{ hideAttribution: true }}
                     nodeTypes={nodeTypes}
