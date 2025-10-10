@@ -514,7 +514,8 @@ addEntity
     "fields": [
       { "name": "userId", "type": "UUID", "primaryKey": true },
       { "name": "email", "type": "VARCHAR(255)", "required": true, "unique": true }
-    ]
+    ],
+    "code": "<code> *Required* //For reference to write code is in input "
   },
   "initialResponse": "Added User entity with fields userId and email"
 }
@@ -773,6 +774,7 @@ Output Operation
 IMPORTANT:
 
 ✅ Always return a valid JSON object, even for clarifications, greetings, or schema queries.
+✅ code inside addEntity operation must be required and must be valid for database language refer input .
 ✅ Do not add any extra explanation text outside the JSON.
 ✅ Do not ask for type clarification for any field.
 ✅ You can answer database-related queries, including entity and relationship details, at any time, inside the JSON.

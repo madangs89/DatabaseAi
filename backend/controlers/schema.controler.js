@@ -93,7 +93,6 @@ export const regenerateApiCodeAfterError = async (req, res) => {
     }
     const data = { entities: nodes };
     console.log(data);
-    
 
     pubClient.publish(
       "apiCode",
@@ -146,6 +145,38 @@ export const SaveSchemaCode = async (req, res) => {
       });
     }
     schema.apiCodes = code;
+    await schema.save();
+    return res
+      .status(200)
+      .json({ success: true, message: "Schema saved Successfully" });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong, Please try again!!",
+    });
+  }
+};
+
+export const SaveEditedNodesAndEdges = async (req, res) => {
+  try {
+    const { projectId, nodes, edges } = req.body;
+    if (!projectId || nodes.length == 0 || edges.length == 0) {
+      return res.status(400).json({
+        success: false,
+        message: "All Fields are required",
+      });
+    }
+    const schema = await SchemaVersion.findOne({
+      projectId: projectId,
+    });
+    if (!schema) {
+      return res
+        .status(404)
+        .json({ message: "Schema not found", success: false });
+    }
+    schema.nodes = nodes;
+    schema.edges = edges;
     await schema.save();
     return res
       .status(200)

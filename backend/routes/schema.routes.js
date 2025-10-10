@@ -4,6 +4,7 @@ import {
   deleteSchemaById,
   getSchemaById,
   regenerateApiCodeAfterError,
+  SaveEditedNodesAndEdges,
   SaveSchemaCode,
 } from "../controlers/schema.controler.js";
 
@@ -13,4 +14,9 @@ schemaRouter.get("/:projectId", getSchemaById);
 schemaRouter.delete("/:projectId", authMiddleware, deleteSchemaById);
 schemaRouter.post("/regenerate", authMiddleware, regenerateApiCodeAfterError);
 schemaRouter.patch("/update-code", authMiddleware, SaveSchemaCode);
+schemaRouter.patch(
+  "/update-nodes-edges",
+  authMiddleware,
+  SaveEditedNodesAndEdges
+);
 export default schemaRouter;
