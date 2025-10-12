@@ -108,21 +108,12 @@ const App = () => {
           <Route
             path="/:id/dashboard"
             element={
-              <ProtectedRoute>
-                <ReactFlowProvider>
-                  <Dashboard />
-                </ReactFlowProvider>
-              </ProtectedRoute>
+              <ReactFlowProvider>
+                <Dashboard />
+              </ReactFlowProvider>
             }
           />
-          <Route
-            path="/project"
-            element={
-              <ProtectedRoute>
-                <Project />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/project" element={<Project />} />
           <Route path="/project/:id/settings" element={<ProjectSetting />} />
           <Route path="/project/:id/history" element={<VersionHistory />} />
           <Route path="/account" element={<AccountSetting />} />

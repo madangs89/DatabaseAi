@@ -2,6 +2,7 @@ import ReactMarkdown from "react-markdown";
 import { useSelector } from "react-redux";
 import remarkGfm from "remark-gfm";
 import SpinnerLoader from "./loaders/SpinnerLoader";
+import { useEffect, useState } from "react";
 
 const Chat = ({
   chatOpen,
@@ -11,14 +12,47 @@ const Chat = ({
   bottomRef,
 }) => {
   const loadingSlice = useSelector((state) => state.loading);
+  const scrollSlice = useSelector((state) => state?.scrollS);
+  const [IsShowScrolBottom, setIsShowScrolBottom] = useState(true);
 
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: scrollSlice?.chatScroll,
+        behavior: "smooth",
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!chatContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+    const isAtBottom = scrollTop + clientHeight >= scrollHeight - 50;
+    setIsShowScrolBottom(!isAtBottom);
+  }, [scrollSlice?.chatScroll, chatOpen]);
+
+  useEffect(() => {
+    if (!chatContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+    const isAtBottom = scrollTop + clientHeight >= scrollHeight - 50;
+    setIsShowScrolBottom(!isAtBottom);
+  }, [chatOpen]); // run once when chat opens
+  useEffect(() => {
+    // Scroll to bottom when new messages arrive
+    if (chatMessages.length > 0 && chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [chatMessages]);
   return (
     <>
       {chatOpen && (
         <div
           ref={chatContainerRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-4"
+          className="flex-1 relative overflow-y-scroll px-3 py-4 flex flex-col gap-4"
         >
           {loadingSlice?.chatLoading ? (
             <div className="flex w-full h-full items-center justify-center">
@@ -93,7 +127,6 @@ const Chat = ({
                     </ReactMarkdown>
                   </div>
                 )}
-                <div ref={bottomRef}></div>
               </div>
             ))
           ) : (
@@ -104,6 +137,21 @@ const Chat = ({
               <p className="text-[#525252]">Start a conversation</p>
             </div>
           )}
+          {IsShowScrolBottom && (
+            <div
+              onClick={() => {
+                chatContainerRef.current?.scrollTo({
+                  top: chatContainerRef.current.scrollHeight,
+                  behavior: "smooth",
+                });
+              }}
+              className="sticky bottom-3 left-[50%] text-black bg-white w-8 h-8 text-lg rounded-full shadow-lg  flex items-center justify-center cursor-pointer z-20"
+            >
+              ↓
+            </div>
+          )}
+
+          <div ref={bottomRef}></div>
         </div>
       )}
     </>

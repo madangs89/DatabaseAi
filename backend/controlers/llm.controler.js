@@ -14,6 +14,8 @@ import {
 import { GoogleGenAI, Type } from "@google/genai";
 export const createDBWithLlmCall = async (req, res) => {
   let it;
+  console.log("Received create db with llm call");
+  
   try {
     const { prompt, message, projectId } = req.body;
     const userId = req.user?._id;
@@ -93,6 +95,7 @@ export const createDBWithLlmCall = async (req, res) => {
     }
 
     console.log("smallLLMResponse?.dbConvKey", smallLLMResponse?.dbConvKey);
+    console.log(id);
 
     if (id) {
       let index = 0;
@@ -509,7 +512,7 @@ addEntity
   "target": "<entityName>",
   "id": "<entityId>",
   "details": {
-  "tittle": "<entityName > *Required*",
+  "title": "<entityName > *Required*",
     "description": "Stores user account info",
     "fields": [
       { "name": "userId", "type": "UUID", "primaryKey": true },
@@ -530,7 +533,8 @@ addField
       "name": "phoneNumber",
       "type": "VARCHAR(15)",
       "required": false
-    }
+    },
+    "code": "<code> *Required* //For reference to write code is in input "
   },
   "initialResponse": "Added field phoneNumber to User"
 }
@@ -774,7 +778,7 @@ Output Operation
 IMPORTANT:
 
 ✅ Always return a valid JSON object, even for clarifications, greetings, or schema queries.
-✅ code inside addEntity operation must be required and must be valid for database language refer input .
+✅ code inside addEntity, addField operation must be required and must be valid for database language refer input .
 ✅ Do not add any extra explanation text outside the JSON.
 ✅ Do not ask for type clarification for any field.
 ✅ You can answer database-related queries, including entity and relationship details, at any time, inside the JSON.
@@ -782,6 +786,8 @@ IMPORTANT:
 ✅ Do not ask for clarification if u able to do that by yourself. ex : add product entity // here no need to ask clarification
 ✅ Do not ask for clarification if user ask for description change in the operation :<editEntityDescription> if user provided the description means add that one else u should generate new Description without asking for clarifications
 ✅ Do not ask for clarification if user ask for types in the operation :<addField>, if user provided the type means add that one else u should generate new types without asking for clarifications
+✅ Do not ask for clarification if user ask asked to create new table or entity , u must create it without asking for clarifications
+✅ Do not ask for clarification if user ask asked to edit the entity or relationship , u must edit it without asking for clarifications
 `,
       },
     });

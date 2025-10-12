@@ -22,6 +22,7 @@ import {
   CloudLightning,
   Copy,
   DatabaseZap,
+  Menu,
   Search,
   SearchIcon,
   Send,
@@ -29,6 +30,7 @@ import {
   SendToBack,
   SendToBackIcon,
   Settings,
+  X,
 } from "lucide-react";
 import axios from "axios";
 import DashbordNav from "../components/DashbordNav";
@@ -60,6 +62,7 @@ import {
   setTree,
 } from "../redux/slice/MonacoEditorSlice";
 import { setCurrentProjectId } from "../redux/slice/projectSlice";
+import { setChatScroll } from "../redux/slice/scrollSlice";
 
 const TableNode = ({ data }) => {
   const {
@@ -127,14 +130,6 @@ const TableNode = ({ data }) => {
         setChatOpen(false);
         setCopyOpen(false);
         setRelationshipsOpen(false);
-        setSelectedDbData({
-          title,
-          fields,
-          theme,
-          id,
-          code,
-          description,
-        });
       }}
       style={{
         ...themeStyles[theme],
@@ -184,6 +179,7 @@ const Dashboard = () => {
   const [theme, setTheme] = useState("dark");
   const [selectedTab, setSelectedTab] = useState("editor");
   const [projectTitle, setProjectTitle] = useState("");
+  const [selectedProjectDetails, setSelectedProjectDetails] = useState({});
   const [autoScroll, setAutoScroll] = useState(true);
   const [chatOpen, setChatOpen] = useState(true);
   const [dbOpen, setDbOpen] = useState(false);
@@ -200,6 +196,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [llmChatHistory, setLlmChatHistory] = useState([]);
   const chatContainerRef = useRef(null);
+  const [mobileSelectedTab, setMobileSelectedTab] = useState(false);
   const [llmCodeFromServer, setLlmCodeFromServer] = useState("");
   const bottomRef = useRef(null);
   const { fitView } = useReactFlow();
@@ -217,7 +214,7 @@ const Dashboard = () => {
   const [isEditingDbCall, setIsEditingDbCall] = useState(false);
   const socket = useSelector((state) => state?.project?.socket);
   const monacoSlice = useSelector((state) => state?.monaco);
-
+  const scrollSlice = useSelector((state) => state?.scrollS);
   const tableData = [
     {
       id: "welcome",
@@ -327,11 +324,6 @@ const Dashboard = () => {
   // All Refs
   const inputRef = useRef(null);
 
-  const saveEditHandler = () => {
-    setIsSaved(3);
-    // setIsSaved(1);
-  };
-
   // Handling the submit function
   const handleInputSubmit = async (e, isAiPrompt = false, aiPrompt = "") => {
     e?.preventDefault();
@@ -358,6 +350,10 @@ const Dashboard = () => {
 
     console.log("setting inn", inn);
 
+    setTimeout(() => {
+      bottomRef.current.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+
     await new Promise((resolve) => {
       setTimeout(() => {
         setChatMessages((prev) => [
@@ -370,9 +366,7 @@ const Dashboard = () => {
 
     console.log("chat messages", chatMessages);
 
-    setTimeout(() => {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
+    setMobileSelectedTab(true);
 
     if (isEditingDbCall) {
       try {
@@ -431,7 +425,9 @@ const Dashboard = () => {
                       id: EditQuery?.data?.data?.details?.title?.toLowerCase(),
                       title: EditQuery?.data?.data?.details?.title,
                       fields: EditQuery?.data?.data?.details?.fields,
-                      code: null,
+                      code: EditQuery?.data?.data?.details?.code
+                        ? EditQuery?.data?.data?.details?.code
+                        : null,
                       theme,
                       selectedDb,
                       loading,
@@ -464,6 +460,9 @@ const Dashboard = () => {
                               ...(n?.data?.fields ? n.data.fields : []),
                               EditQuery?.data?.data?.details.field,
                             ],
+                            code: EditQuery?.data?.data?.details?.code
+                              ? EditQuery?.data?.data?.details?.code
+                              : n?.data?.code,
                           },
                         };
                       }
@@ -842,7 +841,6 @@ const Dashboard = () => {
                 }
                 break;
             }
-            saveEditHandler();
             console.log("operation", EditQuery?.data?.data);
           }
           if (
@@ -866,7 +864,6 @@ const Dashboard = () => {
             });
           }
         }
-
         setChatMessages((prev) => {
           const filtered = prev.filter((c) => c.type !== "status");
           return [...filtered];
@@ -876,6 +873,13 @@ const Dashboard = () => {
         toast.error("Something went wrong, Please Try Again Later");
         console.log("Error while sending api error", error);
         setLoading(false);
+      } finally {
+        setChatMessages((prev) => {
+          const filtered = prev.filter((c) => c.type !== "status");
+          return [...filtered];
+        });
+        setLoading(false);
+        setIsSaved(3);
       }
     } else {
       try {
@@ -981,7 +985,7 @@ const Dashboard = () => {
           nodes.forEach((node) => {
             setLlmCodeFromServer((prev) => prev + node.data.code);
           });
-          setSelectedDbData(nodes[0]);
+          // setSelectedDbData(nodes[0]);
 
           setNodes(nodes);
           setEdges(edges);
@@ -1051,9 +1055,118 @@ const Dashboard = () => {
   const handleScroll = () => {
     if (!chatContainerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
-    const isAtBottom = scrollHeight - scrollTop <= clientHeight + 150; // 50px threshold
+    // const isAtBottom = scrollHeight - scrollTop <= clientHeight + 150;
+    const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10;
+    dispatch(setChatScroll(scrollTop));
     setAutoScroll(isAtBottom);
   };
+
+  useEffect(() => {
+    if (selectedDb) {
+      console.log("finding", selectedDb);
+
+      // const node = nodes.find((n) => (n?.id || n?.data?.title) == selectedDb);
+      let n;
+      nodes.forEach((node) => {
+        if (
+          node.id.toLowerCase() == selectedDb.toLowerCase() ||
+          node.data.title.toLowerCase() == selectedDb.toLowerCase()
+        ) {
+          n = node;
+        }
+      });
+      console.log("finded", n);
+      setSelectedDbData(n);
+    }
+  }, [selectedDb]);
+
+  const handleFromSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const { title, description, status, privacy } = selectedProjectDetails;
+      if (!title || !description || !status || !privacy) {
+        return toast.error("Please fill all the fields");
+      }
+      const result = await axios.put(
+        `${import.meta.env.VITE_BACKEND_URL}/project/${id}`,
+        {
+          title,
+          description,
+          status,
+          privacy,
+        },
+        { withCredentials: true }
+      );
+
+      if (result.data.success) {
+        toast.success("Project updated successfully");
+        setSelectedTab("editor");
+      }
+    } catch (error) {
+      toast.error("Unable to update project Details, Please Try Again Later");
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    setIsSaved(3);
+    const editSaveHandler = async () => {
+      if (isSaved == 3) {
+        try {
+          if (nodes.length > 0 && edges.length > 0) {
+            const newNode = nodes.map((node) => {
+              return {
+                id: node?.id,
+                position: node?.position,
+                data: {
+                  title: node?.data?.title,
+                  fields: node?.data?.fields,
+                  code: node?.data?.code?.length ? node.data.code : null,
+                  description: node?.data?.description
+                    ? node.data.description
+                    : null,
+                },
+              };
+            });
+            const newEdges = edges.map((edge) => {
+              return {
+                id: edge?.id,
+                source: edge?.source,
+                target: edge?.target,
+                data: {
+                  type: edge?.data?.type,
+                  description: edge?.data?.description,
+                },
+              };
+            });
+
+            const reSavingEditedNodesAndEdgeResponse = await axios.patch(
+              `${import.meta.env.VITE_BACKEND_URL}/schema/update-nodes-edges`,
+              {
+                projectId: id,
+                nodes: newNode,
+                edges: newEdges,
+              },
+              {
+                withCredentials: true,
+              }
+            );
+            console.log(reSavingEditedNodesAndEdgeResponse);
+          }
+        } catch (error) {
+          console.log(error);
+        }
+      }
+    };
+    editSaveHandler();
+    let code = "";
+    nodes.forEach((node) => {
+      code += node.data.code;
+    });
+    setLlmCodeFromServer(code);
+    // setSelectedDbData(nodes[0]);
+    setIsSaved(1);
+  }, [nodes, edges, isSaved, id]);
 
   useEffect(() => {
     if (loading == false) {
@@ -1064,11 +1177,11 @@ const Dashboard = () => {
     }
   }, [loading]);
 
-  useEffect(() => {
-    if (nodes.length > 0 && !selectedDbData?.id) {
-      setSelectedDbData(nodes[0]);
-    }
-  }, [nodes]);
+  // useEffect(() => {
+  //   if (nodes.length > 0 && !selectedDbData?.id) {
+  //     // setSelectedDbData(nodes[0]);
+  //   }
+  // }, [nodes]);
   useEffect(() => {
     (async () => {
       dispatch(setDashboardPageLoading(true));
@@ -1078,6 +1191,9 @@ const Dashboard = () => {
           { withCredentials: true }
         );
         if (res.data.success) {
+          console.log("selected Project Detials", res.data.data);
+
+          setSelectedProjectDetails(res.data.data);
           setProjectTitle(res.data.data.title);
         }
         dispatch(setDashboardPageLoading(false));
@@ -1128,7 +1244,7 @@ const Dashboard = () => {
             nodes.forEach((node) => {
               code += node.data.code;
             });
-            setSelectedDbData(nodes[0]);
+            // setSelectedDbData(nodes[0]);
             setLlmCodeFromServer(code);
             setNodes(nodes);
             let edges = res?.data?.data?.edges.map((e) => {
@@ -1267,6 +1383,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (socket) {
       socket.on("statusUpdate", (data) => {
+        console.log("status update", data);
         if (data.projectId == id) {
           dispatch(setLoadingState(1));
           setLoading(true);
@@ -1375,7 +1492,7 @@ const Dashboard = () => {
           nodes.forEach((node) => {
             code += node.data.code;
           });
-          setSelectedDbData(nodes[0]);
+          // setSelectedDbData(nodes[0]);
           setLlmCodeFromServer(code);
           setNodes(nod);
           dispatch(setLoadingState(2));
@@ -1477,6 +1594,10 @@ const Dashboard = () => {
         chatContainerRef.current.scrollTop =
           chatContainerRef.current.scrollHeight;
         initialScrollDone.current = true; // mark as done
+
+        if (bottomRef.current) {
+          bottomRef?.scrollIntoView({ behavior: "smooth" });
+        }
       };
 
       // Wait for DOM to render fully (especially dynamic Markdown)
@@ -1626,6 +1747,7 @@ const Dashboard = () => {
   return (
     <div className="w-full overflow-hidden dm-sans-font relative bg-black h-screen flex-col flex">
       <DashbordNav
+        setMobileSelectedTab={setMobileSelectedTab}
         selectedTab={selectedTab}
         projectTitle={projectTitle}
         setSelectedTab={setSelectedTab}
@@ -1637,7 +1759,7 @@ const Dashboard = () => {
           <>
             <div className="flex-1 overflow-hidden p-2 flex-shrink-0 items-center justify-center gap-4  border-r-[0.5px] border-[#262626] h-full flex flex-col">
               {/* Nav for left half */}
-              <div className="h-12 w-full bg-inherit overflow-hidden flex items-center justify-between px-4 ">
+              <div className="h-12 w-full bg-inherit overflow-hidden flex items-center justify-between lg:px-4 px-1 ">
                 {/* Left: Title */}
                 <h2 className="text-white text-2xl font-bold">ER Diagram</h2>
                 {/* Right: Search + Buttons */}
@@ -1677,6 +1799,12 @@ const Dashboard = () => {
                         d="M4 12v.01M12 20h.01M20 12v.01M12 4h.01M16.24 7.76L20 12l-3.76 4.24M7.76 16.24L4 12l3.76-4.24M12 20V4m8 8H4"
                       />
                     </svg>
+                  </button>
+                  <button
+                    onClick={() => setMobileSelectedTab(true)}
+                    className="w-8 h-8 flex lg:hidden items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]"
+                  >
+                    <Menu className="w-4 h-4 text-white" />
                   </button>
                 </div>
               </div>
@@ -1751,6 +1879,8 @@ const Dashboard = () => {
               <DashboardRightNav
                 chatOpen={chatOpen}
                 dbOpen={dbOpen}
+                mobileSelectedTab={mobileSelectedTab}
+                setMobileSelectedTab={setMobileSelectedTab}
                 copyOpen={copyOpen}
                 relationshipsOpen={relationshipsOpen}
                 setChatOpen={setChatOpen}
@@ -1761,6 +1891,7 @@ const Dashboard = () => {
               />
               <Chat
                 chatOpen={chatOpen}
+                autoScroll={autoScroll}
                 chatMessages={chatMessages}
                 chatContainerRef={chatContainerRef}
                 handleScroll={handleScroll}
@@ -1782,6 +1913,200 @@ const Dashboard = () => {
           </>
         )}
       </div>
+
+      <aside
+        className={`fixed ${
+          selectedTab === "setting" ? "w-[80%] md:w-[50%] lg:w-[35%]" : "w-0"
+        } h-[calc(100vh-64px)] right-0 top-20 
+  bg-black/40 backdrop-blur-md 
+  transition-all duration-300 ease-in-out overflow-y-scroll`}
+      >
+        {/* Project Details */}
+        <div className="p-6 border-b border-[#262626] flex-1 flex flex-col">
+          <h2 className="text-white text-lg w-full justify-between flex gap-1 items-center font-bold">
+            <p>Project Details</p>
+            {selectedTab == "setting" && (
+              <button
+                onClick={() => setSelectedTab("editor")}
+                className="w-8 h-8 flex  cursor-pointer items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]"
+              >
+                <X className="w-4 h-4 text-white" />
+              </button>
+            )}
+          </h2>
+
+          <form
+            onSubmit={handleFromSubmit}
+            className="flex flex-col gap-4 flex-1"
+          >
+            {/* Project Name */}
+            <div className="flex flex-col pt-3">
+              <label className="text-gray-300 text-sm mb-1">Project Name</label>
+              <input
+                required
+                value={selectedProjectDetails?.title}
+                onChange={(e) => {
+                  setSelectedProjectDetails({
+                    ...selectedProjectDetails,
+                    title: e.target.value,
+                  });
+                }}
+                name="title"
+                type="text"
+                placeholder="Project Name"
+                className="bg-[#1c1c1c] border outline-none border-[#333] rounded-lg px-3 py-2 text-sm text-gray-200 placeholder:text-[#808080]"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="flex flex-col pt-3">
+              <label className="text-gray-300 text-sm mb-1">Description</label>
+              <textarea
+                rows="5"
+                value={selectedProjectDetails?.description}
+                required
+                onChange={(e) => {
+                  setSelectedProjectDetails({
+                    ...selectedProjectDetails,
+                    description: e.target.value,
+                  });
+                }}
+                name="description"
+                placeholder="Project Description"
+                className="bg-[#1c1c1c] w-full border outline-none border-[#333] rounded-lg px-3 py-2 text-sm text-gray-200 placeholder:text-[#808080] resize-none"
+              ></textarea>
+            </div>
+
+            {/* Dates */}
+            <div className="flex flex-col pt-3">
+              <label className="text-gray-300 text-sm mb-1">Created At</label>
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  value={
+                    selectedProjectDetails?.createdAt
+                      ? new Date(selectedProjectDetails.createdAt)
+                          .toISOString()
+                          .split("T")[0]
+                      : ""
+                  }
+                  onChange={(e) => {
+                    setSelectedProjectDetails({
+                      ...selectedProjectDetails,
+                      createdAt: e.target.value,
+                    });
+                  }}
+                  className="bg-[#1c1c1c] border border-[#333] outline-none rounded-lg px-3 py-2 text-sm text-gray-200 flex-1"
+                />
+              </div>
+            </div>
+
+            {/* Status */}
+            <div className="flex flex-col pt-3">
+              <label className="text-gray-300 text-sm mb-1">Status</label>
+              <select
+                name="status"
+                value={selectedProjectDetails?.status}
+                required
+                onChange={(e) => {
+                  setSelectedProjectDetails({
+                    ...selectedProjectDetails,
+                    status: e.target.value,
+                  });
+                }}
+                className={`bg-[#1c1c1c] border border-[#333] outline-none rounded-lg px-3 py-2 text-sm ${
+                  selectedProjectDetails?.status === ""
+                    ? "text-[#808080]"
+                    : "text-gray-200"
+                }`}
+              >
+                <option value="">--Select Status--</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+
+            {/* Privacy */}
+            <div className="flex flex-col pt-3">
+              <label className="text-gray-300 text-sm mb-1">Privacy</label>
+              <select
+                name="privacy"
+                value={selectedProjectDetails?.privacy}
+                required
+                onChange={(e) => {
+                  setSelectedProjectDetails({
+                    ...selectedProjectDetails,
+                    privacy: e.target.value,
+                  });
+                }}
+                className={`bg-[#1c1c1c] border border-[#333] outline-none rounded-lg px-3 py-2 text-sm ${
+                  selectedProjectDetails?.privacy === ""
+                    ? "text-[#808080]"
+                    : "text-gray-200"
+                }`}
+              >
+                <option value="">--Select Privacy--</option>
+                <option value="private">Private</option>
+                <option value="public">Public</option>
+              </select>
+            </div>
+
+            {/* Save Button */}
+            <div className="mt-auto pt-3">
+              <button
+                type="submit"
+                className="w-full bg-blue-600 text-white py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-medium hover:bg-blue-700 transition-all shadow"
+              >
+                Save Project
+              </button>
+            </div>
+          </form>
+        </div>
+      </aside>
+
+      <aside
+        className={`fixed ${
+          mobileSelectedTab ? "w-[90%] md:w-[50%] lg:w-[35%]" : "w-0"
+        } h-[calc(100vh-64px)] right-0 top-20 
+  bg-black/40 backdrop-blur-md 
+  transition-all duration-300 ease-in-out overflow-y-scroll pb-2 lg:hidden`}
+      >
+        {/* Project Details */}
+        <DashboardRightNav
+          mobileSelectedTab={mobileSelectedTab}
+          setMobileSelectedTab={setMobileSelectedTab}
+          chatOpen={chatOpen}
+          dbOpen={dbOpen}
+          copyOpen={copyOpen}
+          relationshipsOpen={relationshipsOpen}
+          setChatOpen={setChatOpen}
+          setDbOpen={setDbOpen}
+          setCopyOpen={setCopyOpen}
+          setRelationshipsOpen={setRelationshipsOpen}
+          selectedDb={selectedDb}
+        />
+        <Chat
+          chatOpen={chatOpen}
+          autoScroll={autoScroll}
+          chatMessages={chatMessages}
+          chatContainerRef={chatContainerRef}
+          handleScroll={handleScroll}
+          bottomRef={bottomRef}
+        />
+        <DatabaseOpen dbOpen={dbOpen} selectedDbData={selectedDbData} />
+        <CodeCopyOpen
+          llmCodeFromServer={llmCodeFromServer}
+          copyOpen={copyOpen}
+        />
+        <RelationShipDbOpen
+          relationshipsOpen={relationshipsOpen}
+          edges={edges}
+          setSelectedRelationshipId={setSelectedRelationshipId}
+          setEdges={setEdges}
+          selectedRelationshipId={selectedRelationshipId}
+        />
+      </aside>
     </div>
   );
 };

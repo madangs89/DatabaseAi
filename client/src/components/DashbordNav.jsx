@@ -1,7 +1,5 @@
 import React from "react";
 
-
-
 import logoIcon from "../assets/logoIcon.png";
 import {
   ArrowLeft,
@@ -18,7 +16,12 @@ import { useDispatch } from "react-redux";
 import { setAllToBegin } from "../redux/slice/MonacoEditorSlice";
 import { setCurrentProjectId } from "../redux/slice/projectSlice";
 
-const DashbordNav = ({ selectedTab, setSelectedTab, projectTitle }) => {
+const DashbordNav = ({
+  selectedTab,
+  setSelectedTab,
+  projectTitle,
+  setMobileSelectedTab,
+}) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   return (
@@ -67,7 +70,9 @@ const DashbordNav = ({ selectedTab, setSelectedTab, projectTitle }) => {
       </div> */}
       <div className="flex items-center justify-center gap-4 ">
         <button
-          onClick={() => setSelectedTab("editor")}
+          onClick={() => {
+            setSelectedTab("editor");
+          }}
           className={`p-1.5 bg-[#525252] ${
             selectedTab === "editor" ? "text-blue-500" : "text-white"
           } inter-font font-semibold transition-all duration-200 ease-linear  rounded-md`}
@@ -83,7 +88,10 @@ const DashbordNav = ({ selectedTab, setSelectedTab, projectTitle }) => {
           <Code className="w-5 h-5" />
         </button>
         <button
-          onClick={() => setSelectedTab("setting")}
+          onClick={() => {
+            setMobileSelectedTab(false);
+            setSelectedTab("setting");
+          }}
           className={`p-1.5 bg-[#525252] ${
             selectedTab === "setting" ? "text-blue-500" : "text-white"
           } inter-font font-semibold transition-all duration-200 ease-linear  rounded-md `}
