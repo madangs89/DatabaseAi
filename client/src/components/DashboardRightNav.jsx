@@ -1,5 +1,6 @@
 import { Brain, Cable, Copy, DatabaseZap, X } from "lucide-react";
 import React from "react";
+import toast from "react-hot-toast";
 
 const DashboardRightNav = ({
   chatOpen,
@@ -13,6 +14,7 @@ const DashboardRightNav = ({
   selectedDb,
   mobileSelectedTab,
   setMobileSelectedTab,
+  llmCodeFromServer,
 }) => {
   return (
     <>
@@ -60,6 +62,9 @@ const DashboardRightNav = ({
               setDbOpen(false);
               setRelationshipsOpen(false);
               setCopyOpen(true);
+              if (llmCodeFromServer.length > 0)
+                navigator.clipboard.writeText(llmCodeFromServer);
+              toast.success("Copied to clipboard");
             }}
             className={`w-5 h-5 cursor-pointer transition-all duration-200 ease-linear ${
               copyOpen ? "text-white" : "text-[#525252]"

@@ -1885,6 +1885,7 @@ const Dashboard = () => {
             <div className="w-[35%] relative h-full  flex-col overflow-hidden bg-[#171717] lg:flex hidden  gap-2  justify-center">
               <DashboardRightNav
                 chatOpen={chatOpen}
+                 llmCodeFromServer={llmCodeFromServer}
                 dbOpen={dbOpen}
                 mobileSelectedTab={mobileSelectedTab}
                 setMobileSelectedTab={setMobileSelectedTab}
@@ -1920,10 +1921,11 @@ const Dashboard = () => {
           </>
         )}
       </div>
-
       <aside
         className={`fixed ${
-          selectedTab === "setting" ? "w-[80%] z-[9999999] md:w-[50%] border-t border-[#262626]  lg:w-[35%]" : "w-0"
+          selectedTab === "setting"
+            ? "w-[80%] z-[9999999] md:w-[50%] border-t border-[#262626]  lg:w-[35%]"
+            : "w-0"
         } h-[calc(100vh-64px)] right-0 top-20
   bg-black/40 backdrop-blur-md 
   transition-all duration-300 ease-in-out overflow-y-scroll`}
@@ -2092,6 +2094,7 @@ const Dashboard = () => {
           setCopyOpen={setCopyOpen}
           setRelationshipsOpen={setRelationshipsOpen}
           selectedDb={selectedDb}
+          llmCodeFromServer={llmCodeFromServer}
         />
         <Chat
           chatOpen={chatOpen}
