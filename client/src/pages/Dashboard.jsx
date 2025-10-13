@@ -44,7 +44,7 @@ import CodeCopyOpen from "../components/CodeCopyOpen";
 import RelationShipDbOpen from "../components/RelationShipDbOpen";
 import DashboardRightNav from "../components/DashboardRightNav";
 import { useDispatch, useSelector } from "react-redux";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   setChatLoading,
   setDashboardPageLoading,
@@ -211,6 +211,7 @@ const Dashboard = () => {
   const messageQueue = useRef(Promise.resolve());
   const [index, setIndex] = useState(0);
   const { id } = useParams();
+  const navigate = useNavigate();
   const [isEditingDbCall, setIsEditingDbCall] = useState(false);
   const socket = useSelector((state) => state?.project?.socket);
   const monacoSlice = useSelector((state) => state?.monaco);
@@ -1736,6 +1737,12 @@ const Dashboard = () => {
     }
   }, [id, dispatch]);
 
+  useEffect(() => {
+    if (auth?.isAuth == false) {
+      navigate("/");
+    }
+  }, [auth.isAuth]);
+
   if (loadingSlice?.dashboardPageLoading) {
     return (
       <div className="flex justify-center bg-black items-center w-full h-screen">
@@ -1916,8 +1923,8 @@ const Dashboard = () => {
 
       <aside
         className={`fixed ${
-          selectedTab === "setting" ? "w-[80%] md:w-[50%] lg:w-[35%]" : "w-0"
-        } h-[calc(100vh-64px)] right-0 top-20 
+          selectedTab === "setting" ? "w-[80%] z-[9999999] md:w-[50%] border-t border-[#262626]  lg:w-[35%]" : "w-0"
+        } h-[calc(100vh-64px)] right-0 top-20
   bg-black/40 backdrop-blur-md 
   transition-all duration-300 ease-in-out overflow-y-scroll`}
       >

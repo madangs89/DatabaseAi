@@ -5,6 +5,7 @@ import { SendHorizontal } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import Login from "./Login";
 import { useNavigate } from "react-router-dom";
+import { setIsAuthButtonClickedTrue } from "../redux/slice/authSlice";
 
 const Hero = () => {
   const auth = useSelector((state) => state.auth);
@@ -41,6 +42,14 @@ const Hero = () => {
       if (vantaEffect) vantaEffect.destroy();
     };
   }, [vantaEffect]);
+
+  const handleLoginClick = () => {
+    if (auth?.isAuthButtonClicked == false) {
+      console.log("clicked");
+
+      dispatch(setIsAuthButtonClickedTrue());
+    }
+  };
 
   useEffect(() => {
     if (auth?.isAuth) {
@@ -81,12 +90,12 @@ const Hero = () => {
           <p className="mt-6 text-[#d4d4d4] max-w-2xl text-[14px]  lg:text-[16px] relative z-10 ">
             No more schema design headaches. Just describe your needs in plain
             English, <br />
-            and let Aivora build the database for you.
+            and let SchemaGenius build the database for you.
           </p>
 
           {/* Buttons */}
           <div className="mt-8 flex flex-row lg:w-1/2 w-[90%] md:w-[70%] items-center justify-center gap-4  relative z-10">
-            <div className=" items-center justify-center flex gap-1 shadow-white text-white  bg-inherit shadow-sm flex-1 rounded-full h-full py-3 px-3 ">
+            {/* <div className=" items-center justify-center flex gap-1 shadow-white text-white  bg-inherit shadow-sm flex-1 rounded-full h-full py-3 px-3 ">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -107,9 +116,12 @@ const Hero = () => {
                 className="bg-transparent w-full h-full placeholder:text-[white]  outline-none"
               />
               <SendHorizontal className="w-5 h-5 lg:hidden flex" />
-            </div>
-            <button className="px-3 hidden lg:block py-2.5 bg-inherit shadow-white  text-white rounded-md font-medium shadow-sm hover:opacity-90 transition">
-              Generate Schema
+            </div> */}
+            <button
+              onClick={handleLoginClick}
+              className="px-3  py-2.5 bg-inherit shadow-white  text-white rounded-md font-medium shadow-sm hover:opacity-90 transition"
+            >
+              Sign In to Continue
             </button>
           </div>
         </>

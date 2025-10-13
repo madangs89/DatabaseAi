@@ -1,5 +1,15 @@
-import React, { useEffect, useState } from "react";
-import { Plus, Search, Edit, Trash, Send } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash,
+  Send,
+  Menu,
+  X,
+  CircleUser,
+} from "lucide-react";
+import { googleLogout } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
@@ -15,6 +25,7 @@ import {
 import toast from "react-hot-toast";
 import PageLoader from "../components/loaders/PageLoader";
 import SpinnerLoader from "../components/loaders/SpinnerLoader";
+import { setAuthFalse } from "../redux/slice/authSlice";
 export default function Project() {
   // const [projects, setProjects] = useState(dummyProjects);
   const projects = useSelector((state) => state?.project?.projects);
@@ -27,15 +38,16 @@ export default function Project() {
   const navigate = useNavigate();
   const [filteredProjects, setFilteredProjects] = useState(projects);
   const auth = useSelector((state) => state?.auth);
-
+  const [userProfileHover, setUserProfileHover] = useState(false);
   const [search, setSearch] = useState("");
   const dispatch = useDispatch();
   const [isEditing, setIsEditing] = useState(false);
   const [toEditSelectedId, setToEditSelectedId] = useState(null);
   const [isSuggestionGenearting, setIsSuggestionGenearting] = useState(false);
   const [isPromptGenerating, setIsPromptGenerating] = useState(false);
-
+  const [mobileAsideShow, setMobileAsideShow] = useState(false);
   const socket = useSelector((state) => state.project.socket);
+  const titleRef = useRef(null);
   const handleFromSubmit = async (e) => {
     e.preventDefault();
     if (isEditing) {
@@ -206,6 +218,38 @@ export default function Project() {
     }
   };
 
+  const handleNewProjectSubmit = () => {
+    setMobileAsideShow(true);
+    if (titleRef.current) {
+      titleRef.current.focus();
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      googleLogout();
+      const logoutResult = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/auth/logout`,
+        {},
+        {
+          withCredentials: true,
+        }
+      );
+
+      console.log(logoutResult);
+
+      console.log(logoutResult?.data);
+      if (logoutResult?.data?.success) {
+        dispatch(setAuthFalse());
+        toast.success("Logged out");
+        navigate("/");
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Unable to logout");
+    }
+  };
+
   useEffect(() => {
     const filteredProjects = projects.filter((project) =>
       project.title.toLowerCase().trim().includes(search.toLowerCase())
@@ -264,8 +308,14 @@ export default function Project() {
     };
   }, [socket, auth?.user?._id]);
 
+  useEffect(() => {
+    if (auth?.isAuth == false) {
+      navigate("/");
+    }
+  }, [auth.isAuth]);
+
   return (
-    <div className="bg-black border-none text-gray-200 h-screen flex flex-col">
+    <div className="bg-black relative border-none text-gray-200 h-screen flex flex-col">
       {/* Header */}
       <header className="flex items-center justify-between border-b border-[#262626] px-6 py-4 bg-black ">
         <div className="flex items-center gap-3 cursor-pointer">
@@ -284,10 +334,69 @@ export default function Project() {
           </svg>
           <h1 className="text-lg font-bold text-white">SchemaGenius</h1>
         </div>
-        <button className="bg-white text-sm text-black font-medium px-3 py-2 rounded-xl flex items-center gap-2 shadow hover:bg-gray-200 transition">
-          <Plus size={16} /> New Project
-        </button>
+        <div className="flex gap-3 items-center justify-center">
+          <button
+            // onClick={() => setMobileSelectedTab(true)}
+            onMouseOver={() => setUserProfileHover(true)}
+            onMouseLeave={() => setUserProfileHover(false)}
+            className="w-8 h-8 flex  items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]"
+          >
+            <CircleUser className="w-4 h-4 text-white" />
+          </button>
+        </div>
       </header>
+      {userProfileHover && auth?.user && (
+        <div
+          onMouseOver={() => setUserProfileHover(true)}
+          onMouseLeave={() => setUserProfileHover(false)}
+          className="absolute right-6 top-12 w-64 bg-[#1c1c1c] border border-[#333] rounded-xl shadow-lg p-4 flex flex-col gap-3 transition-all z-[1000]"
+        >
+          {/* User Info */}
+          <div className="flex items-center gap-3 border-b border-[#262626] pb-3">
+            <img
+              src={
+                auth?.user?.avatarUrl ||
+                "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+              }
+              alt="User Avatar"
+              className="w-10 h-10 rounded-full border border-[#333] object-cover"
+            />
+            <div className="flex flex-col">
+              <p className="text-white text-sm font-semibold">
+                {auth?.user?.name || "Guest User"}
+              </p>
+              <p className="text-gray-400 text-xs">{auth?.user?.email}</p>
+            </div>
+          </div>
+
+          {/* Account Actions */}
+          <div className="flex flex-col gap-2">
+            {/* <button
+              onClick={() => navigate("/profile")}
+              className="text-gray-300 text-sm text-left px-2 py-1 hover:bg-[#222] rounded-md transition"
+            >
+              View Profile
+            </button>
+            <button
+              onClick={() => navigate("/settings")}
+              className="text-gray-300 text-sm text-left px-2 py-1 hover:bg-[#222] rounded-md transition"
+            >
+              Account Settings
+            </button> */}
+            <button
+              onClick={handleLogout} // replace with real logout logic
+              className="text-red-400 text-sm text-left px-2 py-1 hover:bg-[#222] rounded-md transition"
+            >
+              Log Out
+            </button>
+          </div>
+
+          {/* Footer */}
+          <p className="text-[10px] text-gray-500 text-center mt-2">
+            Verified Member
+          </p>
+        </div>
+      )}
 
       {/* Main Layout */}
       <main className="flex flex-1 overflow-hidden">
@@ -360,7 +469,10 @@ export default function Project() {
                         Open
                       </button>
                       <button
-                        onClick={() => editHandler(project._id, index)}
+                        onClick={() => {
+                          setMobileAsideShow(true);
+                          editHandler(project._id, index);
+                        }}
                         className="bg-[#171717] border border-[#333] p-1.5 rounded-xl text-white hover:border-white hover:text-white transition"
                       >
                         <Edit size={14} />
@@ -420,7 +532,10 @@ export default function Project() {
                   <p className="text-gray-400 text-sm mb-2">
                     No projects found
                   </p>
-                  <button className="bg-white text-black font-medium px-3 py-2 rounded-xl flex items-center gap-2 shadow hover:bg-gray-200 transition">
+                  <button
+                    onClick={handleNewProjectSubmit}
+                    className="bg-white text-black z-[99] font-medium px-3 py-2 rounded-xl flex items-center gap-2 shadow hover:bg-gray-200 transition"
+                  >
                     <Plus size={16} /> Create your first project
                   </button>
                 </div>
@@ -430,7 +545,7 @@ export default function Project() {
         )}
         {/* Sidebar */}
         {/* Sidebar */}
-        <aside className="w-96  flex-col hidden lg:flex bg-[#111] border-l border-[#262626] h-full">
+        <aside className="w-96 hidden   flex-col  lg:flex bg-[#111] border-l border-[#262626] h-full">
           {/* Add Project */}
           <div className="p-6 border-b border-[#262626] flex-1 flex flex-col">
             <h2 className="text-lg font-semibold mb-4 text-white">
@@ -444,6 +559,7 @@ export default function Project() {
               <input
                 required
                 value={title}
+                ref={titleRef}
                 onChange={(e) => setTitle(e.target.value)}
                 name="title"
                 type="text"
@@ -559,6 +675,145 @@ export default function Project() {
           </div>
         </aside>
       </main>
+
+      <aside
+        className={`${
+          mobileAsideShow ? "w-96 z-[9999] " : "w-0"
+        } transition-all duration-150  ease-in absolute overflow-hidden  right-0 top-0  flex-col lg:hidden flex bg-[#111] border-l border-[#262626] h-full`}
+      >
+        {/* Add Project */}
+        <div className="p-6 border-b border-[#262626] flex-1 flex flex-col">
+          <h2 className="text-lg flex items-center justify-between font-semibold mb-4 text-white">
+            {isEditing ? "Edit Project" : "Add Project"}
+            <button
+              onClick={() => setMobileAsideShow(false)}
+              className="w-8 h-8 flex lg:hidden cursor-pointer items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]"
+            >
+              <X className="w-4 h-4 text-white" />
+            </button>
+          </h2>
+          <form
+            onSubmit={handleFromSubmit}
+            className="flex flex-col gap-4 flex-1"
+          >
+            {/* Project Name */}
+            <input
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              name="title"
+              type="text"
+              placeholder="Project Name"
+              className="bg-[#1c1c1c] border outline-none border-[#333] rounded-lg px-3 py-2 text-sm text-gray-200 placeholder:text-[#808080]"
+            />
+
+            {/* Description */}
+            <div className="relative hide-scrollbar-2  flex items-center justify-center w-[100%]">
+              <h1
+                onClick={handleSuggestion}
+                className={`absolute right-3 top-2 cursor-pointer ${
+                  isSuggestionGenearting ? "animate-pulse" : ""
+                }`}
+              >
+                ✨
+              </h1>
+              <textarea
+                rows="5"
+                value={description}
+                required
+                onChange={(e) => setDescription(e.target.value)}
+                name="description"
+                placeholder="Description"
+                className="bg-[#1c1c1c] w-full border outline-none border-[#333] rounded-lg px-3 py-2 text-sm text-gray-200 placeholder:text-[#808080] resize-none"
+              ></textarea>
+            </div>
+            {/* Status */}
+            <select
+              name="status"
+              value={status}
+              required
+              onChange={(e) => setStatus(e.target.value)}
+              className={`bg-[#1c1c1c] border border-[#333] outline-none rounded-lg px-3 py-2 text-sm ${
+                status === "" ? "text-[#808080]" : "text-gray-200"
+              } placeholder:text-[#808080]`}
+            >
+              <option value="" className="text-[#808080] ">
+                --Select Status--
+              </option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+            <select
+              name="privacy"
+              value={privacy}
+              required
+              onChange={(e) => setPrivacy(e.target.value)}
+              className={`bg-[#1c1c1c] border border-[#333] outline-none rounded-lg px-3 py-2 text-sm ${
+                privacy === "" ? "text-[#808080]" : "text-gray-200"
+              }`}
+            >
+              <option value="" className="text-[#808080] ">
+                --Select Privacy--
+              </option>
+              <option value="private">private</option>
+              <option value="public">public</option>
+            </select>
+            {/* Button pinned to bottom */}
+            <div className="mt-auto flex w-full flex-col gap-4">
+              <div className="relative hide-scrollbar-2  flex items-center justify-center w-[100%]">
+                <h1
+                  onClick={handlePrompt}
+                  className={`absolute right-3 top-2 cursor-pointer ${
+                    isPromptGenerating ? "animate-pulse" : ""
+                  }`}
+                >
+                  ✨
+                </h1>
+                {
+                  <textarea
+                    rows="4"
+                    required={isEditing ? false : true}
+                    value={aiPrompt}
+                    disabled={isEditing}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    name="aiPrompt"
+                    placeholder="(e.g., Generate schema for blog app)"
+                    className={`bg-[#1c1c1c] border w-full border-blue-500/50 outline-none rounded-lg px-3 py-2 text-sm text-gray-200 placeholder:text-[#808080] resize-none ${
+                      isEditing == true && "cursor-not-allowed"
+                    }`}
+                  ></textarea>
+                }
+              </div>
+
+              {projectSlice?.isButtonLoading ? (
+                <button
+                  type="submit"
+                  className="w-full bg-white text-black py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-medium hover:bg-gray-200 transition shadow"
+                >
+                  <SpinnerLoader clr={"black"} />
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  className="w-full bg-white text-black py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-medium hover:bg-gray-200 transition shadow"
+                >
+                  {isEditing ? (
+                    <p className="flex gap-3 items-center justify-center">
+                      <Send size={14} />
+                      Update Project
+                    </p>
+                  ) : (
+                    <p className="flex items-center gap-3 justify-center">
+                      <Plus size={14} />
+                      Create Project & Generate with AI
+                    </p>
+                  )}
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
+      </aside>
 
       {/* Footer */}
       <footer className="text-center p-4 text-xs text-[#1c1c1c] border-t border-[#262626] bg-black">

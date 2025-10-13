@@ -20,36 +20,27 @@ const Navbar = () => {
 
   if (location.pathname == "/") {
     return (
-      <nav className="fixed top-0 text-white left-0 w-full z-50 border-b border-[#d4d4d4] ">
+      <nav className="fixed top-0 text-white left-0 w-full z-50  ">
         {/* bg-black/30 backdrop-blur-md */}
-        <div className="max-w-7xl mx-auto flex items-center pr-1 py-1 justify-between md:px-6 md:py-3">
+        <div className="max-w-7xl mx-auto flex items-center pr-1 py-2 justify-between md:px-6 md:py-3">
           {/* Logo */}
-          <img src={logo} alt="" className="w-32 h-12  object-cover" />
-          {/* Links */}
-          <div className=" space-x-6 lg:flex hidden dm-sans-font">
-            <Link
-              to="/"
-              className="bg-gradient-to-r dm-sans-font from-white via-gray-400 to-gray-300 bg-clip-text text-transparent"
+          <div className="flex items-center gap-3 cursor-pointer">
+            <svg
+              className="text-white"
+              fill="none"
+              height="24"
+              viewBox="0 0 48 48"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
             >
-              Home
-            </Link>
-            <Link
-              to="/features"
-              className="text-[rgb(255, 255, 255)] dm-sans-font"
-            >
-              Features
-            </Link>
-            <Link to="/pricing" className="text-[#e5e5e5] dm-sans-font">
-              Pricing
-            </Link>
-            <Link to="/dashboard" className="text-[#e5e5e5] dm-sans-font">
-              dashboard
-            </Link>
-            <Link to="/project" className="text-[#e5e5e5] dm-sans-font">
-              project
-            </Link>
+              <path
+                d="M44 4H30.6666V17.3334H17.3334V30.6666H4V44H44V4Z"
+                fill="currentColor"
+              ></path>
+            </svg>
+            <h1 className="text-lg font-bold text-white">SchemaGenius</h1>
           </div>
-          {/* Button */}
+
           <button
             onClick={handleLoginClick}
             className="px-6 py-1 rounded-md bg-white/40 hover:bg-white/60 backdrop-blur-sm border border-white/30"

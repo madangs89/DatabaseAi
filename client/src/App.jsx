@@ -28,6 +28,7 @@ const App = () => {
   const location = useLocation();
   const scrollRef = useRef(null);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const projectSlice = useSelector((state) => state.project);
   const auth = useSelector((state) => state.auth);
@@ -109,11 +110,14 @@ const App = () => {
             path="/:id/dashboard"
             element={
               <ReactFlowProvider>
-                <Dashboard />
+                {<Dashboard /> }
               </ReactFlowProvider>
             }
           />
-          <Route path="/project" element={<Project />} />
+          <Route
+            path="/project"
+            element={<Project />}
+          />
           <Route path="/project/:id/settings" element={<ProjectSetting />} />
           <Route path="/project/:id/history" element={<VersionHistory />} />
           <Route path="/account" element={<AccountSetting />} />

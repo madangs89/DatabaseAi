@@ -13,6 +13,7 @@ const generateToken = (user) => {
     {
       _id: user._id,
       email: user.email,
+      name: user.name,
       plan: user.plan,
       avatarUrl: user.avatarUrl,
     },

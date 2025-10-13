@@ -20,6 +20,10 @@ export const authSlice = createSlice({
       state.isAuth = true;
       state.user = action.payload.user;
     },
+    setAuthFalse: (state) => {
+      state.isAuth = false;
+      state.user = null;
+    },
   },
 });
 
@@ -28,6 +32,7 @@ export const {
   setIsAuthButtonClickedTrue,
   setIsAuthButtonClickedFalse,
   setAuthTrue,
+  setAuthFalse,
 } = authSlice.actions;
 
 export const authReducer = authSlice.reducer;
