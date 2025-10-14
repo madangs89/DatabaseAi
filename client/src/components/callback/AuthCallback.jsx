@@ -22,8 +22,13 @@ export default function AuthCallback() {
         );
       })();
     }
-    
   }, [navigate]);
 
-  return <div>Logging in with GitHub...</div>;
+  return (
+    <div>
+      <h1 className="text-black bg-white px-2 py-2">
+        Logging in with GitHub...
+      </h1>
+    </div>
+  );
 }
