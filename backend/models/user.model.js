@@ -21,6 +21,9 @@ const UserSchema = new mongoose.Schema({
     default: null,
     index: true,
   },
+  gitAccessToken: { type: String, default: null },
+  gitAvatarUrl: { type: String, default: null },
+  gitName: { type: String, default: null },
   updatedAt: { type: Date, default: Date.now },
 });
 const User = mongoose.model("User", UserSchema);

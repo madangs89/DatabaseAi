@@ -235,6 +235,14 @@ const MonacoEditor = () => {
       toast.error(error?.response?.data?.message || "Unable to save code");
     }
   };
+
+  const handleGituLogin = () => {
+    const REDIRECT_URI = "http://localhost:5173/auth/callback";
+    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${
+      import.meta.env.VITE_GIT_CLIENT_ID
+    }&redirect_uri=${REDIRECT_URI}&scope=user`;
+    window.open(githubAuthUrl, "_self");
+  };
   return (
     <div className="w-full h-screen overflow-hidden flex bg-[#0a0a0a] text-[#e5e5e5] font-sans">
       {/* Sidebar */}
@@ -286,25 +294,78 @@ const MonacoEditor = () => {
                   />
                 ))}
             </ul>
-            <div className="flex py-2 px-0 items-center justify-center lg:justify-between border-t border-[#2a2a2a] w-full ">
-              <div className="ml-4 hidden lg:block  items-center justify-center  text-xs text-[#737373]">
-                ⓘ Workspace ready
-              </div>
-              {!changesToCode && (
-                <div className="ml-4 lg:hidden w-full  items-center justify-center  text-xs text-[#737373]">
-                  ⓘ Workspace ready
-                </div>
-              )}
-              {changesToCode ? (
-                <div
-                  onClick={handleSaveClick}
-                  className="py-1 cursor-pointer text-sm mr-4 bg-green-500 px-3 rounded-md"
+            <div className="flex flex-col  gap-2  items-center justify-center  border-t border-[#2a2a2a] w-full">
+              {/* Top Action Bar */}
+              <div className="flex flex-col items-center justify-center gap-3 border-b border-[#2a2a2a]  h-auto py-3 w-full text-xs text-[#737373]">
+                {/* Login with GitHub */}
+                <button
+                  onClick={handleGituLogin}
+                  className="flex items-center cursor-pointer justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium bg-gray-900 text-white hover:bg-gray-800 active:bg-black transition-colors duration-200"
                 >
-                  Save
-                </div>
-              ) : (
-                <div className="py-1 text-sm mr-4 w-3 h-7 bg-inherit px-3 rounded-md"></div>
-              )}
+                  <svg
+                    className="w-4 h-4"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M12 0a12 12 0 00-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.6 2.3 1.1 2.9.8.1-.7.4-1.1.7-1.3-2.6-.3-5.4-1.3-5.4-6A4.7 4.7 0 015 7.7a4.4 4.4 0 01.1-3.2s1-.3 3.3 1.2a11.4 11.4 0 016 0C16.7 4.2 17.7 4.5 17.7 4.5a4.4 4.4 0 01.1 3.2 4.7 4.7 0 011.2 3.3c0 4.7-2.8 5.7-5.4 6 .4.3.8.9.8 1.9v2.8c0 .3.2.7.8.6A12 12 0 0012 0z" />
+                  </svg>
+                  Login with GitHub
+                </button>
+
+                {/* Create Repo */}
+                {/* <button className="flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium bg-green-600 text-white hover:bg-green-500 active:bg-green-700 transition-colors duration-200">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  Create Repo
+                </button> */}
+
+                {/* Push Code */}
+                {/* <button className="flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 active:bg-blue-700 transition-colors duration-200">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M5 12h14m-7-7l7 7-7 7"
+                    />
+                  </svg>
+                  Push Code
+                </button> */}
+              </div>
+
+              {/* Bottom Info Section */}
+              <div className="w-full flex flex-col  items-center justify-center  gap-2 ">
+                {!changesToCode && (
+                  <div className="text-xs py-2 text-[#737373] flex items-center justify-center">
+                    ⓘ Workspace ready
+                  </div>
+                )}
+
+                {changesToCode && (
+                  <div
+                    onClick={handleSaveClick}
+                    className="py-1 cursor-pointer text-sm bg-green-500 px-3 rounded-md hover:bg-green-600 active:bg-green-700 transition-colors"
+                  >
+                    Save
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

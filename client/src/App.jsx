@@ -20,6 +20,7 @@ import { setPageLoading } from "./redux/slice/loadingSlice";
 import SpinnerLoader from "./components/loaders/SpinnerLoader";
 import { io } from "socket.io-client";
 import { setSocket } from "./redux/slice/projectSlice";
+import AuthCallback from "./components/callback/AuthCallback";
 
 const App = () => {
   const isAuth = useSelector((state) => state.auth.isAuth);
@@ -108,19 +109,13 @@ const App = () => {
           <Route path="/" element={<Hero />} />
           <Route
             path="/:id/dashboard"
-            element={
-              <ReactFlowProvider>
-                {<Dashboard /> }
-              </ReactFlowProvider>
-            }
+            element={<ReactFlowProvider>{<Dashboard />}</ReactFlowProvider>}
           />
-          <Route
-            path="/project"
-            element={<Project />}
-          />
+          <Route path="/project" element={<Project />} />
           <Route path="/project/:id/settings" element={<ProjectSetting />} />
           <Route path="/project/:id/history" element={<VersionHistory />} />
           <Route path="/account" element={<AccountSetting />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="*" element={<h1>404 - Page Not Found</h1>} />
         </Routes>
       </div>

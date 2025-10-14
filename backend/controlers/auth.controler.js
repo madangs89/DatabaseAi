@@ -185,3 +185,55 @@ export const getCurrentUser = async (req, res) => {
     return res.status(401).json({ message: "Server error", success: false });
   }
 };
+
+export const gitLogin = async (req, res) => {
+  const { code } = req.body;
+  try {
+    const userId = req.user._id;
+    const tokenRes = await axios.post(
+      "https://github.com/login/oauth/access_token",
+      {
+        client_id: process.env.GIT_CLIENT_ID,
+        client_secret: process.env.GIT_SECRET_ID,
+        code,
+      },
+      { headers: { Accept: "application/json" } }
+    );
+    console.log(process.env.GIT_CLIENT_ID, process.env.GIT_SECRET_ID);
+
+    const accessToken = tokenRes.data.access_token;
+    if (!accessToken) return res.status(400).json({ error: "Invalid code" });
+
+    console.log(accessToken);
+    // Step 5: Get user info
+    const userRes = await axios.get("https://api.github.com/user", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    console.log(userRes.data);
+
+    const { avatar_url, name } = userRes.data;
+
+    const userDetails = await User.findOneAndUpdate(
+      { _id: userId },
+      {
+        $set: {
+          gitAccessToken: accessToken,
+          gitAvatarUrl: avatar_url,
+          gitName: name,
+        },
+      },
+      { new: true }
+    );
+
+    if (!userDetails) {
+      return res.status(400).json({ error: "User not found" });
+    }
+
+    console.log(userDetails);
+    
+    // res.json({ user, accessToken });
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.status(500).json({ error: "Failed to authenticate" });
+  }
+};
