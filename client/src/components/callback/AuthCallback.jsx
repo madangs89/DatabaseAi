@@ -22,6 +22,7 @@ export default function AuthCallback() {
         );
       })();
     }
+    
   }, [navigate]);
 
   return <div>Logging in with GitHub...</div>;
