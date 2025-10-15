@@ -25,6 +25,7 @@ import toast from "react-hot-toast";
 import { useLocation, useParams } from "react-router-dom";
 import { setCurrentRepoDetails, setGitAuth } from "../redux/slice/repoSlice";
 import SpinnerLoader from "./loaders/SpinnerLoader";
+import CommitModal from "./modal/CommitModal";
 
 const fakeTreeStructure = {
   "package.json": `{
@@ -646,6 +647,7 @@ const MonacoEditor = () => {
               </div>
             </div>
           )}
+          {showPushRepo && <CommitModal />}
         </>
       )}
     </div>
