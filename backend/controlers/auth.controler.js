@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { oauth2Client } from "../utils/helper.google.js";
 import User from "../models/user.model.js";
 import axios from "axios";
+import { encrypt } from "../utils/helpers.service.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
 const JWT_EXPIRES_IN = "7d";
@@ -190,6 +191,7 @@ export const gitLogin = async (req, res) => {
   const { code } = req.body;
   try {
     const userId = req.user._id;
+    const user = req.user;
     const tokenRes = await axios.post(
       "https://github.com/login/oauth/access_token",
       {
@@ -201,8 +203,11 @@ export const gitLogin = async (req, res) => {
     );
     console.log(process.env.GIT_CLIENT_ID, process.env.GIT_SECRET_ID);
 
-    const accessToken = tokenRes.data.access_token;
-    if (!accessToken) return res.status(400).json({ error: "Invalid code" });
+    console.log(tokenRes.data.scope);
+
+    let accessToken = tokenRes.data.access_token;
+    if (!accessToken)
+      return res.status(400).json({ message: "Invalid code", success: false });
 
     console.log(accessToken);
     // Step 5: Get user info
@@ -212,6 +217,8 @@ export const gitLogin = async (req, res) => {
     console.log(userRes.data);
 
     const { avatar_url, name } = userRes.data;
+
+    accessToken = encrypt(accessToken);
 
     const userDetails = await User.findOneAndUpdate(
       { _id: userId },
@@ -226,14 +233,39 @@ export const gitLogin = async (req, res) => {
     );
 
     if (!userDetails) {
-      return res.status(400).json({ error: "User not found" });
+      return res
+        .status(400)
+        .json({ message: "User not found", success: false });
     }
 
-    console.log(userDetails);
-    
-    // res.json({ user, accessToken });
+    const token = jwt.sign(
+      {
+        _id: user._id,
+        email: user.email,
+        name: user.name,
+        plan: user.plan,
+        avatarUrl: user.avatarUrl,
+        gitAvatarUrl: avatar_url,
+        gitName: name,
+      },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN }
+    );
+    // Set JWT in HTTP-only cookie
+
+    res.cookie("gitToken", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // use https in prod
+      sameSite: "lax", // works for localhost
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    return res.json({
+      message: "Successfully done github auth",
+      success: true,
+    });
   } catch (err) {
     console.error(err.response?.data || err.message);
-    res.status(500).json({ error: "Failed to authenticate" });
+    res.status(500).json({ message: "Failed to authenticate", success: false });
   }
 };

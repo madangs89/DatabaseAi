@@ -18,7 +18,7 @@ const DashboardRightNav = ({
 }) => {
   return (
     <>
-      <nav className="w-full sticky z-[99999] top-0 border-b pl-3 border-[#262626] py-7 left-0 h-10 flex justify-between pr-3 bg-[#171717] gap-5 items-center">
+      <nav className="w-full sticky z-[99] top-0 border-b pl-3 border-[#262626] py-7 left-0 h-10 flex justify-between pr-3 bg-[#171717] gap-5 items-center">
         <h1 className="text-white flex-1 flex gap-1 justify-between items-center font-bold">
           {chatOpen && "Chat with AI"}
           {dbOpen && `${selectedDb == null ? "" : selectedDb} Entity Details`}

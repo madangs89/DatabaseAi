@@ -22,6 +22,9 @@ import {
 import LoadingScreen from "./loaders/LoadingScreen";
 import { convertTreeToObject } from "../utils/elak";
 import toast from "react-hot-toast";
+import { useLocation, useParams } from "react-router-dom";
+import { setCurrentRepoDetails, setGitAuth } from "../redux/slice/repoSlice";
+import SpinnerLoader from "./loaders/SpinnerLoader";
 
 const fakeTreeStructure = {
   "package.json": `{
@@ -168,6 +171,8 @@ const TreeNode = ({
 
 const MonacoEditor = () => {
   const socket = useSelector((state) => state?.project?.socket);
+  const repoSlice = useSelector((state) => state?.repo);
+  const { id } = useParams();
   const dispatch = useDispatch();
   const {
     tree,
@@ -178,10 +183,22 @@ const MonacoEditor = () => {
     loadingState,
     changesToCode,
   } = useSelector((state) => state.monaco);
+  const location = useLocation();
+
+  const [loading, setLoading] = useState(false);
+  console.log(location);
 
   const projectSlice = useSelector((state) => state.project);
 
   const [expandable, setExandable] = useState(false);
+  const [showCreateRepo, setShowCreateRepo] = useState(false);
+  const [showPushRepo, setShowPushRepo] = useState(false);
+  const [repoName, setRepoName] = useState("");
+  const [description, setDescription] = useState("");
+  const [visibility, setVisibility] = useState("public");
+  const [addGitignore, setAddGitignore] = useState(false);
+  const [addLicense, setAddLicense] = useState(false);
+
   const handleLanguage = (name) => {
     if (name && name.length > 2) {
       if (name.endsWith(".js")) return "javascript";
@@ -194,16 +211,6 @@ const MonacoEditor = () => {
       if (name.endsWith(".md")) return "markdown";
     }
     return "plaintext";
-  };
-  const selectedFileHandler = () => {
-    if (selectedFile) {
-      if (selectedFile.name.endsWith(".json")) {
-        return JSON.parse(selectedFile.content);
-      } else {
-        return selectedFile.content;
-      }
-    }
-    return "// Select a file to view/edit";
   };
 
   const handleUpdate = (selectedFile, content) => {
@@ -237,14 +244,83 @@ const MonacoEditor = () => {
   };
 
   const handleGituLogin = () => {
+    let url;
+    if (location?.pathname) {
+      url = `${import.meta.env.VITE_FRONTEND_URL}${location?.pathname}`;
+      localStorage.setItem("redirectUrl", JSON.stringify(url));
+    }
     const REDIRECT_URI = "http://localhost:5173/auth/callback";
     const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${
       import.meta.env.VITE_GIT_CLIENT_ID
-    }&redirect_uri=${REDIRECT_URI}&scope=user`;
+    }&redirect_uri=${REDIRECT_URI}&scope=repo,user`;
     window.open(githubAuthUrl, "_self");
   };
+
+  const handleCreateRepo = async () => {
+    try {
+      if (!repoName) {
+        return toast.error("Repo name is required");
+      }
+
+      const payload = {
+        repoName,
+        description,
+        visibility,
+        addGitignore,
+        projectId: id,
+        addLicense,
+      };
+
+      const repoCreateResult = await axios.post(
+        `
+        ${import.meta.env.VITE_BACKEND_URL}/repo/create-repo`,
+        {
+          ...payload,
+        },
+        {
+          withCredentials: true,
+        }
+      );
+      console.log(repoCreateResult);
+      if (repoCreateResult?.data?.success) {
+        toast.success("Repo created successfully");
+        dispatch(setCurrentRepoDetails(repoCreateResult?.data?.data));
+        setShowCreateRepo(false);
+      }
+      console.log("Creating repo:", payload);
+    } catch (error) {
+      console.log(error);
+      toast.error("Unable to create repo , Please Try again later");
+    }
+  };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/repo/is-repo-created/${id}`,
+          {
+            withCredentials: true,
+          }
+        );
+        console.log(res);
+        if (res?.data?.success) {
+          if (res?.data?.data?.isThere) {
+            dispatch(setCurrentRepoDetails(res?.data?.data?.repo));
+          }
+        }
+        setLoading(false);
+      } catch (error) {
+        console.log(error);
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  console.log(id, "from monaco editor");
   return (
-    <div className="w-full h-screen overflow-hidden flex bg-[#0a0a0a] text-[#e5e5e5] font-sans">
+    <div className="w-full relative h-screen overflow-hidden flex bg-[#0a0a0a] text-[#e5e5e5] font-sans">
       {/* Sidebar */}
       {loadingState > 0 && loadingState <= 3 ? (
         <LoadingScreen state={loadingState} />
@@ -298,55 +374,90 @@ const MonacoEditor = () => {
               {/* Top Action Bar */}
               <div className="flex flex-col items-center justify-center gap-3 border-b border-[#2a2a2a]  h-auto py-3 w-full text-xs text-[#737373]">
                 {/* Login with GitHub */}
-                <button
-                  onClick={handleGituLogin}
-                  className="flex items-center cursor-pointer justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium bg-gray-900 text-white hover:bg-gray-800 active:bg-black transition-colors duration-200"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
+
+                {!repoSlice?.isGitAuth && (
+                  <button
+                    onClick={handleGituLogin}
+                    className="flex items-center justify-center cursor-pointer  gap-2 py-2 px-4 rounded-md text-sm font-medium bg-gray-900 text-white hover:bg-gray-800 active:bg-black transition-colors duration-200"
                   >
-                    <path d="M12 0a12 12 0 00-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.6 2.3 1.1 2.9.8.1-.7.4-1.1.7-1.3-2.6-.3-5.4-1.3-5.4-6A4.7 4.7 0 015 7.7a4.4 4.4 0 01.1-3.2s1-.3 3.3 1.2a11.4 11.4 0 016 0C16.7 4.2 17.7 4.5 17.7 4.5a4.4 4.4 0 01.1 3.2 4.7 4.7 0 011.2 3.3c0 4.7-2.8 5.7-5.4 6 .4.3.8.9.8 1.9v2.8c0 .3.2.7.8.6A12 12 0 0012 0z" />
-                  </svg>
-                  Login with GitHub
-                </button>
+                    {loading ? (
+                      <SpinnerLoader />
+                    ) : (
+                      <>
+                        <svg
+                          className="w-4 h-4"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M12 0a12 12 0 00-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.6 2.3 1.1 2.9.8.1-.7.4-1.1.7-1.3-2.6-.3-5.4-1.3-5.4-6A4.7 4.7 0 015 7.7a4.4 4.4 0 01.1-3.2s1-.3 3.3 1.2a11.4 11.4 0 016 0C16.7 4.2 17.7 4.5 17.7 4.5a4.4 4.4 0 01.1 3.2 4.7 4.7 0 011.2 3.3c0 4.7-2.8 5.7-5.4 6 .4.3.8.9.8 1.9v2.8c0 .3.2.7.8.6A12 12 0 0012 0z" />
+                        </svg>
+                        Login with GitHub
+                      </>
+                    )}
+                  </button>
+                )}
 
                 {/* Create Repo */}
-                {/* <button className="flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium bg-green-600 text-white hover:bg-green-500 active:bg-green-700 transition-colors duration-200">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                  Create Repo
-                </button> */}
-
+                {repoSlice?.isGitAuth &&
+                  (repoSlice?.currentRepo == null ||
+                    repoSlice?.currentRepo == "") && (
+                    <button
+                      onClick={() => setShowCreateRepo(true)}
+                      className="flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium bg-green-600 text-white hover:bg-green-500 active:bg-green-700 transition-colors duration-200"
+                    >
+                      {loading ? (
+                        <SpinnerLoader />
+                      ) : (
+                        <>
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M12 4v16m8-8H4"
+                            />
+                          </svg>
+                          Create Repo
+                        </>
+                      )}
+                    </button>
+                  )}
                 {/* Push Code */}
-                {/* <button className="flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 active:bg-blue-700 transition-colors duration-200">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M5 12h14m-7-7l7 7-7 7"
-                    />
-                  </svg>
-                  Push Code
-                </button> */}
+
+                {repoSlice?.isGitAuth &&
+                  repoSlice.currentRepo &&
+                  repoSlice.currentRepo == id && (
+                    <button
+                      onClick={() => setShowPushRepo(true)}
+                      className="flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 active:bg-blue-700 transition-colors duration-200"
+                    >
+                      {loading ? (
+                        <SpinnerLoader />
+                      ) : (
+                        <>
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M5 12h14m-7-7l7 7-7 7"
+                            />
+                          </svg>
+                          Push Code
+                        </>
+                      )}
+                    </button>
+                  )}
               </div>
 
               {/* Bottom Info Section */}
@@ -432,6 +543,109 @@ const MonacoEditor = () => {
               />
             </div>
           </div>
+
+          {showCreateRepo && (
+            <div className="fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 bg-[#1c1c1c] border border-[#333] rounded-xl shadow-lg p-4 flex flex-col gap-4 transition-all z-[999999999]">
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-[#262626] pb-3">
+                <h2 className="text-white text-sm font-semibold">
+                  Create New Repository
+                </h2>
+                <button
+                  onClick={() => setShowCreateRepo(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Repo Name */}
+              <div className="flex flex-col gap-1">
+                <label className="text-gray-400 text-xs">
+                  Repository Name *
+                </label>
+                <input
+                  type="text"
+                  value={repoName}
+                  onChange={(e) => setRepoName(e.target.value)}
+                  className="bg-[#111] text-white text-sm p-2 rounded-md border border-[#333] focus:outline-none focus:border-[#555]"
+                  placeholder="e.g. my-awesome-project"
+                />
+              </div>
+
+              {/* Description */}
+              <div className="flex flex-col gap-1">
+                <label className="text-gray-400 text-xs">Description</label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="bg-[#111] text-white text-sm p-2 rounded-md border border-[#333] focus:outline-none focus:border-[#555] resize-none"
+                  rows="2"
+                  placeholder="Write a short description..."
+                />
+              </div>
+
+              {/* Visibility */}
+              <div className="flex flex-col gap-2">
+                <label className="text-gray-400 text-xs">Visibility</label>
+                <div className="flex gap-3">
+                  <label className="flex items-center gap-2 text-sm text-gray-300">
+                    <input
+                      type="radio"
+                      value="public"
+                      checked={visibility === "public"}
+                      onChange={() => setVisibility("public")}
+                    />
+                    Public
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-gray-300">
+                    <input
+                      type="radio"
+                      value="private"
+                      checked={visibility === "private"}
+                      onChange={() => setVisibility("private")}
+                    />
+                    Private
+                  </label>
+                </div>
+              </div>
+              {/* Options */}
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-2 text-sm text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={addGitignore}
+                    onChange={() => setAddGitignore(!addGitignore)}
+                  />
+                  Add .gitignore
+                </label>
+                <label className="flex items-center gap-2 text-sm text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={addLicense}
+                    onChange={() => setAddLicense(!addLicense)}
+                  />
+                  Add License
+                </label>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex justify-end gap-2 mt-3">
+                <button
+                  onClick={() => setShowCreateRepo(false)}
+                  className="text-gray-400 text-sm px-3 py-1 rounded-md hover:bg-[#222]"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateRepo}
+                  className="bg-[#2563eb] text-white text-sm px-3 py-1 rounded-md hover:bg-[#1d4ed8]"
+                >
+                  Create
+                </button>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

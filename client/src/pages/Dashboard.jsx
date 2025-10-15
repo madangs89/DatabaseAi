@@ -64,6 +64,7 @@ import {
 } from "../redux/slice/MonacoEditorSlice";
 import { setCurrentProjectId } from "../redux/slice/projectSlice";
 import { setChatScroll } from "../redux/slice/scrollSlice";
+import { setGitAuth } from "../redux/slice/repoSlice";
 
 const TableNode = ({ data }) => {
   const {
@@ -217,6 +218,8 @@ const Dashboard = () => {
   const socket = useSelector((state) => state?.project?.socket);
   const monacoSlice = useSelector((state) => state?.monaco);
   const scrollSlice = useSelector((state) => state?.scrollS);
+  const repoSlice = useSelector((state) => state?.repo);
+
   const tableData = [
     {
       id: "welcome",
@@ -1738,11 +1741,25 @@ const Dashboard = () => {
     }
   }, [id, dispatch]);
 
+  // useEffect(() => {
+  //   if (auth?.isAuth == false) {
+  //     navigate("/");
+  //   }
+  // }, [auth.isAuth]);
+
   useEffect(() => {
-    if (auth?.isAuth == false) {
-      navigate("/");
-    }
-  }, [auth.isAuth]);
+    (async () => {
+      const data = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/repo/is-git-auth`,
+        { withCredentials: true }
+      );
+      if (data?.data?.success) {
+        const { gitAvatarUrl, gitName } = data?.data?.user || {};
+        const payload = { gitAvatarUrl, gitName };
+        dispatch(setGitAuth(payload));
+      }
+    })();
+  }, []);
 
   if (loadingSlice?.dashboardPageLoading) {
     return (
@@ -1753,7 +1770,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="w-full overflow-hidden dm-sans-font relative bg-black h-screen flex-col flex">
+    <div className="w-full  overflow-hidden dm-sans-font relative bg-black h-screen flex-col flex">
       <DashbordNav
         setMobileSelectedTab={setMobileSelectedTab}
         selectedTab={selectedTab}
@@ -1886,7 +1903,7 @@ const Dashboard = () => {
             <div className="w-[35%] relative h-full  flex-col overflow-hidden bg-[#171717] lg:flex hidden  gap-2  justify-center">
               <DashboardRightNav
                 chatOpen={chatOpen}
-                 llmCodeFromServer={llmCodeFromServer}
+                llmCodeFromServer={llmCodeFromServer}
                 dbOpen={dbOpen}
                 mobileSelectedTab={mobileSelectedTab}
                 setMobileSelectedTab={setMobileSelectedTab}

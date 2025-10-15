@@ -15,10 +15,10 @@ const repoSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    privacy: {
-      type: String,
-      enum: ["private", "public"],
-      default: "private",
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      index: true,
     },
   },
   { timestamps: true }

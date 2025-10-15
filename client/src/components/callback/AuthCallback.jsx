@@ -1,7 +1,8 @@
 import React, { useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { redirect, useNavigate } from "react-router-dom";
 import Loader from "../Loader";
+import toast from "react-hot-toast";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -12,7 +13,7 @@ export default function AuthCallback() {
     console.log(code);
     if (code) {
       (async () => {
-        await axios.post(
+        const data = await axios.post(
           `${import.meta.env.VITE_BACKEND_URL}/auth/git-auth`,
           {
             code,
@@ -21,6 +22,24 @@ export default function AuthCallback() {
             withCredentials: true,
           }
         );
+        console.log(data);
+        let redirectUrl = localStorage.getItem("redirectUrl");
+        console.log(redirectUrl);
+
+        if (data?.data?.success) {
+          toast.success("Git Login Done");
+          console.log("Login done");
+
+          let redirectUrl = localStorage.getItem("redirectUrl");
+          redirectUrl = JSON.parse(redirectUrl);
+          if (redirectUrl) {
+            localStorage.removeItem("redirectUrl");
+            console.log(redirectUrl, "return to redirect url");
+            window.open(redirectUrl, "_self");
+          }
+        } else {
+          navigate("/project");
+        }
       })();
     }
   }, [navigate]);
