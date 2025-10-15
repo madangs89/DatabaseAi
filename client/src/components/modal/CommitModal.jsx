@@ -85,6 +85,8 @@ const CommitModal = ({
 
 //   if (!showCommitModal) return null;
 
+
+
   return (
     <div className="fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-opacity-60 flex items-center justify-center z-[99999999]">
       <div className="bg-[#1c1c1c] w-96 rounded-xl shadow-lg p-4 flex flex-col gap-4">
