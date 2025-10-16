@@ -17,6 +17,7 @@ import { setAllToBegin } from "../redux/slice/MonacoEditorSlice";
 import { setCurrentProjectId } from "../redux/slice/projectSlice";
 import toast from "react-hot-toast";
 import { setGitLogout } from "../redux/slice/repoSlice";
+import SpinnerLoader from "./loaders/SpinnerLoader";
 
 const DashbordNav = ({
   selectedTab,
@@ -28,10 +29,12 @@ const DashbordNav = ({
   const dispatch = useDispatch();
   const repoSlice = useSelector((state) => state?.repo);
   const [userProfileHover, setUserProfileHover] = useState(false);
+  const [logoutLoader, setLogoutLoader] = useState(false);
 
   const handleLogout = async () => {
     try {
-      const logoutRes =await axios.post(
+      setLogoutLoader(true);
+      const logoutRes = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/repo/git-logout`,
         {},
         {
@@ -47,6 +50,8 @@ const DashbordNav = ({
     } catch (error) {
       console.log(error);
       toast.error("Unable to logout Git Account");
+    } finally {
+      setLogoutLoader(false);
     }
   };
   return (
@@ -180,9 +185,9 @@ const DashbordNav = ({
           <div className="flex flex-col gap-2">
             <button
               onClick={handleLogout} // replace with real logout logic
-              className="text-red-400 text-sm text-left px-2 py-1 hover:bg-[#222] rounded-md transition"
+              className="text-red-400 flex items-center justify-center text-sm text-left px-2 py-1 hover:bg-[#222] rounded-md transition"
             >
-              Log Out
+              {logoutLoader ? <SpinnerLoader /> : " Log Out"}
             </button>
           </div>
 

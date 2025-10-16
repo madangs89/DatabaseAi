@@ -13,6 +13,7 @@ import Conversation from "./models/conversatoin.model.js";
 import SchemaVersion from "./models/schema.model.js";
 import Usage from "./models/usage.model.js";
 import { getApiCodes } from "./utils/lll.service.js";
+import Repo from "./models/repos.model.js";
 
 export const io = new Server(httpServer, {
   cors: {
@@ -399,6 +400,7 @@ subClient.subscribe("deleteProject", async (data) => {
     if (!projectId) return;
     await Conversation.deleteMany({ projectId });
     await SchemaVersion.deleteMany({ projectId });
+    await Repo.deleteMany({ projectId });
     console.log(`Deleted all data for project ${projectId}`);
   } catch (error) {
     console.error("Error deleting project data:", error);

@@ -174,6 +174,7 @@ const MonacoEditor = () => {
   const socket = useSelector((state) => state?.project?.socket);
   const repoSlice = useSelector((state) => state?.repo);
   const { id } = useParams();
+  const [commits, setCommits] = useState([]);
   const dispatch = useDispatch();
   const {
     tree,
@@ -190,6 +191,7 @@ const MonacoEditor = () => {
   console.log(location);
 
   const projectSlice = useSelector((state) => state.project);
+  const monacoSlice = useSelector((state) => state.monaco);
 
   const [expandable, setExandable] = useState(false);
   const [showCreateRepo, setShowCreateRepo] = useState(false);
@@ -199,6 +201,7 @@ const MonacoEditor = () => {
   const [visibility, setVisibility] = useState("public");
   const [addGitignore, setAddGitignore] = useState(false);
   const [addLicense, setAddLicense] = useState(false);
+  const [gitLoader, setGitLoader] = useState(false);
 
   const handleLanguage = (name) => {
     if (name && name.length > 2) {
@@ -245,6 +248,9 @@ const MonacoEditor = () => {
   };
 
   const handleGituLogin = () => {
+    if (monacoSlice?.loadingState == 1 || monacoSlice?.loadingState == 2) {
+      return toast.error("Please wait until code generated");
+    }
     let url;
     if (location?.pathname) {
       url = `${import.meta.env.VITE_FRONTEND_URL}${location?.pathname}`;
@@ -272,6 +278,7 @@ const MonacoEditor = () => {
         addLicense,
       };
 
+      setGitLoader(true);
       const repoCreateResult = await axios.post(
         `
         ${import.meta.env.VITE_BACKEND_URL}/repo/create-repo`,
@@ -291,9 +298,43 @@ const MonacoEditor = () => {
       console.log("Creating repo:", payload);
     } catch (error) {
       console.log(error);
-      toast.error("Unable to create repo , Please Try again later");
+      toast.error(
+        error?.response?.data?.message ||
+          "Unable to create repo , Please Try again later"
+      );
+    } finally {
+      setGitLoader(false);
     }
   };
+
+  useEffect(() => {
+    const fetchCommits = async () => {
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/repo/commits/${
+            projectSlice?.currentProjectId
+          }/${repoSlice?.currentRepoName}`,
+          { withCredentials: true }
+        );
+        if (res?.data?.success) {
+          setCommits(res?.data?.data?.history);
+        }
+      } catch (err) {
+        console.error(
+          "Fetch commits error:",
+          err.response?.data || err.message
+        );
+      }
+    };
+
+    if (repoSlice.isGitAuth) {
+      fetchCommits();
+    }
+  }, [
+    repoSlice.isGitAuth,
+    projectSlice?.currentProjectId,
+    repoSlice?.currentRepoName,
+  ]);
 
   useEffect(() => {
     (async () => {
@@ -317,7 +358,7 @@ const MonacoEditor = () => {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [repoSlice.isGitAuth, id, dispatch]);
 
   console.log(id, "from monaco editor");
   return (
@@ -546,108 +587,132 @@ const MonacoEditor = () => {
           </div>
 
           {showCreateRepo && (
-            <div className="fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 bg-[#1c1c1c] border border-[#333] rounded-xl shadow-lg p-4 flex flex-col gap-4 transition-all z-[999999999]">
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-[#262626] pb-3">
-                <h2 className="text-white text-sm font-semibold">
-                  Create New Repository
-                </h2>
-                <button
-                  onClick={() => setShowCreateRepo(false)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  ✕
-                </button>
-              </div>
+            <div className="fixed inset-0 flex items-center justify-center z-[999999999] bg-black/50 backdrop-blur-sm">
+              <div className="w-[90%] max-w-md bg-gradient-to-br from-[#181818] to-[#0d0d0d] border border-[#2a2a2a] rounded-xl shadow-2xl p-5 animate-[fadeIn_0.2s_ease-out]">
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-[#262626] pb-3 mb-4">
+                  <h2 className="text-white text-base font-semibold tracking-wide">
+                    🪄 Create New Repository
+                  </h2>
+                  <button
+                    onClick={() => setShowCreateRepo(false)}
+                    className="text-gray-400 hover:text-white transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
 
-              {/* Repo Name */}
-              <div className="flex flex-col gap-1">
-                <label className="text-gray-400 text-xs">
-                  Repository Name *
-                </label>
-                <input
-                  type="text"
-                  value={repoName}
-                  onChange={(e) => setRepoName(e.target.value)}
-                  className="bg-[#111] text-white text-sm p-2 rounded-md border border-[#333] focus:outline-none focus:border-[#555]"
-                  placeholder="e.g. my-awesome-project"
-                />
-              </div>
-
-              {/* Description */}
-              <div className="flex flex-col gap-1">
-                <label className="text-gray-400 text-xs">Description</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="bg-[#111] text-white text-sm p-2 rounded-md border border-[#333] focus:outline-none focus:border-[#555] resize-none"
-                  rows="2"
-                  placeholder="Write a short description..."
-                />
-              </div>
-
-              {/* Visibility */}
-              <div className="flex flex-col gap-2">
-                <label className="text-gray-400 text-xs">Visibility</label>
-                <div className="flex gap-3">
-                  <label className="flex items-center gap-2 text-sm text-gray-300">
-                    <input
-                      type="radio"
-                      value="public"
-                      checked={visibility === "public"}
-                      onChange={() => setVisibility("public")}
-                    />
-                    Public
+                {/* Repo Name */}
+                <div className="flex flex-col gap-1 mb-3">
+                  <label className="text-gray-400 text-xs font-medium">
+                    Repository Name *
                   </label>
-                  <label className="flex items-center gap-2 text-sm text-gray-300">
+                  <input
+                    type="text"
+                    value={repoName}
+                    onChange={(e) => setRepoName(e.target.value)}
+                    className="bg-[#111] text-white text-sm p-2 rounded-md border border-[#333] focus:outline-none focus:ring-1 focus:ring-[#2563eb] transition-all"
+                    placeholder="e.g. spotify-clone"
+                  />
+                </div>
+
+                {/* Description */}
+                <div className="flex flex-col gap-1 mb-3">
+                  <label className="text-gray-400 text-xs font-medium">
+                    Description
+                  </label>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="bg-[#111] text-white text-sm p-2 rounded-md border border-[#333] focus:outline-none focus:ring-1 focus:ring-[#2563eb] resize-none transition-all"
+                    rows="2"
+                    placeholder="Write a short description..."
+                  />
+                </div>
+
+                {/* Visibility */}
+                <div className="flex flex-col gap-2 mb-3">
+                  <label className="text-gray-400 text-xs font-medium">
+                    Visibility
+                  </label>
+                  <div className="flex gap-5 mt-1">
+                    <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                      <input
+                        type="radio"
+                        value="public"
+                        checked={visibility === "public"}
+                        onChange={() => setVisibility("public")}
+                        className="accent-[#2563eb] cursor-pointer"
+                      />
+                      <span>🌐 Public</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                      <input
+                        type="radio"
+                        value="private"
+                        checked={visibility === "private"}
+                        onChange={() => setVisibility("private")}
+                        className="accent-[#2563eb] cursor-pointer"
+                      />
+                      <span>🔒 Private</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Options */}
+                <div className="flex flex-col gap-2 mb-4">
+                  <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                     <input
-                      type="radio"
-                      value="private"
-                      checked={visibility === "private"}
-                      onChange={() => setVisibility("private")}
+                      type="checkbox"
+                      checked={addGitignore}
+                      onChange={() => setAddGitignore(!addGitignore)}
+                      className="accent-[#2563eb] cursor-pointer"
                     />
-                    Private
+                    Add{" "}
+                    <code className="text-xs bg-[#222] px-1 rounded">
+                      .gitignore
+                    </code>
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={addLicense}
+                      onChange={() => setAddLicense(!addLicense)}
+                      className="accent-[#2563eb] cursor-pointer"
+                    />
+                    Add License
                   </label>
                 </div>
-              </div>
-              {/* Options */}
-              <div className="flex flex-col gap-2">
-                <label className="flex items-center gap-2 text-sm text-gray-300">
-                  <input
-                    type="checkbox"
-                    checked={addGitignore}
-                    onChange={() => setAddGitignore(!addGitignore)}
-                  />
-                  Add .gitignore
-                </label>
-                <label className="flex items-center gap-2 text-sm text-gray-300">
-                  <input
-                    type="checkbox"
-                    checked={addLicense}
-                    onChange={() => setAddLicense(!addLicense)}
-                  />
-                  Add License
-                </label>
-              </div>
 
-              {/* Buttons */}
-              <div className="flex justify-end gap-2 mt-3">
-                <button
-                  onClick={() => setShowCreateRepo(false)}
-                  className="text-gray-400 text-sm px-3 py-1 rounded-md hover:bg-[#222]"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleCreateRepo}
-                  className="bg-[#2563eb] text-white text-sm px-3 py-1 rounded-md hover:bg-[#1d4ed8]"
-                >
-                  Create
-                </button>
+                {/* Buttons */}
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => setShowCreateRepo(false)}
+                    disabled={gitLoader}
+                    className="text-gray-400 text-sm px-3 py-1.5 rounded-md hover:bg-[#222] transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleCreateRepo}
+                    className="bg-[#2563eb] flex items-center justify-center text-white text-sm px-4 py-1.5 rounded-md hover:bg-[#1d4ed8] transition-colors disabled:opacity-50"
+                    disabled={gitLoader}
+                  >
+                    {gitLoader ? <SpinnerLoader /> : "Create"}
+                  </button>
+                </div>
               </div>
             </div>
           )}
-          {showPushRepo && <CommitModal />}
+
+          {showPushRepo && (
+            <CommitModal
+              commits={commits}
+              setCommits={setCommits}
+              showPushRepo={showPushRepo}
+              setShowCreateRepo={setShowPushRepo}
+            />
+          )}
         </>
       )}
     </div>

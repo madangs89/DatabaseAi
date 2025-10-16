@@ -216,7 +216,7 @@ export const gitLogin = async (req, res) => {
     });
     console.log(userRes.data);
 
-    const { avatar_url, name } = userRes.data;
+    const { avatar_url, name, login } = userRes.data;
 
     accessToken = encrypt(accessToken);
 
@@ -227,6 +227,7 @@ export const gitLogin = async (req, res) => {
           gitAccessToken: accessToken,
           gitAvatarUrl: avatar_url,
           gitName: name,
+          gitUserName: login,
         },
       },
       { new: true }
