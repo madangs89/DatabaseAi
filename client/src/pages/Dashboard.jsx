@@ -30,6 +30,8 @@ import {
   SendToBack,
   SendToBackIcon,
   Settings,
+  Share,
+  Share2,
   X,
 } from "lucide-react";
 import axios from "axios";
@@ -1876,20 +1878,8 @@ const Dashboard = () => {
                       onClick={handleShare}
                       className="w-8 h-8 flex items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="w-4 h-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M4 12v.01M12 20h.01M20 12v.01M12 4h.01M16.24 7.76L20 12l-3.76 4.24M7.76 16.24L4 12l3.76-4.24M12 20V4m8 8H4"
-                        />
-                      </svg>
+                    
+                      <Share2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setMobileSelectedTab(true)}
