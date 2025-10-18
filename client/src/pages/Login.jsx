@@ -9,10 +9,12 @@ import {
 } from "../redux/slice/authSlice";
 import { useGoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const Login = () => {
-  const BACKEND_URL = "http://localhost:5000";
-  const navigate = useNavigate()
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+  const navigate = useNavigate();
 
   const googleHandler = async (res) => {
     try {
@@ -28,7 +30,16 @@ const Login = () => {
       if (response.data.success) {
         console.log(response);
         dispatch(setAuthTrue(response.data));
-        navigate("/project");
+        let redirectUrl = localStorage.getItem("redirectUrlForNotLogin");
+        redirectUrl = JSON.parse(redirectUrl);
+        if (redirectUrl) {
+          localStorage.removeItem("redirectUrlForNotLogin");
+          toast.success("Redirecting Please Wait!!");
+          console.log(redirectUrl);
+          setTimeout(() => {
+            navigate(redirectUrl);
+          }, 1000);
+        }
       }
     } catch (error) {
       console.log(error);

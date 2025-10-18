@@ -24,6 +24,7 @@ const DashbordNav = ({
   setSelectedTab,
   projectTitle,
   setMobileSelectedTab,
+  share = false,
 }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -117,17 +118,19 @@ const DashbordNav = ({
         >
           <Code className="w-5 h-5" />
         </button>
-        <button
-          onClick={() => {
-            setMobileSelectedTab(false);
-            setSelectedTab("setting");
-          }}
-          className={`p-1.5 bg-[#525252] ${
-            selectedTab === "setting" ? "text-blue-500" : "text-white"
-          } inter-font font-semibold transition-all duration-200 ease-linear  rounded-md `}
-        >
-          <Settings className="w-5 h-5" />
-        </button>
+        {!share && (
+          <button
+            onClick={() => {
+              setMobileSelectedTab(false);
+              setSelectedTab("setting");
+            }}
+            className={`p-1.5 bg-[#525252] ${
+              selectedTab === "setting" ? "text-blue-500" : "text-white"
+            } inter-font font-semibold transition-all duration-200 ease-linear  rounded-md `}
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+        )}
 
         {repoSlice?.isGitAuth && repoSlice?.gitAvatarUrl && (
           <button

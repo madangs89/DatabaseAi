@@ -53,7 +53,15 @@ const Hero = () => {
 
   useEffect(() => {
     if (auth?.isAuth) {
-      navigate("/project");
+
+      let redirectUrl = localStorage.getItem("redirectUrlForNotLogin");
+      redirectUrl = JSON.parse(redirectUrl);
+      if (redirectUrl) {
+        localStorage.removeItem("redirectUrlForNotLogin");
+        navigate(redirectUrl);
+      } else {
+        navigate("/project");
+      }
     }
   }, [auth?.isAuth, navigate]);
 

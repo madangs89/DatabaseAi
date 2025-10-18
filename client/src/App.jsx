@@ -1,5 +1,11 @@
 import React, { useRef, useEffect } from "react";
-import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  useLocation,
+  useNavigate,
+  Navigate,
+} from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Hero from "./pages/Hero";
 import Login from "./pages/Login";
@@ -21,6 +27,7 @@ import SpinnerLoader from "./components/loaders/SpinnerLoader";
 import { io } from "socket.io-client";
 import { setSocket } from "./redux/slice/projectSlice";
 import AuthCallback from "./components/callback/AuthCallback";
+import SharedDashboard from "./pages/SharedDashboard";
 
 const App = () => {
   const isAuth = useSelector((state) => state.auth.isAuth);
@@ -52,7 +59,7 @@ const App = () => {
 
   useEffect(() => {
     if (auth.user?._id) {
-      const newSocket = io("http://localhost:5000", {
+      const newSocket = io(import.meta.env.VITE_BACKEND_URL, {
         auth: {
           userId: auth?.user?._id,
         },
@@ -112,6 +119,14 @@ const App = () => {
             element={<ReactFlowProvider>{<Dashboard />}</ReactFlowProvider>}
           />
           <Route path="/project" element={<Project />} />
+          <Route
+            path="/share/:projectId/:userId/:shareId"
+            element={
+              <ReactFlowProvider>
+                <SharedDashboard />
+              </ReactFlowProvider>
+            }
+          />
           <Route path="/project/:id/settings" element={<ProjectSetting />} />
           <Route path="/project/:id/history" element={<VersionHistory />} />
           <Route path="/account" element={<AccountSetting />} />

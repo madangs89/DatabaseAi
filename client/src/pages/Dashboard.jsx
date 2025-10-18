@@ -219,7 +219,9 @@ const Dashboard = () => {
   const monacoSlice = useSelector((state) => state?.monaco);
   const scrollSlice = useSelector((state) => state?.scrollS);
   const repoSlice = useSelector((state) => state?.repo);
-
+  const [showShare, setShowShare] = useState(false);
+  const [shareLink, setShareLink] = useState("No link loaded yet.Please Wait");
+  const [shareLoader, setShareLoader] = useState(false);
   const tableData = [
     {
       id: "welcome",
@@ -1761,6 +1763,42 @@ const Dashboard = () => {
     })();
   }, []);
 
+  const handleShare = async () => {
+    setShowShare(true);
+    try {
+      setShareLoader(true);
+
+      const shareData = await axios.post(
+        `
+        ${import.meta.env.VITE_BACKEND_URL}/share`,
+        {
+          projectId: id,
+        },
+        {
+          withCredentials: true,
+        }
+      );
+
+      if (shareData?.data?.success) {
+        setShareLink(
+          `${import.meta.env.VITE_FRONTEND_URL}/share/${
+            shareData?.data?.share?.projectId
+          }/${shareData?.data?.share?.userId}/${shareData?.data?.share?._id}`
+        );
+      }
+      console.log(shareData);
+
+      setShareLoader(false);
+    } catch (error) {
+      console.log(error);
+      setShareLoader(false);
+      toast.error("Unable to share project, please Try again!!");
+      setShowShare(false);
+    } finally {
+      setShareLoader(false);
+    }
+  };
+
   if (loadingSlice?.dashboardPageLoading) {
     return (
       <div className="flex justify-center bg-black items-center w-full h-screen">
@@ -1769,375 +1807,451 @@ const Dashboard = () => {
     );
   }
 
-  return (
-    <div className="w-full  overflow-hidden dm-sans-font relative bg-black h-screen flex-col flex">
-      <DashbordNav
-        setMobileSelectedTab={setMobileSelectedTab}
-        selectedTab={selectedTab}
-        projectTitle={projectTitle}
-        setSelectedTab={setSelectedTab}
-      />
-      <div className="w-full h-full overflow-hidden flex">
-        {selectedTab == "api" ? (
-          <MonacoEditor />
-        ) : (
-          <>
-            <div className="flex-1 overflow-hidden p-2 flex-shrink-0 items-center justify-center gap-4  border-r-[0.5px] border-[#262626] h-full flex flex-col">
-              {/* Nav for left half */}
-              <div className="h-12 w-full bg-inherit overflow-hidden flex items-center justify-between lg:px-4 px-1 ">
-                {/* Left: Title */}
-                <h2 className="text-white text-2xl font-bold">ER Diagram</h2>
-                {/* Right: Search + Buttons */}
-                <div className="flex items-center gap-2">
-                  {/* Search Box */}
-
-                  <div className="">
-                    {isSaved == 1 && (
-                      <p className="text-[#525252] text-sm mr-2">Saved</p>
-                    )}
-                    {isSaved == 2 && (
-                      <p className="text-[#525252] text-sm mr-2">Not Saved</p>
-                    )}
-                    {isSaved == 3 && (
-                      <p className="text-[#525252] text-sm mr-2">Saving..</p>
-                    )}
-                  </div>
-
-                  {/* Plus Button */}
-                  <button className="w-8 h-8 flex items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]">
-                    +
-                  </button>
-
-                  {/* Share Button */}
-                  <button className="w-8 h-8 flex items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="w-4 h-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M4 12v.01M12 20h.01M20 12v.01M12 4h.01M16.24 7.76L20 12l-3.76 4.24M7.76 16.24L4 12l3.76-4.24M12 20V4m8 8H4"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => setMobileSelectedTab(true)}
-                    className="w-8 h-8 flex lg:hidden items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]"
-                  >
-                    <Menu className="w-4 h-4 text-white" />
-                  </button>
-                </div>
-              </div>
-              <div className="flex-1 h-full w-full bg-[#171717] rounded-lg flex-shrink-0">
-                {loadingSlice?.setEntityLoading ? (
-                  <div className="flex items-center justify-center w-full h-full">
-                    <SpinnerLoader />
-                  </div>
-                ) : (
-                  <ReactFlow
-                    nodes={nodes}
-                    edges={edges}
-                    onNodesChange={onNodesChange}
-                    onEdgesChange={onEdgesChange}
-                    fitView
-                    onInit={(reactFlowInstance) => {
-                      reactFlowInstance.fitView({
-                        padding: 0.2,
-                        duration: 800,
-                      });
-                    }}
-                    minZoom={0.2}
-                    maxZoom={2}
-                    proOptions={{ hideAttribution: true }}
-                    nodeTypes={nodeTypes}
-                  >
-                    
-                    <Background
-                      variant="dots"
-                      gap={20}
-                      size={1}
-                      color={"black"}
-                    />
-                    <Controls
-                      showZoom={true}
-                      showFitView={true}
-                      showInteractive={true}
-                      position="bottom-right"
-                      className="bg-[#171717] border-[0.5px] border-[#262626]"
-                    />
-                  </ReactFlow>
-                )}
-                {/* </div> */}
-              </div>
-              <form
-                onSubmit={handleInputSubmit}
-                className="h-12 w-[98%] bg-[#171717] px-2  flex gap-2 items-center rounded-lg border-t-[0.5px] border-[#262626]"
-              >
-                <SearchIcon className="w-5 h-5 text-[#525252]" />
-                <input
-                  type="text"
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Create a database for instagram clone..."
-                  className="flex-1 border-none placeholder:text-[#525252] outline-none bg-transparent text-white"
-                />
-                <button
-                  className="flex items-center justify-center"
-                  type="submit"
-                >
-                  {" "}
-                  {loading ? (
-                    <Loader />
-                  ) : (
-                    <ArrowUp className="w-5 cursor-pointer p-1 h-5 transition-all duration-200 ease-linear text-black bg-white rounded-full " />
-                  )}
-                </button>
-              </form>
-            </div>
-
-            <div className="w-[35%] relative h-full  flex-col overflow-hidden bg-[#171717] lg:flex hidden  gap-2  justify-center">
-              <DashboardRightNav
-                chatOpen={chatOpen}
-                llmCodeFromServer={llmCodeFromServer}
-                dbOpen={dbOpen}
-                mobileSelectedTab={mobileSelectedTab}
-                setMobileSelectedTab={setMobileSelectedTab}
-                copyOpen={copyOpen}
-                relationshipsOpen={relationshipsOpen}
-                setChatOpen={setChatOpen}
-                setDbOpen={setDbOpen}
-                setCopyOpen={setCopyOpen}
-                setRelationshipsOpen={setRelationshipsOpen}
-                selectedDb={selectedDb}
-              />
-              <Chat
-                chatOpen={chatOpen}
-                autoScroll={autoScroll}
-                chatMessages={chatMessages}
-                chatContainerRef={chatContainerRef}
-                handleScroll={handleScroll}
-                bottomRef={bottomRef}
-              />
-              <DatabaseOpen dbOpen={dbOpen} selectedDbData={selectedDbData} />
-              <CodeCopyOpen
-                llmCodeFromServer={llmCodeFromServer}
-                copyOpen={copyOpen}
-              />
-              <RelationShipDbOpen
-                relationshipsOpen={relationshipsOpen}
-                edges={edges}
-                setSelectedRelationshipId={setSelectedRelationshipId}
-                setEdges={setEdges}
-                selectedRelationshipId={selectedRelationshipId}
-              />
-            </div>
-          </>
-        )}
+  if (!auth?.isAuth) {
+    return (
+      <div className=" w-full h-screen flex  bg-black bg-opacity-70 backdrop-blur-md  flex-col items-center justify-center z-[9999] p-4">
+        <div className="bg-[#171717] text-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
+          <h2 className="text-2xl font-semibold mb-4">You are not logged in</h2>
+          <p className="text-gray-400 mb-6">
+            Please log in to access this page.
+          </p>
+          <button
+            onClick={() => {
+              const pathName = location?.pathname || "/";
+              localStorage.setItem(
+                "redirectUrlForNotLogin",
+                JSON.stringify(pathName)
+              );
+              navigate("/");
+            }}
+            className="bg-white text-black px-6 py-2 rounded-xl hover:bg-gray-200 transition-all font-medium"
+          >
+            Go to Login
+          </button>
+        </div>
       </div>
-      <aside
-        className={`fixed ${
-          selectedTab === "setting"
-            ? "w-[80%] z-[9999999] md:w-[50%] border-t border-[#262626]  lg:w-[35%]"
-            : "w-0"
-        } h-[calc(100vh-64px)] right-0 top-20
+    );
+  } else {
+    return (
+      <div className="w-full  overflow-hidden dm-sans-font relative bg-black h-screen flex-col flex">
+        <DashbordNav
+          setMobileSelectedTab={setMobileSelectedTab}
+          selectedTab={selectedTab}
+          projectTitle={projectTitle}
+          setSelectedTab={setSelectedTab}
+        />
+        <div className="w-full h-full overflow-hidden flex">
+          {selectedTab == "api" ? (
+            <MonacoEditor />
+          ) : (
+            <>
+              <div className="flex-1 overflow-hidden p-2 flex-shrink-0 items-center justify-center gap-4  border-r-[0.5px] border-[#262626] h-full flex flex-col">
+                {/* Nav for left half */}
+                <div className="h-12 w-full bg-inherit overflow-hidden flex items-center justify-between lg:px-4 px-1 ">
+                  {/* Left: Title */}
+                  <h2 className="text-white text-2xl font-bold">ER Diagram</h2>
+                  {/* Right: Search + Buttons */}
+                  <div className="flex items-center gap-2">
+                    {/* Search Box */}
+
+                    <div className="">
+                      {isSaved == 1 && (
+                        <p className="text-[#525252] text-sm mr-2">Saved</p>
+                      )}
+                      {isSaved == 2 && (
+                        <p className="text-[#525252] text-sm mr-2">Not Saved</p>
+                      )}
+                      {isSaved == 3 && (
+                        <p className="text-[#525252] text-sm mr-2">Saving..</p>
+                      )}
+                    </div>
+
+                    {/* Plus Button */}
+                    <button className="w-8 h-8 flex items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]">
+                      +
+                    </button>
+
+                    {/* Share Button */}
+                    <button
+                      onClick={handleShare}
+                      className="w-8 h-8 flex items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M4 12v.01M12 20h.01M20 12v.01M12 4h.01M16.24 7.76L20 12l-3.76 4.24M7.76 16.24L4 12l3.76-4.24M12 20V4m8 8H4"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => setMobileSelectedTab(true)}
+                      className="w-8 h-8 flex lg:hidden items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]"
+                    >
+                      <Menu className="w-4 h-4 text-white" />
+                    </button>
+                  </div>
+                </div>
+                <div className="flex-1 h-full w-full bg-[#171717] rounded-lg flex-shrink-0">
+                  {loadingSlice?.setEntityLoading ? (
+                    <div className="flex items-center justify-center w-full h-full">
+                      <SpinnerLoader />
+                    </div>
+                  ) : (
+                    <ReactFlow
+                      nodes={nodes}
+                      edges={edges}
+                      onNodesChange={onNodesChange}
+                      onEdgesChange={onEdgesChange}
+                      fitView
+                      onInit={(reactFlowInstance) => {
+                        reactFlowInstance.fitView({
+                          padding: 0.2,
+                          duration: 800,
+                        });
+                      }}
+                      minZoom={0.2}
+                      maxZoom={2}
+                      proOptions={{ hideAttribution: true }}
+                      nodeTypes={nodeTypes}
+                    >
+                      <Background
+                        variant="dots"
+                        gap={20}
+                        size={1}
+                        color={"black"}
+                      />
+                      <Controls
+                        showZoom={true}
+                        showFitView={true}
+                        showInteractive={true}
+                        position="bottom-right"
+                        className="bg-[#171717] border-[0.5px] border-[#262626]"
+                      />
+                    </ReactFlow>
+                  )}
+                  {/* </div> */}
+                </div>
+                <form
+                  onSubmit={handleInputSubmit}
+                  className="h-12 w-[98%] bg-[#171717] px-2  flex gap-2 items-center rounded-lg border-t-[0.5px] border-[#262626]"
+                >
+                  <SearchIcon className="w-5 h-5 text-[#525252]" />
+                  <input
+                    type="text"
+                    ref={inputRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Create a database for instagram clone..."
+                    className="flex-1 border-none placeholder:text-[#525252] outline-none bg-transparent text-white"
+                  />
+                  <button
+                    className="flex items-center justify-center"
+                    type="submit"
+                  >
+                    {" "}
+                    {loading ? (
+                      <Loader />
+                    ) : (
+                      <ArrowUp className="w-5 cursor-pointer p-1 h-5 transition-all duration-200 ease-linear text-black bg-white rounded-full " />
+                    )}
+                  </button>
+                </form>
+              </div>
+
+              <div className="w-[35%] relative h-full  flex-col overflow-hidden bg-[#171717] lg:flex hidden  gap-2  justify-center">
+                <DashboardRightNav
+                  chatOpen={chatOpen}
+                  llmCodeFromServer={llmCodeFromServer}
+                  dbOpen={dbOpen}
+                  mobileSelectedTab={mobileSelectedTab}
+                  setMobileSelectedTab={setMobileSelectedTab}
+                  copyOpen={copyOpen}
+                  relationshipsOpen={relationshipsOpen}
+                  setChatOpen={setChatOpen}
+                  setDbOpen={setDbOpen}
+                  setCopyOpen={setCopyOpen}
+                  setRelationshipsOpen={setRelationshipsOpen}
+                  selectedDb={selectedDb}
+                />
+                <Chat
+                  chatOpen={chatOpen}
+                  autoScroll={autoScroll}
+                  chatMessages={chatMessages}
+                  chatContainerRef={chatContainerRef}
+                  handleScroll={handleScroll}
+                  bottomRef={bottomRef}
+                />
+                <DatabaseOpen dbOpen={dbOpen} selectedDbData={selectedDbData} />
+                <CodeCopyOpen
+                  llmCodeFromServer={llmCodeFromServer}
+                  copyOpen={copyOpen}
+                />
+                <RelationShipDbOpen
+                  relationshipsOpen={relationshipsOpen}
+                  edges={edges}
+                  setSelectedRelationshipId={setSelectedRelationshipId}
+                  setEdges={setEdges}
+                  selectedRelationshipId={selectedRelationshipId}
+                />
+              </div>
+            </>
+          )}
+        </div>
+        <aside
+          className={`fixed ${
+            selectedTab === "setting"
+              ? "w-[80%] z-[9999999] md:w-[50%] border-t border-[#262626]  lg:w-[35%]"
+              : "w-0"
+          } h-[calc(100vh-64px)] right-0 top-20
   bg-black/40 backdrop-blur-md 
   transition-all duration-300 ease-in-out overflow-y-scroll`}
-      >
-        {/* Project Details */}
-        <div className="p-6 border-b border-[#262626] flex-1 flex flex-col">
-          <h2 className="text-white text-lg w-full justify-between flex gap-1 items-center font-bold">
-            <p>Project Details</p>
-            {selectedTab == "setting" && (
-              <button
-                onClick={() => setSelectedTab("editor")}
-                className="w-8 h-8 flex  cursor-pointer items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]"
-              >
-                <X className="w-4 h-4 text-white" />
-              </button>
-            )}
-          </h2>
+        >
+          {/* Project Details */}
+          <div className="p-6 border-b border-[#262626] flex-1 flex flex-col">
+            <h2 className="text-white text-lg w-full justify-between flex gap-1 items-center font-bold">
+              <p>Project Details</p>
+              {selectedTab == "setting" && (
+                <button
+                  onClick={() => setSelectedTab("editor")}
+                  className="w-8 h-8 flex  cursor-pointer items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]"
+                >
+                  <X className="w-4 h-4 text-white" />
+                </button>
+              )}
+            </h2>
 
-          <form
-            onSubmit={handleFromSubmit}
-            className="flex flex-col gap-4 flex-1"
-          >
-            {/* Project Name */}
-            <div className="flex flex-col pt-3">
-              <label className="text-gray-300 text-sm mb-1">Project Name</label>
-              <input
-                required
-                value={selectedProjectDetails?.title}
-                onChange={(e) => {
-                  setSelectedProjectDetails({
-                    ...selectedProjectDetails,
-                    title: e.target.value,
-                  });
-                }}
-                name="title"
-                type="text"
-                placeholder="Project Name"
-                className="bg-[#1c1c1c] border outline-none border-[#333] rounded-lg px-3 py-2 text-sm text-gray-200 placeholder:text-[#808080]"
-              />
-            </div>
-
-            {/* Description */}
-            <div className="flex flex-col pt-3">
-              <label className="text-gray-300 text-sm mb-1">Description</label>
-              <textarea
-                rows="5"
-                value={selectedProjectDetails?.description}
-                required
-                onChange={(e) => {
-                  setSelectedProjectDetails({
-                    ...selectedProjectDetails,
-                    description: e.target.value,
-                  });
-                }}
-                name="description"
-                placeholder="Project Description"
-                className="bg-[#1c1c1c] w-full border outline-none border-[#333] rounded-lg px-3 py-2 text-sm text-gray-200 placeholder:text-[#808080] resize-none"
-              ></textarea>
-            </div>
-
-            {/* Dates */}
-            <div className="flex flex-col pt-3">
-              <label className="text-gray-300 text-sm mb-1">Created At</label>
-              <div className="flex gap-2">
+            <form
+              onSubmit={handleFromSubmit}
+              className="flex flex-col gap-4 flex-1"
+            >
+              {/* Project Name */}
+              <div className="flex flex-col pt-3">
+                <label className="text-gray-300 text-sm mb-1">
+                  Project Name
+                </label>
                 <input
-                  type="date"
-                  value={
-                    selectedProjectDetails?.createdAt
-                      ? new Date(selectedProjectDetails.createdAt)
-                          .toISOString()
-                          .split("T")[0]
-                      : ""
-                  }
+                  required
+                  value={selectedProjectDetails?.title}
                   onChange={(e) => {
                     setSelectedProjectDetails({
                       ...selectedProjectDetails,
-                      createdAt: e.target.value,
+                      title: e.target.value,
                     });
                   }}
-                  className="bg-[#1c1c1c] border border-[#333] outline-none rounded-lg px-3 py-2 text-sm text-gray-200 flex-1"
+                  name="title"
+                  type="text"
+                  placeholder="Project Name"
+                  className="bg-[#1c1c1c] border outline-none border-[#333] rounded-lg px-3 py-2 text-sm text-gray-200 placeholder:text-[#808080]"
                 />
               </div>
-            </div>
 
-            {/* Status */}
-            <div className="flex flex-col pt-3">
-              <label className="text-gray-300 text-sm mb-1">Status</label>
-              <select
-                name="status"
-                value={selectedProjectDetails?.status}
-                required
-                onChange={(e) => {
-                  setSelectedProjectDetails({
-                    ...selectedProjectDetails,
-                    status: e.target.value,
-                  });
-                }}
-                className={`bg-[#1c1c1c] border border-[#333] outline-none rounded-lg px-3 py-2 text-sm ${
-                  selectedProjectDetails?.status === ""
-                    ? "text-[#808080]"
-                    : "text-gray-200"
-                }`}
-              >
-                <option value="">--Select Status--</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="completed">Completed</option>
-              </select>
-            </div>
+              {/* Description */}
+              <div className="flex flex-col pt-3">
+                <label className="text-gray-300 text-sm mb-1">
+                  Description
+                </label>
+                <textarea
+                  rows="5"
+                  value={selectedProjectDetails?.description}
+                  required
+                  onChange={(e) => {
+                    setSelectedProjectDetails({
+                      ...selectedProjectDetails,
+                      description: e.target.value,
+                    });
+                  }}
+                  name="description"
+                  placeholder="Project Description"
+                  className="bg-[#1c1c1c] w-full border outline-none border-[#333] rounded-lg px-3 py-2 text-sm text-gray-200 placeholder:text-[#808080] resize-none"
+                ></textarea>
+              </div>
 
-            {/* Privacy */}
-            <div className="flex flex-col pt-3">
-              <label className="text-gray-300 text-sm mb-1">Privacy</label>
-              <select
-                name="privacy"
-                value={selectedProjectDetails?.privacy}
-                required
-                onChange={(e) => {
-                  setSelectedProjectDetails({
-                    ...selectedProjectDetails,
-                    privacy: e.target.value,
-                  });
-                }}
-                className={`bg-[#1c1c1c] border border-[#333] outline-none rounded-lg px-3 py-2 text-sm ${
-                  selectedProjectDetails?.privacy === ""
-                    ? "text-[#808080]"
-                    : "text-gray-200"
-                }`}
-              >
-                <option value="">--Select Privacy--</option>
-                <option value="private">Private</option>
-                <option value="public">Public</option>
-              </select>
-            </div>
+              {/* Dates */}
+              <div className="flex flex-col pt-3">
+                <label className="text-gray-300 text-sm mb-1">Created At</label>
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    value={
+                      selectedProjectDetails?.createdAt
+                        ? new Date(selectedProjectDetails.createdAt)
+                            .toISOString()
+                            .split("T")[0]
+                        : ""
+                    }
+                    onChange={(e) => {
+                      setSelectedProjectDetails({
+                        ...selectedProjectDetails,
+                        createdAt: e.target.value,
+                      });
+                    }}
+                    className="bg-[#1c1c1c] border border-[#333] outline-none rounded-lg px-3 py-2 text-sm text-gray-200 flex-1"
+                  />
+                </div>
+              </div>
 
-            {/* Save Button */}
-            <div className="mt-auto pt-3">
-              <button
-                type="submit"
-                className="w-full bg-blue-600 text-white py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-medium hover:bg-blue-700 transition-all shadow"
-              >
-                Save Project
-              </button>
-            </div>
-          </form>
-        </div>
-      </aside>
+              {/* Status */}
+              <div className="flex flex-col pt-3">
+                <label className="text-gray-300 text-sm mb-1">Status</label>
+                <select
+                  name="status"
+                  value={selectedProjectDetails?.status}
+                  required
+                  onChange={(e) => {
+                    setSelectedProjectDetails({
+                      ...selectedProjectDetails,
+                      status: e.target.value,
+                    });
+                  }}
+                  className={`bg-[#1c1c1c] border border-[#333] outline-none rounded-lg px-3 py-2 text-sm ${
+                    selectedProjectDetails?.status === ""
+                      ? "text-[#808080]"
+                      : "text-gray-200"
+                  }`}
+                >
+                  <option value="">--Select Status--</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
 
-      <aside
-        className={`fixed ${
-          mobileSelectedTab ? "w-[90%] md:w-[50%] lg:w-[35%]" : "w-0"
-        } h-[calc(100vh-64px)] right-0 top-20 
+              {/* Privacy */}
+              <div className="flex flex-col pt-3">
+                <label className="text-gray-300 text-sm mb-1">Privacy</label>
+                <select
+                  name="privacy"
+                  value={selectedProjectDetails?.privacy}
+                  required
+                  onChange={(e) => {
+                    setSelectedProjectDetails({
+                      ...selectedProjectDetails,
+                      privacy: e.target.value,
+                    });
+                  }}
+                  className={`bg-[#1c1c1c] border border-[#333] outline-none rounded-lg px-3 py-2 text-sm ${
+                    selectedProjectDetails?.privacy === ""
+                      ? "text-[#808080]"
+                      : "text-gray-200"
+                  }`}
+                >
+                  <option value="">--Select Privacy--</option>
+                  <option value="private">Private</option>
+                  <option value="public">Public</option>
+                </select>
+              </div>
+
+              {/* Save Button */}
+              <div className="mt-auto pt-3">
+                <button
+                  type="submit"
+                  className="w-full bg-blue-600 text-white py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-medium hover:bg-blue-700 transition-all shadow"
+                >
+                  Save Project
+                </button>
+              </div>
+            </form>
+          </div>
+        </aside>
+
+        <aside
+          className={`fixed ${
+            mobileSelectedTab ? "w-[90%] md:w-[50%] lg:w-[35%]" : "w-0"
+          } h-[calc(100vh-64px)] right-0 top-20 
   bg-black/40 backdrop-blur-md 
   transition-all duration-300 ease-in-out overflow-y-scroll pb-2 lg:hidden`}
-      >
-        {/* Project Details */}
-        <DashboardRightNav
-          mobileSelectedTab={mobileSelectedTab}
-          setMobileSelectedTab={setMobileSelectedTab}
-          chatOpen={chatOpen}
-          dbOpen={dbOpen}
-          copyOpen={copyOpen}
-          relationshipsOpen={relationshipsOpen}
-          setChatOpen={setChatOpen}
-          setDbOpen={setDbOpen}
-          setCopyOpen={setCopyOpen}
-          setRelationshipsOpen={setRelationshipsOpen}
-          selectedDb={selectedDb}
-          llmCodeFromServer={llmCodeFromServer}
-        />
-        <Chat
-          chatOpen={chatOpen}
-          autoScroll={autoScroll}
-          chatMessages={chatMessages}
-          chatContainerRef={chatContainerRef}
-          handleScroll={handleScroll}
-          bottomRef={bottomRef}
-        />
-        <DatabaseOpen dbOpen={dbOpen} selectedDbData={selectedDbData} />
-        <CodeCopyOpen
-          llmCodeFromServer={llmCodeFromServer}
-          copyOpen={copyOpen}
-        />
-        <RelationShipDbOpen
-          relationshipsOpen={relationshipsOpen}
-          edges={edges}
-          setSelectedRelationshipId={setSelectedRelationshipId}
-          setEdges={setEdges}
-          selectedRelationshipId={selectedRelationshipId}
-        />
-      </aside>
-    </div>
-  );
+        >
+          {/* Project Details */}
+          <DashboardRightNav
+            mobileSelectedTab={mobileSelectedTab}
+            setMobileSelectedTab={setMobileSelectedTab}
+            chatOpen={chatOpen}
+            dbOpen={dbOpen}
+            copyOpen={copyOpen}
+            relationshipsOpen={relationshipsOpen}
+            setChatOpen={setChatOpen}
+            setDbOpen={setDbOpen}
+            setCopyOpen={setCopyOpen}
+            setRelationshipsOpen={setRelationshipsOpen}
+            selectedDb={selectedDb}
+            llmCodeFromServer={llmCodeFromServer}
+          />
+          <Chat
+            chatOpen={chatOpen}
+            autoScroll={autoScroll}
+            chatMessages={chatMessages}
+            chatContainerRef={chatContainerRef}
+            handleScroll={handleScroll}
+            bottomRef={bottomRef}
+          />
+          <DatabaseOpen dbOpen={dbOpen} selectedDbData={selectedDbData} />
+          <CodeCopyOpen
+            llmCodeFromServer={llmCodeFromServer}
+            copyOpen={copyOpen}
+          />
+          <RelationShipDbOpen
+            relationshipsOpen={relationshipsOpen}
+            edges={edges}
+            setSelectedRelationshipId={setSelectedRelationshipId}
+            setEdges={setEdges}
+            selectedRelationshipId={selectedRelationshipId}
+          />
+        </aside>
+
+        {showShare && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-md flex items-center justify-center z-[99999999999] p-4"
+            onClick={() => setShowShare(false)}
+          >
+            <div
+              className="bg-[#171717] rounded-2xl shadow-xl p-6 w-full max-w-md relative"
+              onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
+            >
+              <h2 className="text-xl text-white font-semibold mb-4 text-center">
+                Share This Link
+              </h2>
+
+              {shareLoader ? (
+                <div className="flex justify-center items-center py-8">
+                  <SpinnerLoader clr="white" />
+                </div>
+              ) : (
+                <>
+                  <p className="text-gray-400 text-center break-all">
+                    {shareLink}
+                  </p>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(shareLink);
+                      toast.success("Copied to clipboard");
+                    }}
+                    className="mt-6 w-full bg-black text-white py-2 rounded-xl hover:bg-gray-800 transition-all"
+                  >
+                    Copy to clipboard
+                  </button>
+                </>
+              )}
+
+              <button
+                onClick={() => setShowShare(false)}
+                className="absolute top-3 right-3 text-gray-300 hover:text-gray-100 text-lg"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 };
 
 export default Dashboard;
