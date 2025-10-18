@@ -1867,9 +1867,9 @@ const Dashboard = () => {
                     </div>
 
                     {/* Plus Button */}
-                    <button className="w-8 h-8 flex items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]">
+                    {/* <button className="w-8 h-8 flex items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]">
                       +
-                    </button>
+                    </button> */}
 
                     {/* Share Button */}
                     <button
