@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { io } from "socket.io-client";
+
 import { v4 as uuidv4 } from "uuid";
 import ReactFlow, {
   Background,
@@ -22,6 +23,7 @@ import {
   CloudLightning,
   Copy,
   DatabaseZap,
+  Download,
   Menu,
   Search,
   SearchIcon,
@@ -67,6 +69,7 @@ import {
 import { setCurrentProjectId } from "../redux/slice/projectSlice";
 import { setChatScroll } from "../redux/slice/scrollSlice";
 import { setGitAuth } from "../redux/slice/repoSlice";
+import { exportProject } from "../utils/exportHelper";
 
 const TableNode = ({ data }) => {
   const {
@@ -216,6 +219,7 @@ const Dashboard = () => {
   const [index, setIndex] = useState(0);
   const { id } = useParams();
   const navigate = useNavigate();
+  const rfInstance = useRef(null);
   const [isEditingDbCall, setIsEditingDbCall] = useState(false);
   const socket = useSelector((state) => state?.project?.socket);
   const monacoSlice = useSelector((state) => state?.monaco);
@@ -1869,16 +1873,24 @@ const Dashboard = () => {
                     </div>
 
                     {/* Plus Button */}
-                    {/* <button className="w-8 h-8 flex items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]">
-                      +
-                    </button> */}
+                    <button
+                      onClick={() => {
+                        exportProject(
+                          rfInstance,
+                          monacoSlice.tree,
+                          llmCodeFromServer
+                        );
+                      }}
+                      className="w-8 h-8 flex items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]"
+                    >
+                      <Download className="w-4 h-4" />
+                    </button>
 
                     {/* Share Button */}
                     <button
                       onClick={handleShare}
                       className="w-8 h-8 flex items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]"
                     >
-                    
                       <Share2 className="w-4 h-4" />
                     </button>
                     <button
@@ -1889,7 +1901,10 @@ const Dashboard = () => {
                     </button>
                   </div>
                 </div>
-                <div className="flex-1 h-full w-full bg-[#171717] rounded-lg flex-shrink-0">
+                <div
+                  ref={rfInstance}
+                  className="flex-1 h-full w-full bg-[#171717] rounded-lg flex-shrink-0"
+                >
                   {loadingSlice?.setEntityLoading ? (
                     <div className="flex items-center justify-center w-full h-full">
                       <SpinnerLoader />
