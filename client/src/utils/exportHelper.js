@@ -1,13 +1,9 @@
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { toPng } from "html-to-image";
+import toast from "react-hot-toast";
 
-/**
- * Export a ReactFlow diagram along with code tree and server code as a ZIP file
- * @param {React.RefObject} rfWrapperRef - Ref to the container wrapping ReactFlow
- * @param {Array|Object} codeTree - Code tree structure with files/folders
- * @param {string} servercode - Full database/server code
- */
+
 export const exportProject = async (rfWrapperRef, codeTree, servercode) => {
   if (!rfWrapperRef || !rfWrapperRef.current) {
     console.error("ReactFlow wrapper ref not provided or invalid!");
@@ -24,7 +20,7 @@ export const exportProject = async (rfWrapperRef, codeTree, servercode) => {
         cacheBust: true,
         backgroundColor: "#171717",
         pixelRatio: 3,
-          // Force default font to avoid cross-origin font issues
+        // Force default font to avoid cross-origin font issues
         style: {
           fontFamily: "Arial, sans-serif",
         },
@@ -69,6 +65,7 @@ export const exportProject = async (rfWrapperRef, codeTree, servercode) => {
     const content = await zip.generateAsync({ type: "blob" });
     saveAs(content, "project-export.zip");
 
+    toast.success("Project exported successfully!");
     console.log("Project export completed successfully!");
   } catch (err) {
     console.error("Error exporting project:", err);
