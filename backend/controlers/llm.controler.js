@@ -15,7 +15,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 export const createDBWithLlmCall = async (req, res) => {
   let it;
   console.log("Received create db with llm call");
-  
+
   try {
     const { prompt, message, projectId } = req.body;
     const userId = req.user?._id;
@@ -417,7 +417,7 @@ User says: "E-commerce platform" (no DB specified):
 export const EditDbWithLLmCall = async (req, res) => {
   let it;
   try {
-    const { message, projectId, nodes, edges } = req.body;
+    const { message, projectId, nodes, edges, history } = req.body;
     console.log(message);
     const userId = req.user?._id;
     pubClient.publish("userChat", JSON.stringify({ message, projectId }));
@@ -440,7 +440,7 @@ export const EditDbWithLLmCall = async (req, res) => {
     }
     const chat = ai.chats.create({
       model: "gemini-2.5-flash",
-      history: [],
+      history: history.length > 0 ? history : [],
       config: {
         systemInstruction: `
 
@@ -792,12 +792,17 @@ IMPORTANT:
       },
     });
     const response = await chat.sendMessage({
-      message: JSON.stringify({
-        projectId: projectId,
-        entities: nodes,
-        relationships: edges,
-        RequiredChanges: message,
-      }),
+      message:
+        history && history.length > 0
+          ? JSON.stringify({
+              RequiredChanges: message,
+            })
+          : JSON.stringify({
+              projectId: projectId,
+              entities: nodes,
+              relationships: edges,
+              RequiredChanges: message,
+            }),
     });
     if (it) {
       clearInterval(it);

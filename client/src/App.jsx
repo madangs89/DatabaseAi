@@ -12,9 +12,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import EditorPage from "./pages/EditorPage";
-import ProjectSetting from "./pages/ProjectSetting";
-import AccountSetting from "./pages/AccountSetting";
-import VersionHistory from "./pages/VersionHistory";
+
 import LocomotiveScroll from "locomotive-scroll";
 import { ReactFlowProvider } from "reactflow";
 import ProtectedRoute from "./protected/ProtectedRoute";
@@ -84,7 +82,7 @@ const App = () => {
     dispatch(setPageLoading(true));
     (async () => {
       const data = await axios.get(
-        `http://localhost:5000/auth/get-current-user`,
+        `${import.meta.env.VITE_BACKEND_URL}/auth/get-current-user`,
         {
           withCredentials: true,
         }
@@ -127,9 +125,6 @@ const App = () => {
               </ReactFlowProvider>
             }
           />
-          <Route path="/project/:id/settings" element={<ProjectSetting />} />
-          <Route path="/project/:id/history" element={<VersionHistory />} />
-          <Route path="/account" element={<AccountSetting />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="*" element={<h1>404 - Page Not Found</h1>} />
         </Routes>

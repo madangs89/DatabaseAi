@@ -109,12 +109,25 @@ const TreeNode = ({
   expandedFiles,
   openFile,
   selectedFile,
+  projectId,
+  localHistoryofCodeChanges,
 }) => {
   const isFolder = nodes.type === "folder";
   const isOpen = isFolder && expandedFiles.includes(nodes.id);
 
   // Indentation for tree levels
   const indentStyle = { paddingLeft: `${level * 16}px` };
+
+  const isEdited = () => {
+    const isExits = localHistoryofCodeChanges[projectId];
+    let isTrue = false;
+    if (isExits && isExits.length > 0) {
+      isTrue = isExits.find((d) => {
+        d == nodes?.id;
+      });
+    }
+    return isTrue;
+  };
 
   return (
     <div className="flex flex-col">
@@ -145,7 +158,13 @@ const TreeNode = ({
         ) : (
           <>
             <File className="w-4 h-4 ml-4" />
-            <span className="truncate">{nodes.name}</span>
+            <span
+              className={`truncate ${
+                isEdited() ? "text-yellow-200" : "text-white"
+              }`}
+            >
+              {nodes.name}
+            </span>
           </>
         )}
       </div>
@@ -158,6 +177,8 @@ const TreeNode = ({
               key={child.id}
               nodes={child}
               level={level + 1}
+              projectId={projectId}
+              localHistoryofCodeChanges={localHistoryofCodeChanges}
               toggleExpandable={toggleExpandable}
               expandedFiles={expandedFiles}
               openFile={openFile}
@@ -203,6 +224,10 @@ const MonacoEditor = () => {
   const [addLicense, setAddLicense] = useState(false);
   const [gitLoader, setGitLoader] = useState(false);
 
+  const [localHistoryofCodeChanges, setLocalHistoryofCodeChanges] = useState(
+    {}
+  );
+
   const handleLanguage = (name) => {
     if (name && name.length > 2) {
       if (name.endsWith(".js")) return "javascript";
@@ -222,6 +247,32 @@ const MonacoEditor = () => {
     if (!selectedFile.name || !selectedFile.id) {
       return;
     }
+    let previousHistory = localStorage.getItem("localHistoryofCodeChanges");
+    if (previousHistory) {
+      previousHistory = JSON.parse(previousHistory);
+      const isThere = previousHistory[id];
+      if (isThere) {
+        const isIdExitsInSavedLocalStorage = previousHistory[id].find(
+          (i) => i == selectedFile.id
+        );
+        if (!isIdExitsInSavedLocalStorage) {
+          previousHistory[id] = [...previousHistory[id], selectedFile.id];
+        }
+      } else {
+        previousHistory[id] = [selectedFile.id];
+      }
+
+      localStorage.setItem(
+        "localHistoryofCodeChanges",
+        JSON.stringify(previousHistory)
+      );
+      setLocalHistoryofCodeChanges(previousHistory);
+    } else {
+      let data = {};
+      data[id] = [selectedFile.id];
+      localStorage.setItem("localHistoryofCodeChanges", JSON.stringify(data));
+      setLocalHistoryofCodeChanges(data);
+    }
     dispatch(handleUpdateFileMonacoSlice({ selectedFile, content }));
   };
 
@@ -240,6 +291,19 @@ const MonacoEditor = () => {
       if (data?.data?.success) {
         dispatch(setChangeToCode(false));
         toast.success("Code saved successfully");
+        if (
+          localHistoryofCodeChanges &&
+          localHistoryofCodeChanges[id] &&
+          localHistoryofCodeChanges[id].length > 0
+        ) {
+          let data = { ...localHistoryofCodeChanges };
+          delete data[id];
+          localStorage.setItem(
+            "localHistoryofCodeChanges",
+            JSON.stringify(data)
+          );
+          setLocalHistoryofCodeChanges(data);
+        }
       }
     } catch (error) {
       console.log(error);
@@ -256,7 +320,7 @@ const MonacoEditor = () => {
       url = `${import.meta.env.VITE_FRONTEND_URL}${location?.pathname}`;
       localStorage.setItem("redirectUrl", JSON.stringify(url));
     }
-    const REDIRECT_URI = "http://localhost:5173/auth/callback";
+    const REDIRECT_URI = import.meta.env.VITE_REDIRECT_URI;
     const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${
       import.meta.env.VITE_GIT_CLIENT_ID
     }&redirect_uri=${REDIRECT_URI}&scope=repo,user`;
@@ -337,6 +401,14 @@ const MonacoEditor = () => {
   ]);
 
   useEffect(() => {
+    let previousHistory = localStorage.getItem("localHistoryofCodeChanges");
+    if (previousHistory) {
+      previousHistory = JSON.parse(previousHistory);
+      setLocalHistoryofCodeChanges(previousHistory);
+    }
+  }, []);
+
+  useEffect(() => {
     (async () => {
       try {
         setLoading(true);
@@ -403,6 +475,8 @@ const MonacoEditor = () => {
                 tree.map((item) => (
                   <TreeNode
                     key={item.id}
+                    projectId={id}
+                    localHistoryofCodeChanges={localHistoryofCodeChanges}
                     toggleExpandable={(id) => dispatch(toggleExpandable(id))}
                     expandedFiles={expandedFiles}
                     nodes={item}

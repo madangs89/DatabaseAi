@@ -25,7 +25,7 @@ import {
 import toast from "react-hot-toast";
 import PageLoader from "../components/loaders/PageLoader";
 import SpinnerLoader from "../components/loaders/SpinnerLoader";
-import { setAuthFalse } from "../redux/slice/authSlice";
+import { setAuthFalse, setUsageToken } from "../redux/slice/authSlice";
 export default function Project() {
   // const [projects, setProjects] = useState(dummyProjects);
   const projects = useSelector((state) => state?.project?.projects);
@@ -314,6 +314,25 @@ export default function Project() {
     }
   }, [auth.isAuth]);
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/usage`,
+          {
+            withCredentials: true,
+          }
+        );
+        if (res?.data?.success) {
+          dispatch(setUsageToken(res?.data?.data?.totalTokens));
+        }
+      } catch (error) {
+        console.log(error);
+        dispatch(setUsageToken(0));
+      }
+    })();
+  }, []);
+
   return (
     <div className="bg-black relative border-none text-gray-200 h-screen flex flex-col">
       {/* Header */}
@@ -371,20 +390,22 @@ export default function Project() {
 
           {/* Account Actions */}
           <div className="flex flex-col gap-2">
-            {/* <button
-              onClick={() => navigate("/profile")}
-              className="text-gray-300 text-sm text-left px-2 py-1 hover:bg-[#222] rounded-md transition"
-            >
-              View Profile
-            </button>
+            <div className="flex flex-col">
+              <p className="text-white text-sm font-semibold">
+                {"Token Usage (1Lk Tokens Free)"}
+              </p>
+              <div className="w-56 h-3 rounded-full cursor-pointer bg-white">
+                <div
+                  className={`h-full rounded-full bg-red-500 w-[${
+                    (auth?.usageToken / 100000) * 100 > 100
+                      ? 100
+                      : (auth?.usageToken / 100000) * 100
+                  }%]`}
+                ></div>
+              </div>
+            </div>
             <button
-              onClick={() => navigate("/settings")}
-              className="text-gray-300 text-sm text-left px-2 py-1 hover:bg-[#222] rounded-md transition"
-            >
-              Account Settings
-            </button> */}
-            <button
-              onClick={handleLogout} // replace with real logout logic
+              onClick={handleLogout}
               className="text-red-400 text-sm text-left px-2 py-1 hover:bg-[#222] rounded-md transition"
             >
               Log Out

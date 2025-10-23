@@ -261,6 +261,7 @@ const Dashboard = () => {
     },
   ];
 
+  const [editLlmHistory, setEditLlmHistory] = useState([]);
   // Convert to nodes
   const initialNodes = tableData.map((t) => ({
     id: t.id,
@@ -400,11 +401,27 @@ const Dashboard = () => {
             projectId: id,
             nodes: formatedNode,
             edges: edges,
+            history: editLlmHistory.length > 0 ? editLlmHistory : [],
           },
           {
             withCredentials: true,
           }
         );
+        setEditLlmHistory((prev) => [
+          ...prev,
+          { role: "user", parts: [{ text: inn }] },
+        ]);
+        setEditLlmHistory((prev) => [
+          ...prev,
+          {
+            role: "model",
+            parts: [
+              {
+                text: JSON.stringify(EditQuery?.data?.data),
+              },
+            ],
+          },
+        ]);
         console.log(EditQuery.data);
         if (EditQuery?.data?.success) {
           console.log(EditQuery.data.data);
@@ -1771,6 +1788,14 @@ const Dashboard = () => {
 
   const handleShare = async () => {
     setShowShare(true);
+    if (
+      selectedProjectDetails &&
+      selectedProjectDetails?.privacy == "private"
+    ) {
+      return toast.error(
+        "Your Project privacy is in private please make this to public by editing project details to make this project to share"
+      );
+    }
     try {
       setShareLoader(true);
 

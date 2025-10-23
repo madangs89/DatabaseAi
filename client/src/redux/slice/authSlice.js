@@ -4,6 +4,7 @@ const initialState = {
   isAuthButtonClicked: false,
   isAuth: false,
   user: null,
+  usageToken: 0,
 };
 
 export const authSlice = createSlice({
@@ -24,6 +25,9 @@ export const authSlice = createSlice({
       state.isAuth = false;
       state.user = null;
     },
+    setUsageToken: (state, action) => {
+      state.usageToken = action.payload;
+    },
   },
 });
 
@@ -33,6 +37,7 @@ export const {
   setIsAuthButtonClickedFalse,
   setAuthTrue,
   setAuthFalse,
+  setUsageToken,
 } = authSlice.actions;
 
 export const authReducer = authSlice.reducer;

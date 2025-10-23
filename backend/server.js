@@ -15,6 +15,7 @@ import schemaRouter from "./routes/schema.routes.js";
 import conversationRouter from "./routes/conversation.routes.js";
 import repoRouter from "./routes/repo.router.js";
 import shareRouter from "./routes/share.routes.js";
+import usageRouter from "./routes/usage.router.js";
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 app.use(express.json());
 app.use(
@@ -36,8 +37,9 @@ app.use("/auth", authRouter);
 app.use("/project", projectRouter);
 app.use("/schema", schemaRouter);
 app.use("/conversation", conversationRouter);
-app.use("/repo" , repoRouter);
-app.use("/share" , shareRouter);
+app.use("/repo", repoRouter);
+app.use("/share", shareRouter);
+app.use("/usage", usageRouter);
 
 console.log("CLIENT ID:", process.env.GOOGLE_CLIENT_ID);
 console.log("CLIENT SECRET:", process.env.GOOGLE_CLIENT_SECRET);

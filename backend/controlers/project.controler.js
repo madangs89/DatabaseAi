@@ -61,7 +61,7 @@ export const getProjectById = async (req, res) => {
   }
 };
 
-// ✅ Update a project
+//  Update a project
 export const updateProject = async (req, res) => {
   try {
     const { id } = req.params;
@@ -96,7 +96,7 @@ export const updateProject = async (req, res) => {
   }
 };
 
-// ✅ Delete a project
+//  Delete a project
 export const deleteProject = async (req, res) => {
   try {
     const id = req.params.id;

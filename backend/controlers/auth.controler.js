@@ -163,6 +163,7 @@ export const oauthLogin = async (req, res) => {
 export const logout = (req, res) => {
   try {
     res.clearCookie("token", { httpOnly: true, sameSite: "lax" });
+    res.clearCookie("gitToken", { httpOnly: true, sameSite: "lax" });
     return res.json({ message: "Logged out successfully", success: true });
   } catch (error) {
     console.error(error);

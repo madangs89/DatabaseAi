@@ -1,10 +1,12 @@
+import dotenv from "dotenv";
+dotenv.config();
 import { GoogleGenAI, Type } from "@google/genai";
 import pubClient from "../app.js";
 import JSON5 from "json5";
 export const ai = new GoogleGenAI({
-  apiKey: "AIzaSyAlWQFfshR0bGzgXGvE2fs4QeU3__D42lg",
+  apiKey: process.env.GOOGLE_SECRET,
 });
-
+// "AIzaSyAlWQFfshR0bGzgXGvE2fs4QeU3__D42lg"
 function customParse(raw) {
   const result = {};
 
