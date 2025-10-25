@@ -17,7 +17,7 @@ import repoRouter from "./routes/repo.router.js";
 import shareRouter from "./routes/share.routes.js";
 import usageRouter from "./routes/usage.router.js";
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 app.use(
   cors({
     origin: process.env.FRONTEND_URL,
@@ -26,7 +26,8 @@ app.use(
   })
 );
 app.use(cookieParser());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
+
 
 app.get("/", (req, res) => {
   res.send("Hello World");

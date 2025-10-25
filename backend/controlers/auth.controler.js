@@ -27,7 +27,7 @@ const setTokenCookie = (res, token) => {
   res.cookie("token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production", // use https in prod
-    sameSite: "lax", // works for localhost
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax", // works for localhost
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 };
@@ -162,8 +162,8 @@ export const oauthLogin = async (req, res) => {
 // ==================== Logout ====================
 export const logout = (req, res) => {
   try {
-    res.clearCookie("token", { httpOnly: true, sameSite: "lax" });
-    res.clearCookie("gitToken", { httpOnly: true, sameSite: "lax" });
+    res.clearCookie("token", { httpOnly: true, sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax", });
+    res.clearCookie("gitToken", { httpOnly: true, sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax", });
     return res.json({ message: "Logged out successfully", success: true });
   } catch (error) {
     console.error(error);
@@ -258,7 +258,7 @@ export const gitLogin = async (req, res) => {
     res.cookie("gitToken", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production", // use https in prod
-      sameSite: "lax", // works for localhost
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax", // works for localhost
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 

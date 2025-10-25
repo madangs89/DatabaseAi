@@ -221,7 +221,7 @@ You will never ask for clarifications , by understanding provided details, you m
       })
     );
 
-    if (json?.entities?.length > 0) {
+    if (json?.entities && json?.entities?.length > 0) {
       await client.set(smallLLMResponse?.dbConvKey, JSON.stringify(json));
     }
 
