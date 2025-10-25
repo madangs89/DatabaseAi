@@ -210,6 +210,7 @@ const SharedDashboard = () => {
   let { aiPrompt } = location.state || {};
   const auth = useSelector((state) => state?.auth);
   const initialScrollDone = useRef(false);
+  const [downLoadButtonLoading, setDownLoadButtonLoading] = useState(false);
   const endRef = useRef(null);
   const dispatch = useDispatch();
   const [isWritting, setIsWritting] = useState(false);
@@ -620,51 +621,6 @@ const SharedDashboard = () => {
   //   }
   // }, [auth.isAuth]);
 
-  const handleShare = async () => {
-    if (
-      selectedProjectDetails &&
-      selectedProjectDetails?.privacy == "private"
-    ) {
-      toast.error(
-        "This project is private. Edit the project settings to make it public and shareable."
-      );
-
-      return;
-    }
-    setShowShare(true);
-    try {
-      setShareLoader(true);
-
-      const shareData = await axios.post(
-        `
-        ${import.meta.env.VITE_BACKEND_URL}/share`,
-        {
-          projectId: id,
-        },
-        {
-          withCredentials: true,
-        }
-      );
-
-      if (shareData?.data?.success) {
-        setShareLink(
-          `${import.meta.env.VITE_FRONTEND_URL}/share/${
-            shareData?.data?.share?.projectId
-          }/${shareData?.data?.share?.userId}/${shareData?.data?.share?._id}`
-        );
-      }
-      console.log(shareData);
-
-      setShareLoader(false);
-    } catch (error) {
-      console.log(error);
-      setShareLoader(false);
-      toast.error("Unable to share project, please Try again!!");
-      setShowShare(false);
-    } finally {
-      setShareLoader(false);
-    }
-  };
 
   useEffect(() => {
     (async () => {
@@ -746,12 +702,17 @@ const SharedDashboard = () => {
                         exportProject(
                           rfInstance,
                           monacoSlice.tree,
-                          llmCodeFromServer
+                          llmCodeFromServer,
+                          setDownLoadButtonLoading
                         );
                       }}
                       className="w-8 h-8 flex items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]"
                     >
-                      <Download className="w-4 h-4" />
+                      {downLoadButtonLoading ? (
+                        <SpinnerLoader />
+                      ) : (
+                        <Download className="w-4 h-4" />
+                      )}
                     </button>
 
                     <button
@@ -889,8 +850,6 @@ const SharedDashboard = () => {
             selectedRelationshipId={selectedRelationshipId}
           />
         </aside>
-
-        
       </div>
     );
   }
