@@ -31,6 +31,14 @@ const pubClient = createClient({
 
 pubClient.on("error", (err) => console.log("Redis pubClient Error", err));
 
+pubClient.on("connect", () => {
+  console.log("pubClient: attempting to connect...");
+});
+
+pubClient.on("ready", () => {
+  console.log("pubClient: fully connected and ready!");
+});
+
 await pubClient.connect();
 
 const subClient = pubClient.duplicate();
