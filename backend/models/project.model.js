@@ -5,7 +5,7 @@ const ProjectSchema = new mongoose.Schema(
     title: { type: String, required: true },
     description: String,
     privacy: { type: String, enum: ["private", "public"], default: "private" },
-    status: { type: String, enum: ["active", "inactive"], default: "active" },
+    status: { type: String, enum: ["active", "inactive" , "completed"], default: "active" },
   },
   { timestamps: true }
 );
