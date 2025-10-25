@@ -396,11 +396,14 @@ export default function Project() {
               </p>
               <div className="w-56 h-3 rounded-full cursor-pointer bg-white">
                 <div
-                  className={`h-full rounded-full bg-red-500 w-[${
-                    (auth?.usageToken / 100000) * 100 > 100
-                      ? 100
-                      : (auth?.usageToken / 100000) * 100
-                  }%]`}
+                  className="h-full rounded-full bg-red-500"
+                  style={{
+                    width: `${
+                      (auth?.usageToken / 100000) * 100 > 100
+                        ? 100
+                        : (auth?.usageToken / 100000) * 100
+                    }%`,
+                  }}
                 ></div>
               </div>
             </div>

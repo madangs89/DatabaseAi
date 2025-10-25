@@ -8,11 +8,7 @@ import {
 } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Hero from "./pages/Hero";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
-import EditorPage from "./pages/EditorPage";
-
 import LocomotiveScroll from "locomotive-scroll";
 import { ReactFlowProvider } from "reactflow";
 import ProtectedRoute from "./protected/ProtectedRoute";
@@ -126,7 +122,16 @@ const App = () => {
             }
           />
           <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="*" element={<h1>404 - Page Not Found</h1>} />
+          <Route
+            path="*"
+            element={
+              <div className="w-full h-screen bg-black flex items-center justify-center ">
+                <h1 className="bg-white text-black px-3 py-2 capitalize">
+                  404 - Page Not Found
+                </h1>
+              </div>
+            }
+          />
         </Routes>
       </div>
     </div>

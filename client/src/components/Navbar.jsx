@@ -22,9 +22,9 @@ const Navbar = () => {
     return (
       <nav className="fixed top-0 text-white left-0 w-full z-50  ">
         {/* bg-black/30 backdrop-blur-md */}
-        <div className="max-w-7xl mx-auto flex items-center pr-1 py-2 justify-between md:px-6 md:py-3">
+        <div className="max-w-7xl mx-auto flex items-center px-3 py-2 justify-between md:px-6 md:py-3">
           {/* Logo */}
-          <div className="flex items-center gap-3 cursor-pointer">
+          <div className="flex items-center lg:gap-3 gap-1  cursor-pointer">
             <svg
               className="text-white"
               fill="none"

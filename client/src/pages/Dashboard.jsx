@@ -1787,15 +1787,17 @@ const Dashboard = () => {
   }, []);
 
   const handleShare = async () => {
-    setShowShare(true);
     if (
       selectedProjectDetails &&
       selectedProjectDetails?.privacy == "private"
     ) {
-      return toast.error(
+      toast.error(
         "Your Project privacy is in private please make this to public by editing project details to make this project to share"
       );
+
+      return;
     }
+    setShowShare(true);
     try {
       setShareLoader(true);
 

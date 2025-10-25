@@ -27,81 +27,6 @@ import { setCurrentRepoDetails, setGitAuth } from "../redux/slice/repoSlice";
 import SpinnerLoader from "./loaders/SpinnerLoader";
 import CommitModal from "./modal/CommitModal";
 
-const fakeTreeStructure = {
-  "package.json": `{
-  "name": "fake-project",
-  "version": "1.0.0",
-  "scripts": {
-    "start": "node index.js",
-    "test": "jest"
-  },
-  "dependencies": {
-    "react": "^18.0.0"
-  }
-}`,
-  "README.md": `# Fake Project
-This is a fake project structure for testing your editor and tree view.`,
-  "index.js": `import { greet } from "./src/utils/greet.js";
-console.log(greet("World"));`,
-  "src/app.js": `import React from "react";
-import Header from "./components/Header.jsx";
-import Button from "./components/Button.jsx";
-
-export default function App() {
-  return (
-    <div>
-      <Header />
-      <Button label="Click Me" />
-    </div>
-  );
-}`,
-  "src/components/Header.jsx": `import React from "react";
-export default function Header() {
-  return <h1>Welcome to Fake Project</h1>;
-}`,
-  "src/components/Button.jsx": `import React from "react";
-export default function Button({ label }) {
-  return <button>{label}</button>;
-}`,
-  "src/utils/greet.js": `export function greet(name) {
-  return "Hello, " + name + "!";
-}`,
-  "src/styles/global.css": `body { 
-  font-family: Arial, sans-serif; 
-  background-color: #f5f5f5; 
-  color: #333; 
-}`,
-  "src/styles/button.css": `.button { 
-  padding: 8px 16px; 
-  background-color: #007bff; 
-  color: white; 
-  border-radius: 4px; 
-}`,
-  "controller/auth.js": `export function login(user, pass) {
-  return user === "admin" && pass === "1234";
-}`,
-  "controller/user.js": `export function getUser() {
-  return { id: 1, name: "John Doe" };
-}`,
-  "controller/user/auth/user.js": `export function authUser(userId) {
-  return userId === 1 ? "Authenticated" : "Not Authenticated";
-}`,
-  "assets/logo.png": "FAKE_IMAGE_DATA_BASE64_OR_PATH",
-  "assets/background.jpg": "FAKE_IMAGE_DATA_BASE64_OR_PATH",
-  "tests/app.test.js": `import { greet } from "../src/utils/greet.js";
-
-test("greet function", () => {
-  expect(greet("Alice")).toBe("Hello, Alice!");
-});`,
-  "tests/button.test.js": `import { render } from "@testing-library/react";
-import Button from "../src/components/Button.jsx";
-
-test("Button renders with label", () => {
-  const { getByText } = render(<Button label="Click Me" />);
-  expect(getByText("Click Me")).toBeInTheDocument();
-});`,
-};
-
 const TreeNode = ({
   nodes,
   level = 0,
@@ -119,14 +44,9 @@ const TreeNode = ({
   const indentStyle = { paddingLeft: `${level * 16}px` };
 
   const isEdited = () => {
-    const isExits = localHistoryofCodeChanges[projectId];
-    let isTrue = false;
-    if (isExits && isExits.length > 0) {
-      isTrue = isExits.find((d) => {
-        d == nodes?.id;
-      });
-    }
-    return isTrue;
+    const projectHistory = localHistoryofCodeChanges[projectId];
+    if (!projectHistory || projectHistory.length === 0) return false;
+    return projectHistory.includes(nodes?.id);
   };
 
   return (
