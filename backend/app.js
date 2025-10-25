@@ -29,8 +29,15 @@ const pubClient = createClient({
 });
 const subClient = pubClient.duplicate();
 
-await pubClient.connect();
-await subClient.connect();
+pubClient.on("error", (err) => console.log("Redis pubClient Error", err));
+subClient.on("error", (err) => console.log("Redis subclient Error", err));
+
+try {
+  await pubClient.connect();
+  await subClient.connect();
+} catch (error) {
+  console.error("Error connecting to Redis:", error);
+}
 
 console.log(process.env.REDIS_URL, "REDIS_URL");
 console.log(process.env.FRONTEND_URL, "FRONTEND_URL");
@@ -38,8 +45,6 @@ console.log(process.env.FRONTEND_URL, "FRONTEND_URL");
 console.log("Connected to Redis server");
 
 io.adapter(createAdapter(pubClient, subClient));
-
-pubClient.on("error", (err) => console.log("Redis Client Error", err));
 
 io.on("connection", (socket) => {
   const userId = socket.handshake.auth.userId;
