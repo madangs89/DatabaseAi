@@ -21,10 +21,10 @@ export const io = new Server(httpServer, {
 });
 
 const pubClient = createClient({
-  url: process.env.REDIS_URL,
+  url: "rediss://default:ASVBAAImcDIxZDZjZDhmMmM5OTg0NzRjOTBjMWVkNDIyMGI5ZTMwNnAyOTUzNw@relaxing-mongrel-9537.upstash.io:6379",
   socket: {
-    tls: true, // ✅ important for rediss://
-    reconnectStrategy: (retries) => Math.min(retries * 50, 500), // optional retry logic
+    tls: true,
+    reconnectStrategy: (retries) => Math.min(retries * 50, 500),
   },
 });
 const subClient = pubClient.duplicate();
@@ -32,8 +32,8 @@ const subClient = pubClient.duplicate();
 await pubClient.connect();
 await subClient.connect();
 
-console.log(process.env.REDIS_URL , "REDIS_URL");
-console.log(process.env.FRONTEND_URL , "FRONTEND_URL");
+console.log(process.env.REDIS_URL, "REDIS_URL");
+console.log(process.env.FRONTEND_URL, "FRONTEND_URL");
 
 console.log("Connected to Redis server");
 
