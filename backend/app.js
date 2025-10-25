@@ -1,13 +1,12 @@
+import dotenv from "dotenv";
+dotenv.config();
 import { createServer } from "http";
 import { Server } from "socket.io";
 import express from "express";
-import dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
-dotenv.config();
 export const app = express();
 export const httpServer = createServer(app);
 import { createClient } from "redis";
-
 import { createAdapter } from "@socket.io/redis-adapter";
 import Conversation from "./models/conversatoin.model.js";
 import SchemaVersion from "./models/schema.model.js";
@@ -21,10 +20,10 @@ export const io = new Server(httpServer, {
   },
 });
 
-
-
 const pubClient = createClient({
-  url: process.env.REDIS_URL,
+  url:
+    "rediss://default:ASVBAAImcDIxZDZjZDhmMmM5OTg0NzRjOTBjMWVkNDIyMGI5ZTMwNnAyOTUzNw@relaxing-mongrel-9537.upstash.io:6379" ||
+    process.env.REDIS_URL,
   socket: {
     tls: true, // ✅ important for rediss://
     reconnectStrategy: (retries) => Math.min(retries * 50, 500), // optional retry logic
@@ -34,6 +33,9 @@ const subClient = pubClient.duplicate();
 
 await pubClient.connect();
 await subClient.connect();
+
+console.log(process.env.REDIS_URL , "REDIS_URL");
+console.log(process.env.FRONTEND_URL , "FRONTEND_URL");
 
 console.log("Connected to Redis server");
 
