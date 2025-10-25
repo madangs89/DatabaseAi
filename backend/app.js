@@ -21,8 +21,7 @@ export const io = new Server(httpServer, {
 });
 
 const pubClient = createClient({
-  url:
-    "rediss://default:ASVBAAImcDIxZDZjZDhmMmM5OTg0NzRjOTBjMWVkNDIyMGI5ZTMwNnAyOTUzNw@relaxing-mongrel-9537.upstash.io:6379",
+  url: process.env.REDIS_URL,
   socket: {
     tls: true, // ✅ important for rediss://
     reconnectStrategy: (retries) => Math.min(retries * 50, 500), // optional retry logic
