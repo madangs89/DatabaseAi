@@ -16,7 +16,7 @@ import Repo from "./models/repos.model.js";
 
 export const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL,
+    origin: "http://localhost:5173",
   },
 });
 
