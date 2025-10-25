@@ -17,6 +17,7 @@ createRoot(document.getElementById("root")).render(
         <App />
         <Toaster
           position="top-center"
+            containerStyle={{ zIndex: 9999999999999 }} 
           toastOptions={{
             success: {
               style: {
