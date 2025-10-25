@@ -21,7 +21,10 @@ export const isGitAuth = async (req, res) => {
 
 export const handleGitLogout = async (req, res) => {
   try {
-    res.clearCookie("gitToken", { httpOnly: true, sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax", });
+    res.clearCookie("gitToken", {
+      httpOnly: true,
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    });
     return res.json({ message: "Logged out successfully", success: true });
   } catch (error) {
     console.error(error);
