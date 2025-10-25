@@ -21,7 +21,15 @@ export const io = new Server(httpServer, {
   },
 });
 
-const pubClient = createClient({ url: process.env.REDIS_URL });
+
+
+const pubClient = createClient({
+  url: process.env.REDIS_URL,
+  socket: {
+    tls: true, // ✅ important for rediss://
+    reconnectStrategy: (retries) => Math.min(retries * 50, 500), // optional retry logic
+  },
+});
 const subClient = pubClient.duplicate();
 
 await pubClient.connect();
@@ -497,7 +505,7 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
           }
           console.log("called get api code function now with nodes");
 
-          const rep = await getApiCodes(nodes, dbConvKey , projectId, userId);
+          const rep = await getApiCodes(nodes, dbConvKey, projectId, userId);
           console.log("got the code back now with nodes");
 
           if (rep) {
