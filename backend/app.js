@@ -22,20 +22,20 @@ export const io = new Server(httpServer, {
 
 const pubClient = createClient({
   url: process.env.REDIS_URL,
+  socket: {
+    connectTimeout: 30000, // 30 seconds
+    tls: true,
+    reconnectStrategy: (retries) => Math.min(retries * 50, 5000),
+  },
 });
-const subClient = pubClient.duplicate();
 
 pubClient.on("error", (err) => console.log("Redis pubClient Error", err));
-subClient.on("error", (err) => console.log("Redis subclient Error", err));
 
-try {
-  await pubClient.connect();
-  await subClient.connect();
-  console.log("connected Both SuccessFully");
-  
-} catch (error) {
-  console.error("Error connecting to Redis:", error);
-}
+await pubClient.connect();
+
+const subClient = pubClient.duplicate();
+subClient.on("error", (err) => console.log("Redis subClient Error", err));
+await subClient.connect();
 
 console.log(process.env.REDIS_URL, "REDIS_URL");
 console.log(process.env.FRONTEND_URL, "FRONTEND_URL");
