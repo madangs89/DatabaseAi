@@ -46,7 +46,7 @@ const TreeNode = ({
   const isEdited = () => {
     const projectHistory = localHistoryofCodeChanges[projectId];
     if (!projectHistory || projectHistory.length === 0) return false;
-    return projectHistory.includes(nodes?.id);
+    return projectHistory.some((item) => item.id === nodes.id);
   };
 
   return (
@@ -143,7 +143,6 @@ const MonacoEditor = () => {
   const [addGitignore, setAddGitignore] = useState(false);
   const [addLicense, setAddLicense] = useState(false);
   const [gitLoader, setGitLoader] = useState(false);
-
   const [localHistoryofCodeChanges, setLocalHistoryofCodeChanges] = useState(
     {}
   );
@@ -162,24 +161,60 @@ const MonacoEditor = () => {
     return "plaintext";
   };
 
+  const handleMonacoValue = (selectedFile, localHistoryofCodeChanges) => {
+    if (!selectedFile) return "// Select a file to view/edit";
+
+    const projectHistory =
+      localHistoryofCodeChanges && localHistoryofCodeChanges[id]
+        ? localHistoryofCodeChanges[id]
+        : [];
+
+    const found = projectHistory.find((i) => i?.id == selectedFile?.id);
+    if (found) {
+      dispatch(
+        handleUpdateFileMonacoSlice({
+          selectedFile,
+          content: found.content,
+        })
+      );
+      return found.content ?? selectedFile?.content ?? "";
+    }
+
+    return selectedFile?.content ?? "";
+  };
+
   const handleUpdate = (selectedFile, content) => {
     console.log("handleUpdate", selectedFile, content);
-    if (!selectedFile.name || !selectedFile.id) {
-      return;
-    }
+    if (!selectedFile || !selectedFile.name || !selectedFile.id) return;
+
+    // Ensure content is string (Monaco can pass null sometimes)
+    const newContent = content ?? "";
+
+    // Update localStorage history
     let previousHistory = localStorage.getItem("localHistoryofCodeChanges");
     if (previousHistory) {
       previousHistory = JSON.parse(previousHistory);
       const isThere = previousHistory[id];
       if (isThere) {
         const isIdExitsInSavedLocalStorage = previousHistory[id].find(
-          (i) => i == selectedFile.id
+          (i) => i.id == selectedFile.id
         );
         if (!isIdExitsInSavedLocalStorage) {
-          previousHistory[id] = [...previousHistory[id], selectedFile.id];
+          previousHistory[id] = [
+            ...previousHistory[id],
+            { id: selectedFile.id, content: newContent },
+          ];
+        } else {
+          const index = previousHistory[id].findIndex(
+            (i) => i?.id == selectedFile?.id
+          );
+          previousHistory[id][index] = {
+            id: selectedFile?.id,
+            content: newContent,
+          };
         }
       } else {
-        previousHistory[id] = [selectedFile.id];
+        previousHistory[id] = [{ id: selectedFile?.id, content: newContent }];
       }
 
       localStorage.setItem(
@@ -189,11 +224,19 @@ const MonacoEditor = () => {
       setLocalHistoryofCodeChanges(previousHistory);
     } else {
       let data = {};
-      data[id] = [selectedFile.id];
+      data[id] = [{ id: selectedFile.id, content: newContent }];
       localStorage.setItem("localHistoryofCodeChanges", JSON.stringify(data));
       setLocalHistoryofCodeChanges(data);
     }
-    dispatch(handleUpdateFileMonacoSlice({ selectedFile, content }));
+
+    // Update selectedFile object so UI/Redux show latest content
+    const updatedFile = { ...selectedFile, content: newContent };
+    dispatch(
+      handleUpdateFileMonacoSlice({
+        selectedFile: updatedFile,
+        content: newContent,
+      })
+    );
   };
 
   const handleSaveClick = async () => {
@@ -292,6 +335,15 @@ const MonacoEditor = () => {
   };
 
   useEffect(() => {
+    const previousHistory = localStorage.getItem("localHistoryofCodeChanges");
+    if (previousHistory) {
+      setLocalHistoryofCodeChanges(JSON.parse(previousHistory));
+    } else {
+      setLocalHistoryofCodeChanges({}); // ensure it's an object
+    }
+  }, [id]);
+
+  useEffect(() => {
     const fetchCommits = async () => {
       try {
         const res = await axios.get(
@@ -319,14 +371,6 @@ const MonacoEditor = () => {
     projectSlice?.currentProjectId,
     repoSlice?.currentRepoName,
   ]);
-
-  useEffect(() => {
-    let previousHistory = localStorage.getItem("localHistoryofCodeChanges");
-    if (previousHistory) {
-      previousHistory = JSON.parse(previousHistory);
-      setLocalHistoryofCodeChanges(previousHistory);
-    }
-  }, []);
 
   useEffect(() => {
     (async () => {
@@ -557,12 +601,11 @@ const MonacoEditor = () => {
                 defaultLanguage="javascript"
                 onChange={(content) => handleUpdate(selectedFile, content)}
                 language={handleLanguage(selectedFile?.name)}
-                value={
-                  selectedFile
-                    ? selectedFile.content
-                    : "// Select a file to view/edit"
-                }
-                defaultValue={`// Welcome to Monaco Editor\nconsole.log("Hello, world!");`}
+                value={handleMonacoValue(
+                  selectedFile,
+                  localHistoryofCodeChanges
+                )}
+                // defaultValue={`// Welcome to Monaco Editor\nconsole.log("Hello, world!");`}
                 options={{
                   fontSize: 15,
                   minimap: { enabled: false },
