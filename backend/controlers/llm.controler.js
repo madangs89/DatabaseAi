@@ -480,8 +480,7 @@ If required information is incomplete (e.g., missing field name, constraints, ne
 ✅ Clarification JSON must include all keys  
 When asking for clarification, always return a JSON operation where **all keys are present** but **values are empty**, except for initialResponse.
 
-✅ Stateless mode handling  
-Assume **no prior chat history**. All context must come from the current message and schema.  
+ 
 
 ✅ Always respond in JSON  
 No matter what the user message is (even greetings, irrelevant text, or queries), always return a valid JSON object as the response.  
@@ -792,17 +791,12 @@ IMPORTANT:
       },
     });
     const response = await chat.sendMessage({
-      message:
-        history && history.length > 0
-          ? JSON.stringify({
-              RequiredChanges: message,
-            })
-          : JSON.stringify({
-              projectId: projectId,
-              entities: nodes,
-              relationships: edges,
-              RequiredChanges: message,
-            }),
+      message: JSON.stringify({
+        projectId: projectId,
+        entities: nodes,
+        relationships: edges,
+        RequiredChanges: message,
+      }),
     });
     if (it) {
       clearInterval(it);
@@ -844,6 +838,7 @@ IMPORTANT:
         })
       );
     }
+    console.log("json", json);
     return res.json({
       data: json,
       token: response.usageMetadata,

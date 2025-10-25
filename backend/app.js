@@ -497,7 +497,7 @@ subClient.subscribe("apiCode", async (apiCodeData) => {
           }
           console.log("called get api code function now with nodes");
 
-          const rep = await getApiCodes(nodes, dbConvKey);
+          const rep = await getApiCodes(nodes, dbConvKey , projectId, userId);
           console.log("got the code back now with nodes");
 
           if (rep) {

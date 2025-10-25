@@ -788,7 +788,7 @@ Refresh expiry: 7d
 }
 `;
 
-export const getApiCodes = async (message, key) => {
+export const getApiCodes = async (message, key, projectId, userId) => {
   try {
     console.log("called get api codes get api code function");
     message = typeof message === "string" ? message : JSON.stringify(message);
@@ -804,6 +804,18 @@ export const getApiCodes = async (message, key) => {
     raw = raw.replace(/```json|```/g, "").trim();
     let json = parseInvalidJson2(raw);
     console.log(response.usageMetadata);
+    const { promptTokenCount, totalTokenCount, candidatesTokenCount } =
+      response?.usageMetadata;
+    pubClient.publish(
+      "token",
+      JSON.stringify({
+        projectId,
+        userId,
+        promptTokens: promptTokenCount,
+        totalTokens: totalTokenCount,
+        completionTokens: candidatesTokenCount,
+      })
+    );
     console.log("get api code function executed successfully");
     await pubClient.set(`api:${key}`, JSON.stringify(json));
 

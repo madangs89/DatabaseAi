@@ -143,6 +143,7 @@ const MonacoEditor = () => {
   const [addGitignore, setAddGitignore] = useState(false);
   const [addLicense, setAddLicense] = useState(false);
   const [gitLoader, setGitLoader] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
   const [localHistoryofCodeChanges, setLocalHistoryofCodeChanges] = useState(
     {}
   );
@@ -246,6 +247,7 @@ const MonacoEditor = () => {
     const ObjectTree = convertTreeToObject(tree[0].children);
     console.log("tree", ObjectTree);
     try {
+      setSaveLoading(true);
       const data = await axios.patch(
         `${import.meta.env.VITE_BACKEND_URL}/schema/update-code`,
         { code: ObjectTree, projectId: projectSlice?.currentProjectId },
@@ -268,7 +270,9 @@ const MonacoEditor = () => {
           setLocalHistoryofCodeChanges(data);
         }
       }
+      setSaveLoading(false);
     } catch (error) {
+      setSaveLoading(false);
       console.log(error);
       toast.error(error?.response?.data?.message || "Unable to save code");
     }
@@ -542,18 +546,18 @@ const MonacoEditor = () => {
 
               {/* Bottom Info Section */}
               <div className="w-full flex flex-col  items-center justify-center  gap-2 ">
-                {!changesToCode && (
+                {!changesToCode && !localHistoryofCodeChanges[id] && (
                   <div className="text-xs py-2 text-[#737373] flex items-center justify-center">
                     ⓘ Workspace ready
                   </div>
                 )}
 
-                {changesToCode && (
+                {(changesToCode || localHistoryofCodeChanges[id]) && (
                   <div
                     onClick={handleSaveClick}
-                    className="py-1 cursor-pointer text-sm bg-green-500 px-3 rounded-md hover:bg-green-600 active:bg-green-700 transition-colors"
+                    className="py-1 cursor-pointer text-sm bg-green-500 px-3 rounded-md hover:bg-green-600 active:bg-green-700 flex items-center justify-center transition-colors"
                   >
-                    Save
+                    {saveLoading ? <SpinnerLoader /> : "Save"}
                   </div>
                 )}
               </div>

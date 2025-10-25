@@ -25,6 +25,7 @@ const DashbordNav = ({
   projectTitle,
   setMobileSelectedTab,
   share = false,
+  loading = false,
 }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -149,6 +150,12 @@ const DashbordNav = ({
         )}
         <button
           onClick={() => {
+            if (loading) {
+              toast.error(
+                "Data is still generating. If you leave, some content may be lost! Please wait."
+              );
+              return;
+            }
             dispatch(setAllToBegin());
             dispatch(setGitLogout());
 

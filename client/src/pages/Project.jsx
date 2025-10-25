@@ -399,9 +399,9 @@ export default function Project() {
                   className="h-full rounded-full bg-red-500"
                   style={{
                     width: `${
-                      (auth?.usageToken / 100000) * 100 > 100
+                      (auth?.usageToken / 1000000) * 100 > 100
                         ? 100
-                        : (auth?.usageToken / 100000) * 100
+                        : (auth?.usageToken / 1000000) * 100
                     }%`,
                   }}
                 ></div>

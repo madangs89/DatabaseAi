@@ -342,6 +342,13 @@ const Dashboard = () => {
   const handleInputSubmit = async (e, isAiPrompt = false, aiPrompt = "") => {
     e?.preventDefault();
 
+    if (auth?.usageToken >= 1000000) {
+      toast.error(
+        "Token Limit for free users has been exceeded. Please upgrade to premium to continue using this feature."
+      );
+      return;
+    }
+
     if (loading) return;
     let inn;
     if (isAiPrompt == true) {
@@ -1792,7 +1799,7 @@ const Dashboard = () => {
       selectedProjectDetails?.privacy == "private"
     ) {
       toast.error(
-        "Your Project privacy is in private please make this to public by editing project details to make this project to share"
+        "This project is private. Edit the project settings to make it public and shareable."
       );
 
       return;
@@ -1872,6 +1879,7 @@ const Dashboard = () => {
           selectedTab={selectedTab}
           projectTitle={projectTitle}
           setSelectedTab={setSelectedTab}
+          loading={loading}
         />
         <div className="w-full h-full overflow-hidden flex">
           {selectedTab == "api" ? (
