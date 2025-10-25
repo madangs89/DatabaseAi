@@ -3,14 +3,19 @@ import { saveAs } from "file-saver";
 import { toPng } from "html-to-image";
 import toast from "react-hot-toast";
 
-
-export const exportProject = async (rfWrapperRef, codeTree, servercode) => {
+export const exportProject = async (
+  rfWrapperRef,
+  codeTree,
+  servercode,
+  setDownLoadButtonLoading
+) => {
   if (!rfWrapperRef || !rfWrapperRef.current) {
     console.error("ReactFlow wrapper ref not provided or invalid!");
     return;
   }
 
   try {
+    setDownLoadButtonLoading(true);
     const zip = new JSZip();
 
     // 1️⃣ Export ER Diagram as PNG
@@ -60,7 +65,6 @@ export const exportProject = async (rfWrapperRef, codeTree, servercode) => {
     if (servercode) {
       zip.file("FullDataBase.js", servercode);
     }
-    
 
     // 4️⃣ Generate zip and trigger download
     const content = await zip.generateAsync({ type: "blob" });
@@ -68,7 +72,12 @@ export const exportProject = async (rfWrapperRef, codeTree, servercode) => {
 
     toast.success("Project exported successfully!");
     console.log("Project export completed successfully!");
+    setDownLoadButtonLoading(false);
   } catch (err) {
     console.error("Error exporting project:", err);
+    setDownLoadButtonLoading(false);
+    toast.error("Failed to export project. Please try again.");
+  } finally {
+    setDownLoadButtonLoading(false);
   }
 };

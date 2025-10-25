@@ -228,6 +228,7 @@ const Dashboard = () => {
   const [showShare, setShowShare] = useState(false);
   const [shareLink, setShareLink] = useState("No link loaded yet.Please Wait");
   const [shareLoader, setShareLoader] = useState(false);
+  const [downLoadButtonLoading, setDownLoadButtonLoading] = useState(false);
   const tableData = [
     {
       id: "welcome",
@@ -1907,18 +1908,23 @@ const Dashboard = () => {
                       )}
                     </div>
 
-                    {/* Plus Button */}
+                    {/* Download Button */}
                     <button
                       onClick={() => {
                         exportProject(
                           rfInstance,
                           monacoSlice.tree,
-                          llmCodeFromServer
+                          llmCodeFromServer,
+                          setDownLoadButtonLoading
                         );
                       }}
                       className="w-8 h-8 flex items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]"
                     >
-                      <Download className="w-4 h-4" />
+                      {downLoadButtonLoading ? (
+                        <SpinnerLoader />
+                      ) : (
+                        <Download className="w-4 h-4" />
+                      )}
                     </button>
 
                     {/* Share Button */}
