@@ -1,5 +1,5 @@
-import dotenv from "dotenv";
-dotenv.config();
+// import dotenv from "dotenv";
+// dotenv.config();
 import { createServer } from "http";
 import { Server } from "socket.io";
 import express from "express";
@@ -22,8 +22,7 @@ export const io = new Server(httpServer, {
 
 const pubClient = createClient({
   url:
-    "rediss://default:ASVBAAImcDIxZDZjZDhmMmM5OTg0NzRjOTBjMWVkNDIyMGI5ZTMwNnAyOTUzNw@relaxing-mongrel-9537.upstash.io:6379" ||
-    process.env.REDIS_URL,
+    "rediss://default:ASVBAAImcDIxZDZjZDhmMmM5OTg0NzRjOTBjMWVkNDIyMGI5ZTMwNnAyOTUzNw@relaxing-mongrel-9537.upstash.io:6379",
   socket: {
     tls: true, // ✅ important for rediss://
     reconnectStrategy: (retries) => Math.min(retries * 50, 500), // optional retry logic
