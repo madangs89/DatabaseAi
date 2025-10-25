@@ -22,10 +22,6 @@ export const io = new Server(httpServer, {
 
 const pubClient = createClient({
   url: process.env.REDIS_URL,
-  // socket: {
-  //   tls: true,
-  //   reconnectStrategy: (retries) => Math.min(retries * 50, 500),
-  // },
 });
 const subClient = pubClient.duplicate();
 
