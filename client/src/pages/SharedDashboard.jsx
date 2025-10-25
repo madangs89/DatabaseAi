@@ -22,6 +22,7 @@ import {
   CloudLightning,
   Copy,
   DatabaseZap,
+  Download,
   Menu,
   Search,
   SearchIcon,
@@ -30,6 +31,7 @@ import {
   SendToBack,
   SendToBackIcon,
   Settings,
+  Share2,
   X,
 } from "lucide-react";
 import axios from "axios";
@@ -66,6 +68,7 @@ import { setCurrentProjectId } from "../redux/slice/projectSlice";
 import { setChatScroll } from "../redux/slice/scrollSlice";
 import { setGitAuth } from "../redux/slice/repoSlice";
 import SharedMonaco from "../components/SharedMonaco";
+import { exportProject } from "../utils/exportHelper";
 
 const TableNode = ({ data }) => {
   const {
@@ -220,7 +223,10 @@ const SharedDashboard = () => {
   const monacoSlice = useSelector((state) => state?.monaco);
   const scrollSlice = useSelector((state) => state?.scrollS);
   const repoSlice = useSelector((state) => state?.repo);
-
+  const [showShare, setShowShare] = useState(false);
+  const [shareLink, setShareLink] = useState("No link loaded yet.Please Wait");
+  const [shareLoader, setShareLoader] = useState(false);
+  const rfInstance = useRef(null);
   const tableData = [
     {
       id: "welcome",
@@ -614,6 +620,52 @@ const SharedDashboard = () => {
   //   }
   // }, [auth.isAuth]);
 
+  const handleShare = async () => {
+    if (
+      selectedProjectDetails &&
+      selectedProjectDetails?.privacy == "private"
+    ) {
+      toast.error(
+        "This project is private. Edit the project settings to make it public and shareable."
+      );
+
+      return;
+    }
+    setShowShare(true);
+    try {
+      setShareLoader(true);
+
+      const shareData = await axios.post(
+        `
+        ${import.meta.env.VITE_BACKEND_URL}/share`,
+        {
+          projectId: id,
+        },
+        {
+          withCredentials: true,
+        }
+      );
+
+      if (shareData?.data?.success) {
+        setShareLink(
+          `${import.meta.env.VITE_FRONTEND_URL}/share/${
+            shareData?.data?.share?.projectId
+          }/${shareData?.data?.share?.userId}/${shareData?.data?.share?._id}`
+        );
+      }
+      console.log(shareData);
+
+      setShareLoader(false);
+    } catch (error) {
+      console.log(error);
+      setShareLoader(false);
+      toast.error("Unable to share project, please Try again!!");
+      setShowShare(false);
+    } finally {
+      setShareLoader(false);
+    }
+  };
+
   useEffect(() => {
     (async () => {
       const data = await axios.get(
@@ -637,25 +689,29 @@ const SharedDashboard = () => {
   }
 
   if (!auth?.isAuth) {
-   return <div className=" w-full h-screen flex  bg-black bg-opacity-70 backdrop-blur-md  flex-col items-center justify-center z-[9999] p-4">
-      <div className="bg-[#171717] text-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-        <h2 className="text-2xl font-semibold mb-4">You are not logged in</h2>
-        <p className="text-gray-400 mb-6">Please log in to access this page.</p>
-        <button
-          onClick={() => {
-            const pathName = location?.pathname || "/";
-            localStorage.setItem(
-              "redirectUrlForNotLogin",
-              JSON.stringify(pathName)
-            );
-            navigate("/");
-          }}
-          className="bg-white text-black px-6 py-2 rounded-xl hover:bg-gray-200 transition-all font-medium"
-        >
-          Go to Login
-        </button>
+    return (
+      <div className=" w-full h-screen flex  bg-black bg-opacity-70 backdrop-blur-md  flex-col items-center justify-center z-[9999] p-4">
+        <div className="bg-[#171717] text-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
+          <h2 className="text-2xl font-semibold mb-4">You are not logged in</h2>
+          <p className="text-gray-400 mb-6">
+            Please log in to access this page.
+          </p>
+          <button
+            onClick={() => {
+              const pathName = location?.pathname || "/";
+              localStorage.setItem(
+                "redirectUrlForNotLogin",
+                JSON.stringify(pathName)
+              );
+              navigate("/");
+            }}
+            className="bg-white text-black px-6 py-2 rounded-xl hover:bg-gray-200 transition-all font-medium"
+          >
+            Go to Login
+          </button>
+        </div>
       </div>
-    </div>;
+    );
   } else {
     return (
       <div className="w-full  overflow-hidden dm-sans-font relative bg-black h-screen flex-col flex">
@@ -665,6 +721,7 @@ const SharedDashboard = () => {
           selectedTab={selectedTab}
           projectTitle={projectTitle}
           setSelectedTab={setSelectedTab}
+          loading={loading}
         />
         <div className="w-full h-full overflow-hidden flex">
           {selectedTab == "api" ? (
@@ -684,7 +741,18 @@ const SharedDashboard = () => {
                       <p className="text-blue-500 text-sm mr-2">Shared</p>
                     </div>
 
-                    {/* Plus Button */}
+                    <button
+                      onClick={() => {
+                        exportProject(
+                          rfInstance,
+                          monacoSlice.tree,
+                          llmCodeFromServer
+                        );
+                      }}
+                      className="w-8 h-8 flex items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]"
+                    >
+                      <Download className="w-4 h-4" />
+                    </button>
 
                     <button
                       onClick={() => setMobileSelectedTab(true)}
@@ -694,7 +762,10 @@ const SharedDashboard = () => {
                     </button>
                   </div>
                 </div>
-                <div className="flex-1 h-full w-full bg-[#171717] rounded-lg flex-shrink-0">
+                <div
+                  ref={rfInstance}
+                  className="flex-1 h-full w-full bg-[#171717] rounded-lg flex-shrink-0"
+                >
                   {loadingSlice?.setEntityLoading ? (
                     <div className="flex items-center justify-center w-full h-full">
                       <SpinnerLoader />
@@ -818,6 +889,8 @@ const SharedDashboard = () => {
             selectedRelationshipId={selectedRelationshipId}
           />
         </aside>
+
+        
       </div>
     );
   }

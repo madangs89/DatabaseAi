@@ -342,9 +342,9 @@ const Dashboard = () => {
   const handleInputSubmit = async (e, isAiPrompt = false, aiPrompt = "") => {
     e?.preventDefault();
 
-    if (auth?.usageToken >= 1000000) {
+    if (auth?.usageToken >= 500000) {
       toast.error(
-        "Token Limit for free users has been exceeded. Please upgrade to premium to continue using this feature."
+        "You’ve reached the token limit for this account. To continue, please try using a different email. A premium plan will be available soon for extended usage."
       );
       return;
     }
