@@ -16,16 +16,16 @@ import Repo from "./models/repos.model.js";
 
 export const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: process.env.FRONTEND_URL,
   },
 });
 
 const pubClient = createClient({
-  url: "rediss://default:ASVBAAImcDIxZDZjZDhmMmM5OTg0NzRjOTBjMWVkNDIyMGI5ZTMwNnAyOTUzNw@relaxing-mongrel-9537.upstash.io:6379",
-  socket: {
-    tls: true,
-    reconnectStrategy: (retries) => Math.min(retries * 50, 500),
-  },
+  url: process.env.REDIS_URL,
+  // socket: {
+  //   tls: true,
+  //   reconnectStrategy: (retries) => Math.min(retries * 50, 500),
+  // },
 });
 const subClient = pubClient.duplicate();
 
