@@ -8,6 +8,7 @@ import {
   Menu,
   X,
   CircleUser,
+  PlusCircle,
 } from "lucide-react";
 import { googleLogout } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
@@ -336,7 +337,7 @@ export default function Project() {
   return (
     <div className="bg-black relative border-none text-gray-200 h-screen flex flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between border-b border-[#262626] px-6 py-4 bg-black ">
+      <header className="flex items-center justify-between border-b border-[#262626] px-5 py-4 bg-black ">
         <div className="flex items-center gap-3 cursor-pointer">
           <svg
             className="text-white"
@@ -362,75 +363,84 @@ export default function Project() {
           >
             <CircleUser className="w-4 h-4 text-white" />
           </button>
+          <button
+            onClick={() => {
+              setMobileAsideShow(true);
+              titleRef.current.focus();
+            }}
+            className="w-8 h-8 flex px-5 text-sm py-1 lg:hidden items-center justify-center bg-[#1c1c1c] border border-[#333] rounded-md text-white hover:bg-[#2a2a2a]"
+          >
+            New <PlusCircle className="w-4 h-4 text-white" />
+          </button>
         </div>
       </header>
       {userProfileHover && auth?.user && (
-    <div
-  onMouseOver={() => setUserProfileHover(true)}
-  onMouseLeave={() => setUserProfileHover(false)}
-  className="absolute right-6 top-12 w-64 bg-[#1c1c1c] border border-[#333] rounded-xl shadow-xl p-4 flex flex-col gap-4 transition-all z-[1000]"
->
-  {/* User Info */}
-  <div className="flex items-center gap-1 border-b border-[#262626] pb-3">
-    <img
-      src={
-        auth?.user?.avatarUrl ||
-        "https://cdn-icons-png.flaticon.com/512/149/149071.png"
-      }
-      alt="User Avatar"
-      className="w-12 h-12 rounded-full border border-[#333] object-cover"
-    />
-    <div className="flex flex-col">
-      <p className="text-white text-sm font-semibold">
-        {auth?.user?.name || "Guest User"}
-      </p>
-      <p className="text-gray-400 text-xs truncate">
-        {auth?.user?.email || "No Email"}
-      </p>
-    </div>
-  </div>
-
-  {/* Account Actions */}
-  <div className="flex flex-col gap-3  bg-[#1b1b1b] rounded-lg w-full">
-    <div className="flex flex-col gap-2">
-      <p className="text-gray-300 text-sm font-medium">
-        Token Usage <span className="text-gray-100">(5Lk Tokens Free)</span>
-      </p>
-
-      {/* Progress bar */}
-      <div className="relative w-full h-5 bg-gray-700 rounded-full overflow-hidden">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-500 ease-out"
-          style={{
-            width: `${
-              (auth?.usageToken / 500000) * 100 > 100
-                ? 100
-                : (auth?.usageToken / 500000) * 100
-            }%`,
-          }}
-        ></div>
-      </div>
+          onMouseOver={() => setUserProfileHover(true)}
+          onMouseLeave={() => setUserProfileHover(false)}
+          className="absolute right-6 top-12 w-64 bg-[#1c1c1c] border border-[#333] rounded-xl shadow-xl p-4 flex flex-col gap-4 transition-all z-[1000]"
+        >
+          {/* User Info */}
+          <div className="flex items-center gap-1 border-b border-[#262626] pb-3">
+            <img
+              src={
+                auth?.user?.avatarUrl ||
+                "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+              }
+              alt="User Avatar"
+              className="w-12 h-12 rounded-full border border-[#333] object-cover"
+            />
+            <div className="flex flex-col">
+              <p className="text-white text-sm font-semibold">
+                {auth?.user?.name || "Guest User"}
+              </p>
+              <p className="text-gray-400 text-xs truncate">
+                {auth?.user?.email || "No Email"}
+              </p>
+            </div>
+          </div>
 
-      {/* Progress text */}
-      <p className="text-xs text-gray-200 text-center mt-1">
-        {Math.min(((auth?.usageToken / 500000) * 100).toFixed(2), 100)}% used (
-        {auth?.usageToken || 0} / 500000 tokens)
-      </p>
-    </div>
+          {/* Account Actions */}
+          <div className="flex flex-col gap-3  bg-[#1b1b1b] rounded-lg w-full">
+            <div className="flex flex-col gap-2">
+              <p className="text-gray-300 text-sm font-medium">
+                Token Usage{" "}
+                <span className="text-gray-100">(5Lk Tokens Free)</span>
+              </p>
 
-    <button
-      onClick={handleLogout}
-      className="mt-2 w-full flex items-center justify-center text-red-400 text-sm font-medium px-3 py-2 rounded-md hover:bg-[#2a2a2a] transition-colors duration-300"
-    >
-      Log Out
-    </button>
-  </div>
-  {/* Footer */}
-  <p className="text-[10px] text-gray-500 text-center mt-1">
-    Verified Member
-  </p>
-</div>
+              {/* Progress bar */}
+              <div className="relative w-full h-5 bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-500 ease-out"
+                  style={{
+                    width: `${
+                      (auth?.usageToken / 500000) * 100 > 100
+                        ? 100
+                        : (auth?.usageToken / 500000) * 100
+                    }%`,
+                  }}
+                ></div>
+              </div>
 
+              {/* Progress text */}
+              <p className="text-xs text-gray-200 text-center mt-1">
+                {Math.min(((auth?.usageToken / 500000) * 100).toFixed(2), 100)}%
+                used ({auth?.usageToken || 0} / 500000 tokens)
+              </p>
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="mt-2 w-full flex items-center justify-center text-red-400 text-sm font-medium px-3 py-2 rounded-md hover:bg-[#2a2a2a] transition-colors duration-300"
+            >
+              Log Out
+            </button>
+          </div>
+          {/* Footer */}
+          <p className="text-[10px] text-gray-500 text-center mt-1">
+            Verified Member
+          </p>
+        </div>
       )}
 
       {/* Main Layout */}
