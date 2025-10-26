@@ -162,8 +162,16 @@ export const oauthLogin = async (req, res) => {
 // ==================== Logout ====================
 export const logout = (req, res) => {
   try {
-    res.clearCookie("token", { httpOnly: true, sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", });
-    res.clearCookie("gitToken", { httpOnly: true, sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", });
+    res.clearCookie("token", {
+      httpOnly: true,
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
+    res.clearCookie("gitToken", {
+      httpOnly: true,
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
     return res.json({ message: "Logged out successfully", success: true });
   } catch (error) {
     console.error(error);
