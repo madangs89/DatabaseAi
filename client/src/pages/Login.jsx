@@ -10,14 +10,17 @@ import {
 import { useGoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import SpinnerLoader from "../components/loaders/SpinnerLoader";
 
 const Login = () => {
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
+  const [loginLoading, setLoginLoading] = useState(false);
   const navigate = useNavigate();
 
   const googleHandler = async (res) => {
     try {
+      setLoginLoading(true);
       const response = await axios.post(
         `${BACKEND_URL}/auth/google-auth`,
         {
@@ -41,8 +44,13 @@ const Login = () => {
           }, 1000);
         }
       }
+      setLoginLoading(false);
     } catch (error) {
+      setLoginLoading(false);
+      toast.error("Login Failed. Please try again.");
       console.log(error);
+    } finally {
+      setLoginLoading(false);
     }
   };
   const dispatch = useDispatch();
@@ -84,16 +92,24 @@ const Login = () => {
         </h1>
         <button
           onClick={handleLogin}
-          className="flex items-center gap-3 px-6 py-3 border border-gray-300 rounded-lg shadow-sm bg-white hover:bg-gray-50 transition"
+          className="flex items-center justify-center gap-3 px-6 py-3 border border-gray-300 rounded-lg shadow-sm bg-white hover:bg-gray-50 transition"
         >
-          <img
-            src="https://developers.google.com/identity/images/g-logo.png"
-            alt="Google logo"
-            className="w-6 h-6"
-          />
-          <span className="text-gray-700 font-medium">
-            Continue with Google
-          </span>
+          {loginLoading ? (
+            <div className="w-12 flex items-center justify-center">
+              <SpinnerLoader clr="black" />
+            </div>
+          ) : (
+            <>
+              <img
+                src="https://developers.google.com/identity/images/g-logo.png"
+                alt="Google logo"
+                className="w-6 h-6"
+              />
+              <span className="text-gray-700 font-medium">
+                Continue with Google
+              </span>
+            </>
+          )}
         </button>
       </div>
     </div>

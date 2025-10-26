@@ -49,6 +49,7 @@ export default function Project() {
   const [mobileAsideShow, setMobileAsideShow] = useState(false);
   const socket = useSelector((state) => state.project.socket);
   const titleRef = useRef(null);
+  const [logoutLoader, setLogoutLoader] = useState(false);
   const handleFromSubmit = async (e) => {
     e.preventDefault();
     if (isEditing) {
@@ -228,6 +229,7 @@ export default function Project() {
 
   const handleLogout = async () => {
     try {
+      setLogoutLoader(true);
       googleLogout();
       const logoutResult = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/auth/logout`,
@@ -245,8 +247,10 @@ export default function Project() {
         toast.success("Logged out");
         navigate("/");
       }
+      setLogoutLoader(false);
     } catch (error) {
       console.log(error);
+      setLogoutLoader(false);
       toast.error("Unable to logout");
     }
   };
@@ -433,7 +437,7 @@ export default function Project() {
               onClick={handleLogout}
               className="mt-2 w-full flex items-center justify-center text-red-400 text-sm font-medium px-3 py-2 rounded-md hover:bg-[#2a2a2a] transition-colors duration-300"
             >
-              Log Out
+               {logoutLoader ? <SpinnerLoader  /> : "Logout"}
             </button>
           </div>
           {/* Footer */}
