@@ -100,11 +100,10 @@ const App = () => {
   "Note : Backend in Deployed On Render , it will take 1 min for backend bootup becuase i deployed on a free tier please do considre waiting for 1 min.. And Thanks For Your Time",
   {
     duration: 6000,
-  }
-    setTimeout(() => {
- toast.success("Now You Are Ready To Go!!")
-}, 60000);
-);
+  });
+     setTimeout(() => {
+          toast.success("Now You Are Ready To Go!!")
+         }, 60000);
   }, []);
 
   if (loadingSlice?.pageLoading) {
