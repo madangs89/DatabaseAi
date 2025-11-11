@@ -23,6 +23,7 @@ import { io } from "socket.io-client";
 import { setSocket } from "./redux/slice/projectSlice";
 import AuthCallback from "./components/callback/AuthCallback";
 import SharedDashboard from "./pages/SharedDashboard";
+import {toast} from "react-hot-toast"
 
 const App = () => {
   const isAuth = useSelector((state) => state.auth.isAuth);
@@ -89,6 +90,18 @@ const App = () => {
       }
     })();
     dispatch(setPageLoading(false));
+  }, []);
+
+
+
+
+  useEffect(() => {
+   toast(
+  "Note : Backend in Deployed On Render , it will take 1 min for backend bootup becuase i deployed on a free tier please do considre waiting for 1 min.. And Thanks For Your Time",
+  {
+    duration: 6000,
+  }
+);
   }, []);
 
   if (loadingSlice?.pageLoading) {
