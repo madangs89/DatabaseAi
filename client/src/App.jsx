@@ -93,20 +93,23 @@ const App = () => {
   }, []);
 
 
-
-
 useEffect(() => {
   toast(
-    "⚡ Note: The backend is hosted on Render's free tier, so it may take up to ⏱️ 1 minute to wake up. Please hang tight — and thank you so much for your patience 🙏💖",
-    { duration: 6000 } // shows for 6 seconds
+    "⚡ Note: The backend is deployed on Render’s free tier — it may take up to ⏱️ 1 minute to start. Thanks for your patience 🙏💖",
+    {
+      duration: 6000,
+    }
   );
 
+  // ✅ Save the timeout ID so you can clear it later
   const timer = setTimeout(() => {
-    toast.success("✅ The backend is now ready — you're good to go! 🚀 Thanks again for waiting 💫");
-  }, 60000); // 1 minute (60,000 ms)
+    toast.success("✅ The backend is ready — you're good to go! 🚀 Thanks for waiting 💫");
+  }, 60000);
 
-  return () => clearTimeout(timer); // cleanup just in case
+  // ✅ Cleanup on unmount
+  return () => clearTimeout(timer);
 }, []);
+
 
 
   if (loadingSlice?.pageLoading) {
