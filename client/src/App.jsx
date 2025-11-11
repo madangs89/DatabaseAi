@@ -95,16 +95,19 @@ const App = () => {
 
 
 
-  useEffect(() => {
-   toast(
-  "Note : Backend in Deployed On Render , it will take 1 min for backend bootup becuase i deployed on a free tier please do considre waiting for 1 min.. And Thanks For Your Time",
-  {
-    duration: 6000,
-  });
-     setTimeout(() => {
-          toast.success("Now You Are Ready To Go!!")
-         }, 60000);
-  }, []);
+useEffect(() => {
+  toast(
+    "⚡ Note: The backend is hosted on Render's free tier, so it may take up to ⏱️ 1 minute to wake up. Please hang tight — and thank you so much for your patience 🙏💖",
+    { duration: 6000 } // shows for 6 seconds
+  );
+
+  const timer = setTimeout(() => {
+    toast.success("✅ The backend is now ready — you're good to go! 🚀 Thanks again for waiting 💫");
+  }, 60000); // 1 minute (60,000 ms)
+
+  return () => clearTimeout(timer); // cleanup just in case
+}, []);
+
 
   if (loadingSlice?.pageLoading) {
     return (
