@@ -101,6 +101,9 @@ const App = () => {
   {
     duration: 6000,
   }
+    setTimeout(() => {
+ toast.success("Now You Are Ready To Go!!")
+}, 60000);
 );
   }, []);
 
