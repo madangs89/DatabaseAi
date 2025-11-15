@@ -69,3 +69,91 @@ A beginner in India can collaborate with an expert in Germany. A student team ca
 Schema Genius unites developers through collaboration, creativity, and AI.
 
 Because the future of tech isn’t about working alone — it’s about building together.
+
+
+🔧 Installation & Setup (MERN Application)
+
+Schema Genius is a full MERN-stack application with separate client and server directories.
+Follow the steps below to run it locally.
+
+📁 Folder Structure
+schema-genius/
+│
+├── client/        # React frontend (React, Redux, React Flow, Monaco)
+│   ├── src/
+│   ├── public/
+│   └── package.json
+│
+├── server/        # Node.js + Express backend (AI processing + real-time)
+│   ├── src/
+│   ├── config/
+│   └── package.json
+│
+├── README.md
+└── .env.example
+
+⚙️ Prerequisites
+
+Make sure you have the following installed:
+
+Node.js (v18+)
+
+npm or yarn
+
+MongoDB (local or Atlas cloud)
+
+Redis (required for real-time + caching)
+
+Git
+
+🔑 Environment Variables
+
+Create an .env file inside the server folder:
+
+PORT=5000
+MONGO_URI=your_mongodb_connection_string
+REDIS_URL=redis://localhost:6379
+
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_secret
+
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_secret
+
+SESSION_SECRET=your_session_secret
+
+GEMINI_API_KEY=your_gemini_api_key
+
+
+For the client, create a .env file inside client:
+
+REACT_APP_API_URL=http://localhost:5000
+
+📦 Install Dependencies
+1️⃣ Install client dependencies
+cd client
+npm install
+
+2️⃣ Install server dependencies
+cd ../server
+npm install
+
+▶️ Running the Application
+
+Open two terminals:
+
+1️⃣ Start the backend
+cd server
+npm run dev
+
+2️⃣ Start the frontend
+cd client
+npm start
+
+
+The app will be available at:
+
+👉 Frontend: http://localhost:3000
+
+👉 Backend API: http://localhost:5000 
+
